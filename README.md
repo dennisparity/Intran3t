@@ -7,15 +7,17 @@
 ---
 
 ## 🎯 Project Overview
+<img width="1273" height="712" alt="Screenshot 2025-12-18 at 18 03 41" src="https://github.com/user-attachments/assets/25ae5b9a-6fad-4133-834e-9a4a6a1040ca" />
 
 ### Purpose
 Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions and functionalities as plugins under a single interface, run fully on Polkadot. The dapp demonstrates role-base access managements for web3 users while enabling isolated functionalities and chain interactions per module.
 
 ### Key Features
 - **On-Chain Identity:** Real-time identity verification from Polkadot People Chain with social account display (Matrix, Twitter, GitHub, Discord)
-- **NFT Access Passes:** Mint, manage, and verify location-based access passes as NFTs on Asset Hub
+<img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
+- **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
 - **Modular Dashboard:** Extensible widget-based interface for customization
-- **Governance Integration:** Participate in on-chain governance directly from the interface
+- **Parity DAO Governance:** Participate in on-chain governance for Parity specific refs
 - **Multi-Wallet Support:** Connect with Polkadot.js, Talisman, SubWallet, and more
 
 ### Status
