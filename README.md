@@ -2,7 +2,7 @@
 
 > **Product Owner:** Dennis Schiessl, Parity Technologies
 > **Target Distribution:** Polkadot Triad (Polkadot.com, Mobile App, Desktop)
-> **Last Updated:** December 18, 2024
+> **Last Updated:** December 18, 2025
 
 ---
 
@@ -507,7 +507,7 @@ A feature is "done" when:
 
 MIT License
 
-Copyright (c) 2024 Dennis Schiessl / Parity Technologies
+Copyright (c) 2025 Dennis Schiessl / Parity Technologies
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -545,6 +545,6 @@ Special thanks to the Polkadot and Parity teams for building an incredible ecosy
 
 ---
 
-**Last Updated:** December 18, 2024
+**Last Updated:** December 18, 2025
 **Status:** Active Development (MVP)
 **Version:** 0.1.0
