@@ -1,0 +1,18 @@
+{
+  "id": "profile",
+  "name": "Profile",
+  "version": "1.0.0",
+  "description": "User profile with avatar, identity, and tags",
+  "author": "Intran3t",
+  "category": "user",
+  "permissions": [
+    "read:account",
+    "read:identity"
+  ],
+  "dependencies": [],
+  "settings": {
+    "showTags": true,
+    "showDescription": true,
+    "useOnChainIdentity": false
+  }
+}

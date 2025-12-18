@@ -1,0 +1,16 @@
+{
+  "id": "quick-navigation",
+  "name": "Quick Navigation",
+  "version": "1.0.0",
+  "description": "Quick access to important links and sections",
+  "widgets": [
+    {
+      "id": "QuickNavWidget",
+      "name": "Quick Navigation",
+      "component": "QuickNavWidget",
+      "defaultPosition": "sidebar"
+    }
+  ],
+  "permissions": [],
+  "dependencies": []
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "polkadot-ui": {
+      "command": "npx",
+      "args": ["polkadot-ui@latest", "mcp"]
+    }
+  }
+}

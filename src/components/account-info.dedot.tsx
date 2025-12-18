@@ -1,0 +1,61 @@
+"use client";
+
+import {
+  AccountInfoBase,
+  AccountInfoSkeleton,
+  type AccountInfoBaseProps,
+} from "./account-info.base";
+import { ClientOnly } from "@/components/client-only";
+import { useIdentityOf } from "@/hooks/use-identity-of.dedot";
+import { PolkadotProvider } from "@/lib/polkadot-provider.dedot";
+import { useMemo } from "react";
+import { polkadotPeople } from "typink";
+
+export type AccountInfoProps = Omit<AccountInfoBaseProps, "services">;
+
+function AccountInfoInner(props: AccountInfoProps) {
+  const {
+    data: identity,
+    isLoading,
+    error,
+  } = useIdentityOf({
+    address: props.address,
+    chainId: props.chainId || polkadotPeople.id,
+  });
+  const services = useMemo(
+    () => ({
+      identity: identity ?? null,
+      isLoading,
+      error,
+    }),
+    [identity, isLoading, error]
+  );
+
+  return (
+    <>
+      <AccountInfoBase
+        services={services}
+        chainId={props.chainId || polkadotPeople.id}
+        {...props}
+      />
+    </>
+  );
+}
+
+export function AccountInfo(props: AccountInfoProps) {
+  return (
+    <ClientOnly fallback={<AccountInfoSkeleton address={props.address} />}>
+      <AccountInfoInner {...props} />
+    </ClientOnly>
+  );
+}
+
+export function AccountInfoWithProvider(props: AccountInfoProps) {
+  return (
+    <PolkadotProvider>
+      <AccountInfo {...props} />
+    </PolkadotProvider>
+  );
+}
+
+AccountInfoWithProvider.displayName = "AccountInfoWithProvider";

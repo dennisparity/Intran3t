@@ -1,0 +1,16 @@
+{
+  "id": "help-center",
+  "name": "Help Center",
+  "version": "1.0.0",
+  "description": "Access help articles, guides, and resources",
+  "widgets": [
+    {
+      "id": "HelpCenterWidget",
+      "name": "Help Center",
+      "component": "HelpCenterWidget",
+      "defaultPosition": "sidebar"
+    }
+  ],
+  "permissions": [],
+  "dependencies": []
+}

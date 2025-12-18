@@ -1,0 +1,44 @@
+{
+  "id": "governance",
+  "name": "Parity DAO",
+  "version": "3.0.0",
+  "description": "On-chain voting on internal initiatives - OpenGov-style governance with System Remarks",
+  "widgets": [
+    {
+      "id": "GovernanceWidget",
+      "name": "Parity DAO",
+      "component": "GovernanceWidget",
+      "defaultPosition": "main",
+      "size": "large"
+    }
+  ],
+  "permissions": ["read:polls", "write:poll", "write:vote", "chain:system.remark"],
+  "dependencies": ["typink"],
+  "features": [
+    "Create custom polls",
+    "OpenGov-style voting (Aye/Nay/Abstain)",
+    "Vote with connected wallet",
+    "On-chain storage via System Remarks",
+    "Permanent, verifiable vote records",
+    "Real-time vote tracking",
+    "Custom vote option labels",
+    "Automatic poll closure",
+    "Vote history tracking",
+    "On-chain badge indicator"
+  ],
+  "storage": {
+    "type": "hybrid",
+    "local": {
+      "type": "localStorage",
+      "key": "intran3t_parity_dao_polls",
+      "description": "Local cache and fallback"
+    },
+    "onchain": {
+      "type": "system_remarks",
+      "chain": "Paseo AssetHub",
+      "description": "Permanent on-chain storage using System.remark extrinsics",
+      "format": "JSON encoded as bytes",
+      "recordTypes": ["parity_dao_poll", "parity_dao_vote"]
+    }
+  }
+}

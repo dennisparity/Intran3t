@@ -1,0 +1,23 @@
+{
+  "id": "acc3ss",
+  "name": "Acc3ss",
+  "version": "1.0.0",
+  "description": "Office access management - book desks, meeting rooms, and manage visitor access",
+  "widgets": [
+    {
+      "id": "Acc3ssWidget",
+      "name": "Office Access",
+      "component": "Acc3ssWidget",
+      "defaultPosition": "sidebar",
+      "size": "tall"
+    }
+  ],
+  "permissions": ["read:office", "write:booking"],
+  "dependencies": [],
+  "integrations": {
+    "calendar": {
+      "required": false,
+      "description": "Sync bookings with calendar"
+    }
+  }
+}
