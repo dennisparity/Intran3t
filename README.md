@@ -9,7 +9,7 @@
 ## 🎯 Project Overview
 
 ### Purpose
-Intran3t is a modular dapp demonstrating decentralized access control using NFT-based passes and on-chain identity verification on the Polkadot ecosystem. It showcases integration with People Chain for verified identities and Asset Hub for NFT management.
+Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions and functionalities as plugins under a single interface, run fully on Polkadot. The dapp demonstrates role-base access managements for web3 users while enabling isolated functionalities and chain interactions per module.
 
 ### Key Features
 - **On-Chain Identity:** Real-time identity verification from Polkadot People Chain with social account display (Matrix, Twitter, GitHub, Discord)
