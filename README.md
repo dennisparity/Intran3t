@@ -15,6 +15,7 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 ### Key Features
 - **On-Chain Identity:** Real-time identity verification from Polkadot People Chain with social account display (Matrix, Twitter, GitHub, Discord)
 <img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
+
 - **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
 - **Modular Dashboard:** Extensible widget-based interface for customization
 - **Parity DAO Governance:** Participate in on-chain governance for Parity specific refs
