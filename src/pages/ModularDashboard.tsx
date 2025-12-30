@@ -17,8 +17,8 @@ export default function ModularDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">
         <div className="max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-polkadot mb-6">
-            <span className="text-4xl font-bold text-white">I3</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-white mb-6 shadow-lg overflow-hidden">
+            <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-2" />
           </div>
           <h2 className="text-3xl font-bold text-[#1c1917] mb-4 font-serif">
             Connect Your Wallet
@@ -46,8 +46,8 @@ export default function ModularDashboard() {
         <div className="flex items-center justify-between gap-3 mb-6">
           {/* Intran3t Branding */}
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-polkadot">
-              <span className="text-xl font-bold text-white">I3</span>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-md overflow-hidden">
+              <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-1.5" />
             </div>
             <h1 className="text-2xl font-bold text-[#1c1917] font-serif">
               Intran<span className="text-gradient">3</span>t

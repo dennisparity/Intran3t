@@ -19,8 +19,8 @@ export default function Landing() {
       <div className="max-w-2xl w-full">
         {/* Logo/Brand Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-polkadot mb-6">
-            <span className="text-4xl font-bold text-white">I3</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-white mb-6 shadow-lg overflow-hidden">
+            <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-2" />
           </div>
 
           <h1 className="text-6xl font-bold text-[#1c1917] mb-4 font-serif">
