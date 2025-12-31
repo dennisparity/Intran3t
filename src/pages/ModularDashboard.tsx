@@ -7,6 +7,7 @@ import { GovernanceWidget, defaultGovernanceConfig } from '../modules/governance
 import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigation'
 import { HelpCenterWidget, defaultHelpCenterConfig } from '../modules/help-center'
 import { ProfileWidget, defaultProfileConfig } from '../modules/profile'
+import { FormsWidget, defaultFormsConfig } from '../modules/forms'
 
 export default function ModularDashboard() {
   const { connectedAccount } = useTypink()
@@ -85,6 +86,11 @@ export default function ModularDashboard() {
               {/* Acc3ss - More space */}
               <div className="col-span-12 xl:col-span-4 row-span-2">
                 <Acc3ssWidget config={defaultAcc3ssConfig} />
+              </div>
+
+              {/* Forms - Below Governance */}
+              <div className="col-span-12 xl:col-span-8 row-span-2">
+                <FormsWidget config={defaultFormsConfig} />
               </div>
             </div>
           </div>

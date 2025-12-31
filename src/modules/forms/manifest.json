@@ -1,0 +1,43 @@
+{
+  "id": "forms",
+  "name": "Forms",
+  "version": "1.0.0",
+  "description": "Create forms and collect public responses",
+  "widgets": [
+    {
+      "id": "FormsWidget",
+      "name": "Forms",
+      "component": "FormsWidget",
+      "defaultPosition": "main",
+      "size": "large"
+    }
+  ],
+  "permissions": [
+    "read:forms",
+    "write:form",
+    "write:response",
+    "public:submit"
+  ],
+  "dependencies": ["typink"],
+  "features": [
+    "Create custom forms",
+    "Multiple field types (text, email, textarea, select)",
+    "Public submission (no wallet required)",
+    "Shareable links",
+    "Response viewing and management",
+    "Form status management (active/closed)",
+    "Local storage with future Statement Store support"
+  ],
+  "storage": {
+    "type": "hybrid",
+    "local": {
+      "type": "localStorage",
+      "key": "intran3t_forms",
+      "description": "Local cache and fallback"
+    },
+    "future": {
+      "type": "statement_store",
+      "description": "Ephemeral off-chain storage for responses"
+    }
+  }
+}

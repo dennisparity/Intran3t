@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Landing from "./pages/Landing";
 import ModularDashboard from "./pages/ModularDashboard";
 import { PolkadotProvider } from "@/lib/polkadot-provider.dedot";
+import { PublicForm } from "./modules/forms";
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
         <div className="min-h-screen bg-[#fafafa]">
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/f/:formId" element={<PublicForm />} />
             <Route path="/dashboard" element={<ModularDashboard />} />
           </Routes>
         </div>
