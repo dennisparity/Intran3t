@@ -17,6 +17,7 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 <img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
 
 - **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
+- **Forms:** Create privacy-preserving forms with public submission links (no wallet required for respondents)
 - **Modular Dashboard:** Extensible widget-based interface for customization
 - **Parity DAO Governance:** Participate in on-chain governance for Parity specific refs
 - **Multi-Wallet Support:** Connect with Polkadot.js, Talisman, SubWallet, and more
@@ -83,6 +84,12 @@ Intran3t/
 │   │   │   └── nft-helpers.ts     # Asset Hub NFT operations
 │   │   ├── governance/            # Governance participation
 │   │   │   └── GovernanceWidget.tsx
+│   │   ├── forms/                 # Forms builder
+│   │   │   ├── FormsWidget.tsx
+│   │   │   ├── PublicForm.tsx
+│   │   │   ├── config.ts          # localStorage helpers
+│   │   │   ├── types.ts           # TypeScript definitions
+│   │   │   └── manifest.json      # Module metadata
 │   │   ├── quick-navigation/      # Navigation widget
 │   │   └── help-center/           # Help & documentation
 │   ├── hooks/                     # Custom React hooks
@@ -246,7 +253,31 @@ pnpm preview
 - Track governance activity
 - Monitor proposal status
 
-### 4. Modular Dashboard
+### 4. Forms Module
+**Privacy-Preserving Form Builder**
+- Create custom forms with multiple field types (text, email, textarea, select)
+- Generate shareable public links for form submission
+- Public form submission without wallet connection required
+- Edit forms after creation while preserving responses
+- View and manage form submissions in dashboard
+- Toggle form status (active/closed)
+- Copy shareable links with one click
+
+**Technical Details:**
+- localStorage persistence (future Statement Store integration)
+- Public route at `/f/:formId` for wallet-free submissions
+- Tab-based dashboard widget (Create Form / View Submissions)
+- Follows Intran3t design system and modular architecture
+- Privacy-preserving approach with data sovereignty messaging
+
+**Key Features:**
+- No wallet required for respondents
+- Form creator controls access to responses
+- Clean, branded public form UI
+- Onchain identity CTA for user acquisition
+- Seamless integration with existing modules
+
+### 5. Modular Dashboard
 **Extensible Widget System**
 - Drag-and-drop widget layout (future)
 - Customizable module placement
@@ -282,6 +313,24 @@ pnpm preview
 2. System queries your NFT ownership
 3. Validates expiration and access level
 4. Grants/denies access accordingly
+
+### Create and Share a Form
+1. Navigate to Forms module in dashboard
+2. Click "Create Form" tab
+3. Enter form title and description
+4. Click "Add Field" to create questions
+5. Select field type (text, email, textarea, select)
+6. Click "Create Form"
+7. Copy shareable link from "View Submissions" tab
+8. Share link with respondents (no wallet needed)
+9. View responses in "View Submissions" tab
+
+### Edit a Form
+1. Navigate to "View Submissions" tab in Forms module
+2. Click the edit icon (pencil) on the form you want to modify
+3. Make changes to title, description, or fields
+4. Click "Update Form" to save changes
+5. Existing responses are preserved
 
 ---
 
@@ -374,6 +423,7 @@ export const SUPPORTED_NETWORKS = [
 - ✅ Profile module with on-chain identity
 - ✅ Acc3ss module for NFT access control
 - ✅ Governance participation
+- ✅ Forms module with public submission
 - ✅ Multi-wallet support
 - ✅ Responsive design
 
