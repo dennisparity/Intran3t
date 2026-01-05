@@ -1,5 +1,5 @@
 export type FormStatus = 'active' | 'closed'
-export type FieldType = 'text' | 'email' | 'textarea' | 'select'
+export type FieldType = 'text' | 'email' | 'select' | 'multiselect'
 
 export interface FormField {
   id: string
@@ -14,7 +14,7 @@ export interface FormResponse {
   id: string
   formId: string
   submittedAt: number
-  answers: Record<string, string>
+  answers: Record<string, string | string[]>
 }
 
 export interface Form {

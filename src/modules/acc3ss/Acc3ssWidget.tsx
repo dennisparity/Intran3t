@@ -105,7 +105,7 @@ function AccessPassModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-        <div className="bg-gradient-polkadot p-6 text-white">
+        <div className="bg-grey-900 p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-bold font-serif">
               {pass.onChain ? 'NFT Access Pass' : 'Access Pass'}
@@ -188,7 +188,7 @@ function AccessPassModal({
             )}
             <button
               onClick={handleDownload}
-              className="flex-1 px-4 py-2 bg-gradient-polkadot text-white rounded-lg hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200 font-medium flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
               Download
@@ -430,7 +430,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
             <button
               onClick={handleGeneratePass}
               disabled={!selectedLocation || isGenerating}
-              className="w-full py-3 px-4 bg-gradient-polkadot text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-grey-900 text-white text-sm font-medium rounded-xl hover:bg-grey-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isGenerating ? (
                 <>

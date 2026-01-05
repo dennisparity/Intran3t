@@ -24,7 +24,7 @@ export default function Landing() {
           </div>
 
           <h1 className="text-6xl font-bold text-[#1c1917] mb-4 font-serif">
-            Intran<span className="text-gradient">3</span>t
+            Intran<span className="text-accent">3</span>t
           </h1>
 
           <p className="text-xl text-[#78716c] max-w-md mx-auto">
@@ -34,13 +34,15 @@ export default function Landing() {
 
         {/* Connect Wallet Section */}
         <div className="flex justify-center">
-          <ConnectWallet />
+          <div className="inline-block">
+            <ConnectWallet />
+          </div>
         </div>
 
         {/* Additional Info */}
         <div className="mt-16 text-center">
           <p className="text-sm text-gray-400">
-            Powered by Polkadot light client
+            Powered by Polkadot
           </p>
         </div>
       </div>

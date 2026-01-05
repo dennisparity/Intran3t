@@ -59,52 +59,54 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
     <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       {connectedAccount && config.useOnChainIdentity ? (
         <div className="mb-4">
-          {/* Profile Picture */}
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Identicon
-                value={profile.address}
-                size={80}
-                theme="polkadot"
-                className="rounded-full"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-polkadot rounded-full flex items-center justify-center border-2 border-white">
-                <User className="w-3 h-3 text-white" />
+          {/* Compact Profile Header - Avatar + Identity - Centered */}
+          <div className="flex flex-col items-center mb-3">
+            <div className="flex items-center gap-3 mb-2">
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                <Identicon
+                  value={profile.address}
+                  size={56}
+                  theme="polkadot"
+                  className="rounded-full"
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
+                  <User className="w-2.5 h-2.5 text-white" />
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Account Info with Identity */}
-          <div className="flex justify-center">
-            {identityLoading ? (
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-[#1c1917] mb-1 font-serif">
-                  {profile.name}
-                </h2>
-                <p className="text-xs text-[#78716c] font-mono mb-2">
-                  {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
-                </p>
-                <p className="text-xs text-[#a8a29e] italic">
-                  Loading identity...
-                </p>
-              </div>
-            ) : identity ? (
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <div className="text-center cursor-pointer">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <h2 className="text-xl font-bold text-[#1c1917] font-serif">
-                        {identity.display || profile.name}
-                      </h2>
-                      {identity.verified && (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      )}
-                    </div>
-                    <p className="text-xs text-[#78716c] font-mono">
+              {/* Account Info with Identity */}
+              <div className="flex-1 min-w-0">
+                {identityLoading ? (
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1c1917] mb-0.5 font-serif">
+                      {profile.name}
+                    </h2>
+                    <p className="text-xs text-[#78716c] font-mono mb-1">
                       {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
                     </p>
+                    <p className="text-xs text-[#a8a29e] italic">
+                      Loading identity...
+                    </p>
                   </div>
-                </HoverCardTrigger>
+                ) : identity ? (
+                  <div>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <div className="cursor-pointer">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <h2 className="text-lg font-bold text-[#1c1917] font-serif truncate">
+                              {identity.display || profile.name}
+                            </h2>
+                            {identity.verified && (
+                              <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-[#78716c] font-mono mb-1">
+                            {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+                          </p>
+                        </div>
+                      </HoverCardTrigger>
                 <HoverCardContent className="w-80 p-4 bg-white" side="bottom">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 pb-2 border-b border-[#e7e5e4]">
@@ -166,48 +168,61 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
                     </div>
                   </div>
                 </HoverCardContent>
-              </HoverCard>
-            ) : (
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-[#1c1917] mb-1 font-serif">
-                  {profile.name}
-                </h2>
-                <p className="text-xs text-[#78716c] font-mono mb-2">
-                  {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
-                </p>
-                <p className="text-xs text-[#a8a29e] italic">
-                  No on-chain identity
-                </p>
+                    </HoverCard>
+                    {/* Verification Badge - Visible */}
+                    {identity.verified && (
+                      <div className="flex items-center gap-1 text-xs text-green-600 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Verified on People Chain</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1c1917] mb-0.5 font-serif">
+                      {profile.name}
+                    </h2>
+                    <p className="text-xs text-[#78716c] font-mono mb-1">
+                      {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+                    </p>
+                    <p className="text-xs text-[#a8a29e] italic">
+                      No on-chain identity
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       ) : connectedAccount ? (
         <>
-          {/* Profile Picture */}
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Identicon
-                value={profile.address}
-                size={80}
-                theme="polkadot"
-                className="rounded-full"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-polkadot rounded-full flex items-center justify-center border-2 border-white">
-                <User className="w-3 h-3 text-white" />
+          {/* Compact Profile Header - Avatar + Info - Centered */}
+          <div className="flex justify-center mb-3">
+            <div className="flex items-center gap-3">
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                <Identicon
+                  value={profile.address}
+                  size={56}
+                  theme="polkadot"
+                  className="rounded-full"
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
+                  <User className="w-2.5 h-2.5 text-white" />
+                </div>
+              </div>
+
+              {/* Account Info */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-[#1c1917] mb-0.5 font-serif truncate">
+                  {profile.name}
+                </h2>
+                <p className="text-xs text-[#78716c] font-mono">
+                  {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Name */}
-          <h2 className="text-xl font-bold text-[#1c1917] text-center mb-1 font-serif">
-            {profile.name}
-          </h2>
-
-          {/* Address */}
-          <p className="text-xs text-[#78716c] text-center font-mono mb-2">
-            {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
-          </p>
         </>
       ) : (
         <>
@@ -228,7 +243,7 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
       {connectedAccount && (
         <div className="mb-3">
           {balance?.free ? (
-            <p className="text-lg font-semibold text-gradient text-center">
+            <p className="text-lg font-semibold text-accent text-center">
               {formatBalance(balance.free)} PAS
             </p>
           ) : (
@@ -252,7 +267,7 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
           {profile.tags.map((tag, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-gradient-to-br from-[#ff2867]/10 to-[#e6007a]/5 border border-[#ff2867]/20 text-[#ff2867] text-xs font-medium rounded-full"
+              className="px-3 py-1 bg-accent-soft border border-accent/20 text-accent text-xs font-medium rounded-full"
             >
               {tag}
             </span>
@@ -270,16 +285,6 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
             <LogOut className="w-4 h-4" />
             Disconnect Wallet
           </button>
-        </div>
-      )}
-
-      {/* On-chain Identity Badge (when available) */}
-      {config.useOnChainIdentity && (
-        <div className="mt-4 pt-4 border-t border-[#e7e5e4]">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs text-[#78716c]">Verified on People Chain</span>
-          </div>
         </div>
       )}
     </div>

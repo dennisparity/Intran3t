@@ -16,6 +16,30 @@
   --color-polkadot-black: #000000;
   --color-polkadot-white: #ffffff;
 
+  /* Grey Scale */
+  --color-grey-50: #fafaf9;
+  --color-grey-100: #f5f5f4;
+  --color-grey-200: #e7e5e4;
+  --color-grey-300: #d6d3d1;
+  --color-grey-400: #a8a29e;
+  --color-grey-500: #78716c;
+  --color-grey-600: #57534e;
+  --color-grey-700: #44403c;
+  --color-grey-800: #292524;
+  --color-grey-900: #1c1917;
+  --color-grey-950: #0f0f0f;
+
+  /* Accent Colors */
+  --color-accent: #ff2867;
+  --color-accent-hover: #e6245d;
+  --color-accent-active: #cc2050;
+  --color-accent-soft: rgba(255, 40, 103, 0.08);
+
+  /* Semantic Colors */
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+
   /* Design System Colors - Light */
   --color-background: oklch(1 0 0);
   --color-foreground: oklch(0.145 0 0);
@@ -29,7 +53,6 @@
   --color-secondary-foreground: oklch(0.205 0 0);
   --color-muted: oklch(0.97 0 0);
   --color-muted-foreground: oklch(0.556 0 0);
-  --color-accent: oklch(0.985 0 0);
   --color-accent-foreground: oklch(0.145 0 0);
   --color-destructive: oklch(0.577 0.245 27.325);
   --color-border: oklch(0.922 0 0);

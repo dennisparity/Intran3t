@@ -4,11 +4,28 @@ import { CheckCircle, AlertCircle } from 'lucide-react'
 import type { Form, FormResponse } from './types'
 import { loadForms, saveForms, saveResponse } from './config'
 
+// Simple markdown formatter
+function formatMarkdown(text: string) {
+  if (!text) return ''
+
+  return text
+    // Bold: **text** or __text__
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    // Italic: *text* or _text_
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Links: [text](url)
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-accent-hover underline decoration-accent/30 hover:decoration-accent-hover transition-colors">$1</a>')
+    // Line breaks
+    .replace(/\n/g, '<br />')
+}
+
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>()
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,7 +58,12 @@ export function PublicForm() {
     // Validate required fields
     const missingRequired = form.fields
       .filter(f => f.required)
-      .find(f => !answers[f.id]?.trim())
+      .find(f => {
+        const answer = answers[f.id]
+        if (!answer) return true
+        if (Array.isArray(answer)) return answer.length === 0
+        return !answer.trim()
+      })
 
     if (missingRequired) {
       setError(`Please fill in: ${missingRequired.label}`)
@@ -71,8 +93,19 @@ export function PublicForm() {
     setSubmitted(true)
   }
 
-  const handleChange = (fieldId: string, value: string) => {
+  const handleChange = (fieldId: string, value: string | string[]) => {
     setAnswers(prev => ({ ...prev, [fieldId]: value }))
+    setError('')
+  }
+
+  const handleMultiSelectChange = (fieldId: string, optionValue: string, checked: boolean) => {
+    setAnswers(prev => {
+      const current = (prev[fieldId] as string[]) || []
+      const updated = checked
+        ? [...current, optionValue]
+        : current.filter(v => v !== optionValue)
+      return { ...prev, [fieldId]: updated }
+    })
     setError('')
   }
 
@@ -88,7 +121,7 @@ export function PublicForm() {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">
         <div className="max-w-md w-full text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-[#ff2867]" />
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-[#dc2626]" />
           <h1 className="text-2xl font-bold text-[#1c1917] mb-2 font-serif">
             {error || 'Form not found'}
           </h1>
@@ -103,16 +136,35 @@ export function PublicForm() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">
-        <div className="max-w-md w-full text-center">
+        <div className="max-w-lg w-full text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-[#1c1917] mb-3 font-serif">
             Thank You!
           </h1>
-          <p className="text-[#78716c] mb-8">
-            Your response has been recorded on Polkadot
+          <p className="text-[#78716c] mb-6">
+            Your response has been submitted successfully
           </p>
+
+          {/* Security & Privacy Info */}
+          <div className="bg-white border border-[#e7e5e4] rounded-xl p-6 mb-8 text-left">
+            <h2 className="text-sm font-semibold text-[#1c1917] mb-3">🔐 Privacy & Security</h2>
+            <ul className="space-y-2 text-sm text-[#78716c]">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                <span><strong>Encrypted:</strong> Your responses are encrypted and only the form creator can decrypt them</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                <span><strong>On-chain:</strong> Stored on Polkadot's decentralized network (no centralized servers)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                <span><strong>Auto-delete:</strong> Data is automatically deleted after 2 weeks for privacy</span>
+              </li>
+            </ul>
+          </div>
 
           {/* CTA Section */}
           <div className="mb-8">
@@ -123,10 +175,10 @@ export function PublicForm() {
               href="https://polkadot.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-gradient-to-r from-[#E6007A] to-[#552BBF] text-white rounded-lg hover:opacity-90 transition-opacity shadow-lg"
+              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
             >
               <img src="/logo.png" alt="Polkadot" className="w-5 h-5" />
-              Set up your onchain identity
+              Get started with Polkadot
             </a>
           </div>
 
@@ -153,9 +205,10 @@ export function PublicForm() {
             {form.title}
           </h1>
           {form.description && (
-            <p className="text-[#78716c]">
-              {form.description}
-            </p>
+            <div
+              className="text-[#78716c] max-w-2xl mx-auto"
+              dangerouslySetInnerHTML={{ __html: formatMarkdown(form.description) }}
+            />
           )}
         </div>
 
@@ -164,50 +217,39 @@ export function PublicForm() {
           <div className="space-y-6">
             {form.fields.map((field) => (
               <div key={field.id}>
-                <label className="block text-sm font-medium text-[#1c1917] mb-2">
+                <label className="block text-sm font-medium text-grey-900 mb-2">
                   {field.label}
-                  {field.required && <span className="text-[#ff2867] ml-1">*</span>}
+                  {field.required && <span className="text-accent ml-1">*</span>}
                 </label>
 
                 {field.type === 'text' && (
                   <input
                     type="text"
-                    value={answers[field.id] || ''}
+                    value={answers[field.id] as string || ''}
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff2867] focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
                   />
                 )}
 
                 {field.type === 'email' && (
                   <input
                     type="email"
-                    value={answers[field.id] || ''}
+                    value={answers[field.id] as string || ''}
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff2867] focus:border-transparent"
-                  />
-                )}
-
-                {field.type === 'textarea' && (
-                  <textarea
-                    value={answers[field.id] || ''}
-                    onChange={(e) => handleChange(field.id, e.target.value)}
-                    placeholder={field.placeholder}
-                    required={field.required}
-                    rows={4}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff2867] focus:border-transparent resize-none"
+                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
                   />
                 )}
 
                 {field.type === 'select' && (
                   <select
-                    value={answers[field.id] || ''}
+                    value={answers[field.id] as string || ''}
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff2867] focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
                   >
                     <option value="">Select an option</option>
                     {field.options?.map(option => (
@@ -217,19 +259,38 @@ export function PublicForm() {
                     ))}
                   </select>
                 )}
+
+                {field.type === 'multiselect' && (
+                  <div className="space-y-2">
+                    {field.options?.map(option => {
+                      const selectedValues = (answers[field.id] as string[]) || []
+                      return (
+                        <label key={option} className="flex items-center gap-3 p-3 border border-grey-200 rounded-lg hover:bg-grey-50 hover:border-grey-300 cursor-pointer transition-all duration-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedValues.includes(option)}
+                            onChange={(e) => handleMultiSelectChange(field.id, option, e.target.checked)}
+                            className="w-4 h-4 text-accent border-grey-200 rounded focus:ring-4 focus:ring-accent-soft transition-all"
+                          />
+                          <span className="text-sm text-grey-900">{option}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 animate-shake">
               {error}
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full mt-8 px-6 py-3 text-base font-medium bg-gradient-to-r from-[#E6007A] to-[#552BBF] text-white rounded-lg hover:opacity-90 transition-opacity"
+            className="w-full mt-8 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
           >
             Submit Response
           </button>
@@ -244,7 +305,7 @@ export function PublicForm() {
             href="https://polkadot.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-gradient-to-r from-[#E6007A] to-[#552BBF] text-white rounded-lg hover:opacity-90 transition-opacity shadow-lg"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
           >
             <img src="/logo.png" alt="Polkadot" className="w-5 h-5" />
             Set up your onchain identity

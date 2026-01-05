@@ -51,7 +51,7 @@ export default function ModularDashboard() {
               <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-1.5" />
             </div>
             <h1 className="text-2xl font-bold text-[#1c1917] font-serif">
-              Intran<span className="text-gradient">3</span>t
+              Intran<span className="text-accent">3</span>t
             </h1>
           </div>
 
