@@ -1,0 +1,30 @@
+{
+  "name": "intran3t-rbac-contracts",
+  "version": "1.0.0",
+  "description": "RBAC Smart Contracts for Intran3t",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network assetHubTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network assetHubMainnet",
+    "verify": "hardhat verify"
+  },
+  "keywords": [
+    "rbac",
+    "solidity",
+    "polkadot",
+    "assethub",
+    "evm"
+  ],
+  "author": "Intran3t Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1"
+  }
+}

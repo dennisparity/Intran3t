@@ -198,6 +198,15 @@ export async function queryOnChainIdentity(
   error?: string
 }> {
   try {
+    // Skip identity lookup for EVM addresses (0x... format)
+    if (address.startsWith('0x') && address.length === 42) {
+      console.log('ℹ️ Skipping identity lookup for EVM address:', address)
+      return {
+        success: false,
+        error: 'Identity lookup not available for EVM addresses'
+      }
+    }
+
     const api = await getPeopleChainApi()
 
     console.log('📋 Querying identity for address:', address)

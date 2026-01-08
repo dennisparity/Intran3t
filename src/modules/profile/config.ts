@@ -13,5 +13,5 @@ export const mockUserProfile: UserProfile = {
   address: '',
   name: 'Account',
   description: 'Product Owner at Parity Technologies',
-  tags: ['Developer', 'Governance', 'Core Team']
+  tags: ['Admin', 'Core Team', 'Engineering']
 }

@@ -16,6 +16,11 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 - **On-Chain Identity:** Real-time identity verification from Polkadot People Chain with social account display (Matrix, Twitter, GitHub, Discord)
 <img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
 
+- **RBAC Smart Contracts:** Role-based access control with W3C Verifiable Credentials on Asset Hub EVM
+  - Organization management with on-chain credential issuance
+  - Permission matrix (Admin/Member/Viewer/PeopleCulture roles)
+  - Expiration and revocation support
+  - Integration with Polkadot wallets (Talisman, SubWallet) for EVM operations
 - **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
 - **Forms:** Create privacy-preserving forms with public submission links (no wallet required for respondents)
 - **Modular Dashboard:** Extensible widget-based interface for customization
@@ -36,14 +41,17 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 - **Build Tool:** Vite 7
 - **Styling:** Tailwind CSS 4.0 (beta)
 - **Chain API:** Typink 0.5.0 (dedot-based) + Polkadot.js API 10.12
+- **Smart Contracts:** Solidity + Hardhat for Asset Hub EVM
+- **EVM Integration:** ethers.js 6.13 for contract interaction
 - **Light Client:** Smoldot via @substrate/connect
 
 ### Polkadot Integration
 - **Target Chains:**
-  - Paseo Asset Hub (testnet) - NFT minting and transactions
+  - Paseo Asset Hub (testnet) - RBAC smart contracts, NFT minting and transactions
+  - Asset Hub (mainnet) - Production RBAC deployment
   - Polkadot People Chain (mainnet) - Identity verification
-- **Wallet Connection:** Typink (browser extensions)
-- **Authentication:** Wallet-based (permissionless)
+- **Wallet Connection:** Typink (browser extensions) + EVM provider for smart contracts
+- **Authentication:** Wallet-based (permissionless) + on-chain credentials (RBAC)
 
 ### Storage Strategy
 
@@ -68,15 +76,30 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 
 ```
 Intran3t/
+├── contracts/                     # Smart contracts
+│   ├── solidity/                  # Solidity implementation
+│   │   ├── contracts/
+│   │   │   └── Intran3tRBAC.sol  # RBAC smart contract
+│   │   ├── scripts/               # Deployment and verification scripts
+│   │   ├── test/                  # Contract test suite
+│   │   └── hardhat.config.js      # Hardhat configuration
+│   └── README.md                  # Contract documentation
 ├── src/
 │   ├── components/
 │   │   ├── ui/                    # Radix UI components
 │   │   ├── ConnectWallet.tsx      # Wallet connection UI
 │   │   ├── AccountManager.tsx     # Account switching
+│   │   ├── LockedModule.tsx       # Access control UI
+│   │   ├── SettingsMenu.tsx       # Settings dropdown
+│   │   ├── UserProfileModal.tsx   # User profile display
 │   │   └── account-info.dedot.tsx # Identity display component
+│   ├── contracts/                 # Smart contract integration
+│   │   └── intran3t-rbac.ts       # ABI, types, and contract address
+│   ├── providers/                 # React contexts
+│   │   └── EVMProvider.tsx        # EVM wallet connection for smart contracts
 │   ├── modules/                   # Feature modules
 │   │   ├── profile/               # Profile with identity
-│   │   │   ├── ProfileWidget.tsx
+│   │   │   ├── ProfileWidget.tsx  # Displays RBAC role badges
 │   │   │   ├── identity-helpers.ts # Direct People Chain connection
 │   │   │   └── use-identity.ts    # Identity React hook
 │   │   ├── acc3ss/                # NFT access control
@@ -94,14 +117,21 @@ Intran3t/
 │   │   └── help-center/           # Help & documentation
 │   ├── hooks/                     # Custom React hooks
 │   │   ├── use-identity-of.dedot.ts
-│   │   └── use-asset-balance.dedot.ts
+│   │   ├── use-asset-balance.dedot.ts
+│   │   ├── useRBACContract.ts     # Smart contract interaction
+│   │   ├── useAccessControl.ts    # Permission checking
+│   │   └── useUserSearch.ts       # User search functionality
 │   ├── lib/                       # Core utilities
 │   │   └── polkadot-provider.dedot.tsx
 │   ├── pages/
 │   │   ├── Landing.tsx            # Landing page with wallet connect
-│   │   └── ModularDashboard.tsx   # Main dashboard
-│   └── App.tsx                    # Root component
+│   │   ├── ModularDashboard.tsx   # Main dashboard with RBAC
+│   │   └── Admin.tsx              # Admin panel with credential issuance
+│   └── App.tsx                    # Root component with EVMProvider
 ├── public/                        # Static assets
+├── RBAC_SETUP_GUIDE.md           # RBAC smart contract setup guide
+├── RBAC_IMPLEMENTATION_SUMMARY.md # Implementation details
+├── QUICK_START_DEPLOYMENT.md     # Quick deployment guide
 └── [config files]
 ```
 
@@ -246,14 +276,41 @@ pnpm preview
 - Time-based expiration
 - Permission levels (admin, member, visitor)
 
-### 3. Governance Module
+### 3. RBAC Smart Contracts (Role-Based Access Control)
+**Verifiable Credentials on Asset Hub EVM**
+- Create on-chain organizations
+- Issue W3C-compliant Verifiable Credentials
+- Role-based permissions (Admin/Member/Viewer/PeopleCulture)
+- Granular permission matrix (Action × Resource)
+- Credential expiration and revocation support
+- Integration with Polkadot wallets via EVM compatibility layer
+
+**Technical Details:**
+- Solidity smart contract deployed on Asset Hub EVM
+- Uses ethers.js for contract interaction
+- React hooks for seamless frontend integration
+- Supports both testnet (Paseo) and mainnet deployment
+- Admin panel UI for credential management
+- Profile widget displays user roles as badges
+
+**Permission Matrix:**
+| Role | Create Poll | Vote | Create Form | View Results | Manage Users | Settings |
+|------|------------|------|-------------|--------------|--------------|----------|
+| Admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Member | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Viewer | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| PeopleCulture | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+**Setup Guide:** See [RBAC_SETUP_GUIDE.md](./RBAC_SETUP_GUIDE.md) for deployment instructions.
+
+### 4. Governance Module
 **On-Chain Governance Participation**
 - View active referenda
 - Participate in voting
 - Track governance activity
 - Monitor proposal status
 
-### 4. Forms Module
+### 5. Forms Module
 **Privacy-Preserving Form Builder**
 - Create custom forms with multiple field types (text, email, textarea, select)
 - Generate shareable public links for form submission
@@ -277,7 +334,7 @@ pnpm preview
 - Onchain identity CTA for user acquisition
 - Seamless integration with existing modules
 
-### 5. Modular Dashboard
+### 6. Modular Dashboard
 **Extensible Widget System**
 - Drag-and-drop widget layout (future)
 - Customizable module placement

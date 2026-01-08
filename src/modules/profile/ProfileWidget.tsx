@@ -1,12 +1,13 @@
 import { useTypink, useBalance } from 'typink'
-import { useNavigate } from 'react-router-dom'
 import Identicon from '@polkadot/react-identicon'
-import { User, LogOut, Copy, Check, CheckCircle2, Mail, Twitter, MessageCircle, Github } from 'lucide-react'
+import { User, CheckCircle2, Shield, Users as UsersIcon } from 'lucide-react'
 import type { ProfileConfig } from './types'
 import { mockUserProfile } from './config'
 import { useIdentity } from './use-identity'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import { useEVM } from '../../providers/EVMProvider'
+import { useRBACContract, roleToString } from '../../hooks/useRBACContract'
 
 function formatBalance(value: bigint | undefined, decimals: number = 10): string {
   if (!value) return "0";
@@ -18,9 +19,9 @@ function formatBalance(value: bigint | undefined, decimals: number = 10): string
 }
 
 export function ProfileWidget({ config }: { config: ProfileConfig }) {
-  const { connectedAccount, disconnect, connectedNetworks } = useTypink()
-  const navigate = useNavigate()
-  const [copied, setCopied] = useState(false)
+  const { connectedAccount, connectedNetworks } = useTypink()
+  const { account: evmAccount, provider, signer } = useEVM()
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Get balance
   const network = connectedNetworks?.[0];
@@ -33,25 +34,45 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
     connectedAccount?.address
   )
 
-  const handleDisconnect = () => {
-    disconnect()
-    navigate('/')
-  }
+  // RBAC contract hook
+  const rbac = useRBACContract(provider, signer)
 
-  // Copy address to clipboard
-  const handleCopyAddress = async () => {
-    if (connectedAccount?.address) {
-      await navigator.clipboard.writeText(connectedAccount.address)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+  // Get orgId from localStorage
+  const orgId = localStorage.getItem('intran3t_org_id')
+
+  // Fetch user's role from contract
+  useEffect(() => {
+    if (!orgId || !rbac.contract || !evmAccount) {
+      setUserRole(null)
+      return
     }
-  }
 
+    const fetchRole = async () => {
+      try {
+        const { role, hasRole } = await rbac.getUserRole(orgId, evmAccount)
+        if (hasRole) {
+          setUserRole(roleToString(role))
+        } else {
+          setUserRole(null)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user role:', error)
+        setUserRole(null)
+      }
+    }
+
+    fetchRole()
+  }, [orgId, rbac, evmAccount])
+
+  // Build profile from real data only - no mock data for connected users
   const profile = connectedAccount
     ? {
-        ...mockUserProfile,
         address: connectedAccount.address,
-        name: connectedAccount.name || identity?.display || mockUserProfile.name
+        name: connectedAccount.name || identity?.display || 'Unknown User',
+        // Only use real identity data if available
+        description: identity?.legal || undefined,
+        tags: identity ? [] : undefined, // Don't show mock tags
+        avatar: undefined // Use Identicon, no custom avatar
       }
     : mockUserProfile
 
@@ -62,14 +83,20 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
           {/* Compact Profile Header - Avatar + Identity - Centered */}
           <div className="flex flex-col items-center mb-3">
             <div className="flex items-center gap-3 mb-2">
-              {/* Profile Picture */}
+              {/* Profile Picture with Identicon */}
               <div className="relative flex-shrink-0">
-                <Identicon
-                  value={profile.address}
-                  size={56}
-                  theme="polkadot"
-                  className="rounded-full"
-                />
+                {profile.address ? (
+                  <Identicon
+                    value={profile.address}
+                    size={56}
+                    theme="polkadot"
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-accent" />
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
@@ -169,13 +196,32 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
                   </div>
                 </HoverCardContent>
                     </HoverCard>
-                    {/* Verification Badge - Visible */}
-                    {identity.verified && (
-                      <div className="flex items-center gap-1 text-xs text-green-600 mt-0.5">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Verified on People Chain</span>
-                      </div>
-                    )}
+                    {/* Role & Verification Badges - Visible */}
+                    <div className="flex items-center gap-2 mt-1">
+                      {/* Role Badge - Only show if role is fetched */}
+                      {userRole && (
+                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                          userRole === 'Admin'
+                            ? 'bg-accent-soft border border-accent/20 text-accent'
+                            : userRole === 'People/Culture'
+                            ? 'bg-purple-50 border border-purple-200 text-purple-700'
+                            : userRole === 'Member'
+                            ? 'bg-blue-50 border border-blue-200 text-blue-700'
+                            : 'bg-gray-50 border border-gray-200 text-gray-700'
+                        }`}>
+                          {userRole === 'Admin' && <Shield className="w-3 h-3" />}
+                          {userRole === 'People/Culture' && <UsersIcon className="w-3 h-3" />}
+                          <span>{userRole}</span>
+                        </div>
+                      )}
+                      {/* Verification Badge */}
+                      {identity.verified && (
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Verified</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -199,14 +245,20 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
           {/* Compact Profile Header - Avatar + Info - Centered */}
           <div className="flex justify-center mb-3">
             <div className="flex items-center gap-3">
-              {/* Profile Picture */}
+              {/* Profile Picture with Identicon */}
               <div className="relative flex-shrink-0">
-                <Identicon
-                  value={profile.address}
-                  size={56}
-                  theme="polkadot"
-                  className="rounded-full"
-                />
+                {profile.address ? (
+                  <Identicon
+                    value={profile.address}
+                    size={56}
+                    theme="polkadot"
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-accent" />
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
@@ -272,19 +324,6 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
               {tag}
             </span>
           ))}
-        </div>
-      )}
-
-      {/* Logout Button */}
-      {connectedAccount && (
-        <div className="mt-4 pt-4 border-t border-[#e7e5e4]">
-          <button
-            onClick={handleDisconnect}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-[#78716c] hover:text-[#1c1917] hover:bg-[#fafaf9] rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Disconnect Wallet
-          </button>
         </div>
       )}
     </div>

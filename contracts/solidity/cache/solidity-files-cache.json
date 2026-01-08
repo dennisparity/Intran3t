@@ -1,0 +1,41 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/dennisschiessl/Claude Code/Intran3t/contracts/solidity/contracts/Intran3tRBAC.sol": {
+      "lastModificationDate": 1767790738808,
+      "contentHash": "dfe48470c600a5677ccef7ddce9e365c",
+      "sourceName": "contracts/Intran3tRBAC.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Intran3tRBAC"
+      ]
+    }
+  }
+}
