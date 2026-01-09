@@ -9,7 +9,7 @@ Before you begin, ensure you have:
 1. **Node.js** (v18 or higher)
 2. **npm** or **pnpm**
 3. **Polkadot wallet** with EVM support (Polkadot.js Extension, Talisman, SubWallet, or Nova Wallet)
-4. **Asset Hub EVM testnet access** (or mainnet for production)
+4. **Polkadot Hub EVM testnet access** (or mainnet for production)
 
 ---
 
@@ -100,13 +100,13 @@ Expected output:
 npm run deploy:local
 ```
 
-### Deploy to Asset Hub Testnet
+### Deploy to Polkadot Hub Testnet
 
 ```bash
 npm run deploy:testnet
 ```
 
-### Deploy to Asset Hub Mainnet (Production)
+### Deploy to Polkadot Hub Mainnet (Production)
 
 ```bash
 npm run deploy:mainnet
@@ -160,14 +160,14 @@ function App() {
 
 ### Step 3: Configure Polkadot Wallet for EVM
 
-Your Polkadot wallet (Talisman, SubWallet, or Nova Wallet) must be configured for **Asset Hub EVM network**:
+Your Polkadot wallet (Talisman, SubWallet, or Nova Wallet) must be configured for **Polkadot Hub EVM network**:
 
 #### Option 1: Automatic Configuration (Recommended)
-The app will automatically prompt to add and switch to Asset Hub EVM when you enable EVM mode in the Admin panel.
+The app will automatically prompt to add and switch to Polkadot Hub EVM when you enable EVM mode in the Admin panel.
 
 #### Option 2: Manual Configuration
-Add Asset Hub EVM network manually in your wallet:
-- **Network Name**: Asset Hub Testnet
+Add Polkadot Hub EVM network manually in your wallet:
+- **Network Name**: Polkadot Hub Testnet
 - **RPC URL**: `https://rpc.testnet.assethub.io`
 - **Chain ID**: `420420`
 - **Currency Symbol**: DOT
@@ -340,7 +340,7 @@ function UserRoleBadge({ orgId, userAddress }: Props) {
 1. Get testnet DOT from faucet
 2. Deploy to testnet: `npm run deploy:testnet`
 3. Update contract address in frontend
-4. Enable EVM mode in your Polkadot wallet for Asset Hub Testnet
+4. Enable EVM mode in your Polkadot wallet for Polkadot Hub Testnet
 5. Test with real transactions
 
 ---
@@ -365,7 +365,7 @@ const rbac = useRBACContract(provider, signer); // Pass signer
 
 ### Issue: "Wrong network"
 
-**Solution**: Switch your Polkadot wallet to Asset Hub EVM network (Chain ID: 420420 for testnet)
+**Solution**: Switch your Polkadot wallet to Polkadot Hub EVM network (Chain ID: 420420 for testnet)
 
 ### Issue: "Transaction failed"
 
@@ -394,7 +394,7 @@ Check the error message and transaction details in your wallet.
 
 - [Hardhat Documentation](https://hardhat.org/docs)
 - [Ethers.js Documentation](https://docs.ethers.org/)
-- [Asset Hub Documentation](https://wiki.polkadot.network/docs/learn-assets)
+- [Polkadot Hub Documentation](https://wiki.polkadot.network/docs/learn-assets)
 - [Polkadot.js Extension](https://polkadot.js.org/extension/)
 - [Polkadot.js Apps](https://polkadot.js.org/apps/)
 - [Talisman Wallet](https://talisman.xyz)

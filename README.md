@@ -16,7 +16,7 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 - **On-Chain Identity:** Real-time identity verification from Polkadot People Chain with social account display (Matrix, Twitter, GitHub, Discord)
 <img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
 
-- **RBAC Smart Contracts:** Role-based access control with W3C Verifiable Credentials on Asset Hub EVM
+- **RBAC Smart Contracts:** Role-based access control with W3C Verifiable Credentials on Polkadot Hub EVM
   - Organization management with on-chain credential issuance
   - Permission matrix (Admin/Member/Viewer/PeopleCulture roles)
   - Expiration and revocation support
@@ -41,14 +41,14 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 - **Build Tool:** Vite 7
 - **Styling:** Tailwind CSS 4.0 (beta)
 - **Chain API:** Typink 0.5.0 (dedot-based) + Polkadot.js API 10.12
-- **Smart Contracts:** Solidity + Hardhat for Asset Hub EVM
+- **Smart Contracts:** Solidity + Hardhat for Polkadot Hub EVM
 - **EVM Integration:** ethers.js 6.13 for contract interaction
 - **Light Client:** Smoldot via @substrate/connect
 
 ### Polkadot Integration
 - **Target Chains:**
-  - Paseo Asset Hub (testnet) - RBAC smart contracts, NFT minting and transactions
-  - Asset Hub (mainnet) - Production RBAC deployment
+  - Paseo Polkadot Hub (testnet) - RBAC smart contracts, NFT minting and transactions
+  - Polkadot Hub (mainnet) - Production RBAC deployment
   - Polkadot People Chain (mainnet) - Identity verification
 - **Wallet Connection:** Typink (browser extensions) + EVM provider for smart contracts
 - **Authentication:** Wallet-based (permissionless) + on-chain credentials (RBAC)
@@ -58,7 +58,7 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 | Data Type | Solution | Retention |
 |-----------|----------|-----------|
 | User preferences | LocalStorage | Client-side |
-| Access passes | NFTs on Asset Hub | Permanent on-chain |
+| Access passes | NFTs on Polkadot Hub | Permanent on-chain |
 | Identity data | People Chain | Permanent on-chain |
 | Location metadata | NFT metadata | Permanent on-chain |
 
@@ -104,7 +104,7 @@ Intran3t/
 │   │   │   └── use-identity.ts    # Identity React hook
 │   │   ├── acc3ss/                # NFT access control
 │   │   │   ├── Acc3ssWidget.tsx
-│   │   │   └── nft-helpers.ts     # Asset Hub NFT operations
+│   │   │   └── nft-helpers.ts     # Polkadot Hub NFT operations
 │   │   ├── governance/            # Governance participation
 │   │   │   └── GovernanceWidget.tsx
 │   │   ├── forms/                 # Forms builder
@@ -171,7 +171,7 @@ Intran3t/
 **✅ REQUIRED:**
 - Light client via smoldot (no RPC endpoints for production)
 - Direct blockchain connection using @polkadot/api for reliability
-- Support for People Chain (identity) and Asset Hub (NFTs)
+- Support for People Chain (identity) and Polkadot Hub (NFTs + RBAC)
 - Multi-network support (testnet + mainnet)
 
 **❌ AVOIDED:**
@@ -187,7 +187,8 @@ Intran3t/
 - Shows verification status with green checkmark
 - Fallback RPC endpoints for reliability
 
-**Paseo Asset Hub (Testnet)**
+**Paseo Polkadot Hub (Testnet)**
+- RBAC smart contract deployment
 - NFT minting for access passes
 - Asset transfers and management
 - Testing environment for access control
@@ -270,14 +271,14 @@ pnpm preview
 - Admin functions for collection management
 
 **Technical Details:**
-- Uses Asset Hub NFTs pallet
+- Uses Polkadot Hub NFTs pallet
 - Metadata stored on-chain (JSON format)
 - Supports multiple locations
 - Time-based expiration
 - Permission levels (admin, member, visitor)
 
 ### 3. RBAC Smart Contracts (Role-Based Access Control)
-**Verifiable Credentials on Asset Hub EVM**
+**Verifiable Credentials on Polkadot Hub EVM**
 - Create on-chain organizations
 - Issue W3C-compliant Verifiable Credentials
 - Role-based permissions (Admin/Member/Viewer/PeopleCulture)
@@ -286,7 +287,7 @@ pnpm preview
 - Integration with Polkadot wallets via EVM compatibility layer
 
 **Technical Details:**
-- Solidity smart contract deployed on Asset Hub EVM
+- Solidity smart contract deployed on Polkadot Hub EVM
 - Uses ethers.js for contract interaction
 - React hooks for seamless frontend integration
 - Supports both testnet (Paseo) and mainnet deployment
@@ -363,7 +364,7 @@ pnpm preview
 2. Enter location details
 3. Set access level and expiration
 4. Sign transaction with wallet
-5. NFT minted on Asset Hub
+5. NFT minted on Polkadot Hub
 
 ### Check Access
 1. Enter location ID

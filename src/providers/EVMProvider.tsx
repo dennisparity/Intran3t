@@ -1,7 +1,7 @@
 /**
  * EVM Provider Context
  *
- * Manages EVM wallet connection for Asset Hub EVM interaction using Polkadot wallets
+ * Manages EVM wallet connection for Polkadot Hub EVM interaction using Polkadot wallets
  * Supports: Polkadot.js Extension, Talisman, SubWallet, Nova Wallet (any wallet with EVM support)
  */
 
@@ -30,12 +30,12 @@ interface EVMContextValue {
 const EVMContext = createContext<EVMContextValue | undefined>(undefined);
 
 /**
- * Asset Hub EVM Chain Configuration
+ * Polkadot Hub EVM Chain Configuration
  */
 const ASSET_HUB_CHAIN_CONFIG = {
   testnet: {
-    chainId: '0x190F1B46', // 420420422 in hex (Paseo Asset Hub)
-    chainName: 'Paseo Asset Hub',
+    chainId: '0x190F1B46', // 420420422 in hex (Paseo Polkadot Hub)
+    chainName: 'Paseo Polkadot Hub',
     rpcUrls: ['https://testnet-passet-hub-eth-rpc.polkadot.io'],
     blockExplorerUrls: ['https://assethub-paseo.subscan.io'],
     nativeCurrency: {
@@ -46,7 +46,7 @@ const ASSET_HUB_CHAIN_CONFIG = {
   },
   mainnet: {
     chainId: '0x3E8', // 1000 in hex
-    chainName: 'Asset Hub',
+    chainName: 'Polkadot Hub',
     rpcUrls: ['https://rpc.assethub.io'],
     blockExplorerUrls: ['https://explorer.assethub.io'],
     nativeCurrency: {
@@ -218,9 +218,9 @@ export function EVMProvider({ children }: EVMProviderProps) {
         setChainId(Number(network.chainId));
         console.log('✅ Connected to network:', network.chainId);
 
-        // Prompt to switch to Asset Hub if not already
+        // Prompt to switch to Polkadot Hub if not already
         if (Number(network.chainId) !== parseInt(CURRENT_NETWORK.chainId, 16)) {
-          console.log('⚠️ Wrong network, switching to Paseo Asset Hub...');
+          console.log('⚠️ Wrong network, switching to Paseo Polkadot Hub...');
           await switchToAssetHub();
         }
       }
@@ -243,7 +243,7 @@ export function EVMProvider({ children }: EVMProviderProps) {
   };
 
   /**
-   * Switch to Asset Hub EVM network
+   * Switch to Polkadot Hub EVM network
    */
   const switchToAssetHub = async () => {
     const ethereum = getEVMProvider();
@@ -268,11 +268,11 @@ export function EVMProvider({ children }: EVMProviderProps) {
             params: [CURRENT_NETWORK],
           });
         } catch (addError) {
-          setError('Failed to add Asset Hub network to wallet');
+          setError('Failed to add Polkadot Hub network to wallet');
           throw addError;
         }
       } else {
-        setError('Failed to switch to Asset Hub network');
+        setError('Failed to switch to Polkadot Hub network');
         throw switchError;
       }
     }

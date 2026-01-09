@@ -20,7 +20,7 @@ This document summarizes the complete RBAC (Role-Based Access Control) smart con
   - Event emissions for audit trail
 
 - **Infrastructure**:
-  - Hardhat configuration for Asset Hub EVM (testnet/mainnet)
+  - Hardhat configuration for Polkadot Hub EVM (testnet/mainnet)
   - Deployment scripts with verification
   - Comprehensive test suite (15+ tests covering all features)
   - Package.json with npm scripts
@@ -57,7 +57,7 @@ This document summarizes the complete RBAC (Role-Based Access Control) smart con
 
 #### EVM Provider (`/src/providers/EVMProvider.tsx`)
 - React Context for Polkadot wallet EVM connection
-- Automatic Asset Hub network detection and switching
+- Automatic Polkadot Hub network detection and switching
 - Account and chain ID management
 - `useEVM()` hook for accessing EVM context
 - Support for Polkadot.js Extension, Talisman, SubWallet, Nova Wallet
@@ -159,7 +159,7 @@ npx hardhat node
 npm run deploy:local
 ```
 
-**Option B: Asset Hub Testnet**
+**Option B: Polkadot Hub Testnet**
 ```bash
 # Create .env file with your private key
 echo "PRIVATE_KEY=your_private_key_here" > .env
@@ -193,7 +193,7 @@ npm run dev
 2. Navigate to Admin panel (`/admin`)
 3. Click "RBAC" section
 4. Click "Enable EVM Mode"
-5. Your wallet will prompt to add Asset Hub EVM network (approve)
+5. Your wallet will prompt to add Polkadot Hub EVM network (approve)
 6. Approve account connection
 
 ### Step 7: Create Organization
@@ -265,7 +265,7 @@ export const RBAC_CONTRACT_ADDRESS = '0xYOUR_ADDRESS';
 │  ┌─────────────────────────────────────────────┐   │
 │  │     EVMProvider (MetaMask Connection)       │   │
 │  │  - Account management                       │   │
-│  │  - Chain switching (Asset Hub)              │   │
+│  │  - Chain switching (Polkadot Hub)              │   │
 │  └──────────────────────┬──────────────────────┘   │
 └─────────────────────────┼──────────────────────────┘
                           ↓
@@ -279,7 +279,7 @@ export const RBAC_CONTRACT_ADDRESS = '0xYOUR_ADDRESS';
               └───────────┬───────────────┘
                           ↓
         ╔═════════════════════════════════╗
-        ║   Asset Hub EVM (Polkadot)      ║
+        ║   Polkadot Hub EVM (Polkadot)      ║
         ║                                 ║
         ║  ┌──────────────────────────┐  ║
         ║  │  Intran3tRBAC Contract   │  ║
@@ -386,7 +386,7 @@ const rbac = useRBACContract(provider, signer); // Pass signer
 ```
 
 ### Issue: "Wrong network"
-**Solution**: Switch your Polkadot wallet to Asset Hub EVM (Chain ID: 420420 for testnet)
+**Solution**: Switch your Polkadot wallet to Polkadot Hub EVM (Chain ID: 420420 for testnet)
 
 ### Issue: TypeScript errors about ethers
 **Solution**: The hook currently uses placeholder code. After installing ethers, update:
@@ -484,7 +484,7 @@ Run tests: `cd contracts/solidity && npm test`
 ## 💡 Key Decisions Made
 
 1. **Solidity over ink!**: Chose Solidity as primary due to strategic direction toward EVM compatibility
-2. **Asset Hub EVM**: Deployed to Asset Hub for Polkadot ecosystem integration
+2. **Polkadot Hub EVM**: Deployed to Polkadot Hub for Polkadot ecosystem integration
 3. **W3C Verifiable Credentials**: Used industry standard for credentials
 4. **Polkadot Wallet EVM Integration**: Leveraged Polkadot wallets with EVM support (Talisman, SubWallet, Nova) for seamless user experience
 5. **localStorage for OrgID**: Simple client-side storage for demo (can be enhanced)
@@ -497,7 +497,7 @@ Run tests: `cd contracts/solidity && npm test`
 - [Hardhat Documentation](https://hardhat.org/docs)
 - [Solidity Documentation](https://docs.soliditylang.org/)
 - [Ethers.js Documentation](https://docs.ethers.org/)
-- [Asset Hub Documentation](https://wiki.polkadot.network/docs/learn-assets)
+- [Polkadot Hub Documentation](https://wiki.polkadot.network/docs/learn-assets)
 - [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model/)
 - [Polkadot.js Extension](https://polkadot.js.org/extension/)
 - [Polkadot.js Apps](https://polkadot.js.org/apps/)
@@ -515,7 +515,7 @@ Run tests: `cd contracts/solidity && npm test`
 - [ ] Deploy to testnet (`npm run deploy:testnet`)
 - [ ] Update contract address in frontend
 - [ ] Install Polkadot wallet with EVM support (Polkadot.js Extension, Talisman, SubWallet, or Nova - Talisman/SubWallet recommended)
-- [ ] Configure Asset Hub EVM network in wallet
+- [ ] Configure Polkadot Hub EVM network in wallet
 - [ ] Fund testnet account with DOT
 - [ ] Test organization creation
 - [ ] Test credential issuance

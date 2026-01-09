@@ -91,10 +91,10 @@ function AccessPassModal({
 
   const handleViewOnChain = () => {
     if (pass.txHash) {
-      // Open Subscan for Paseo Asset Hub
+      // Open Subscan for Paseo Polkadot Hub
       window.open(`https://assethub-paseo.subscan.io/extrinsic/${pass.txHash}`, '_blank')
     } else if (pass.nftId && pass.collectionId) {
-      // Open Asset Hub NFT explorer
+      // Open Polkadot Hub NFT explorer
       window.open(
         `https://assethub-paseo.subscan.io/nft/${pass.collectionId}/${pass.nftId}`,
         '_blank'
@@ -123,7 +123,7 @@ function AccessPassModal({
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
               <Check className="w-5 h-5 text-green-600" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-green-700">Minted on Paseo Asset Hub</p>
+                <p className="text-sm font-medium text-green-700">Minted on Paseo Polkadot Hub</p>
                 <p className="text-xs text-green-600">NFT #{pass.nftId}</p>
               </div>
             </div>
@@ -322,7 +322,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           }
         }
 
-        // Mint NFT on Asset Hub
+        // Mint NFT on Polkadot Hub
         const nftResult = await mintAccessPassNFT(
           injectedAccount,
           nftMetadata,
@@ -336,7 +336,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           passData.onChain = true
         } else {
           // NFT minting failed - stop here and don't save the pass
-          throw new Error(nftResult.error || 'Failed to mint NFT on Asset Hub')
+          throw new Error(nftResult.error || 'Failed to mint NFT on Polkadot Hub')
         }
       }
 
@@ -448,7 +448,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
             {selectedLocation && (
               <p className="text-xs text-center text-[#78716c]">
                 {config.generateNFT
-                  ? `Mint an NFT access pass for ${selectedLocation.name} on Paseo Asset Hub`
+                  ? `Mint an NFT access pass for ${selectedLocation.name} on Paseo Polkadot Hub`
                   : `Sign with your wallet to generate an access pass for ${selectedLocation.name}`}
               </p>
             )}
@@ -491,7 +491,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     </p>
                   )}
                   <p className="text-[#a8a29e]">
-                    Create a new NFT collection on Paseo Asset Hub. This is a one-time setup required before minting access passes.
+                    Create a new NFT collection on Paseo Polkadot Hub. This is a one-time setup required before minting access passes.
                   </p>
                 </div>
 

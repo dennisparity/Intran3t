@@ -4,7 +4,7 @@
  * Contract ABI, types, and constants for frontend integration
  */
 
-// Contract address (deployed to Paseo Asset Hub - 2026-01-07 - Updated with custom roles)
+// Contract address (deployed to Paseo Polkadot Hub - 2026-01-07 - Updated with custom roles)
 export const RBAC_CONTRACT_ADDRESS = '0xfde4dD5d4e31adDe12123b214D81c43b04921760';
 
 // Enums matching Solidity contract

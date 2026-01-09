@@ -25,18 +25,18 @@ contracts/
 
 ### 1. Solidity Contract (Recommended)
 
-**Use Case:** Polkadot Asset Hub EVM compatibility layer
+**Use Case:** Polkadot Polkadot Hub EVM compatibility layer
 
 **Advantages:**
-- Deploy to Asset Hub EVM
+- Deploy to Polkadot Hub EVM
 - Wider Ethereum tooling support
 - Familiar Solidity syntax
 - Hardhat testing framework
 - Easy integration with existing Web3 libraries
 
 **Deployment Targets:**
-- Asset Hub Testnet (EVM)
-- Asset Hub Mainnet (EVM)
+- Polkadot Hub Testnet (EVM)
+- Polkadot Hub Mainnet (EVM)
 - Local Hardhat network
 
 ### 2. ink! Contract (Alternative)
@@ -110,12 +110,12 @@ Expected output:
 npm run deploy:local
 ```
 
-**Asset Hub Testnet:**
+**Polkadot Hub Testnet:**
 ```bash
 npm run deploy:testnet
 ```
 
-**Asset Hub Mainnet:**
+**Polkadot Hub Mainnet:**
 ```bash
 npm run deploy:mainnet
 ```
@@ -397,7 +397,7 @@ For upgradeable contracts, consider using OpenZeppelin's upgradeable contracts p
 - [Solidity Documentation](https://docs.soliditylang.org/)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 - [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model/)
-- [Polkadot Asset Hub](https://wiki.polkadot.network/docs/learn-assets)
+- [Polkadot Polkadot Hub](https://wiki.polkadot.network/docs/learn-assets)
 
 ---
 

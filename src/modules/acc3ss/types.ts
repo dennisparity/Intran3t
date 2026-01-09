@@ -17,8 +17,8 @@ export interface AccessPass {
   signature: string
   qrCode?: string
   // NFT-specific fields
-  nftId?: number // NFT item ID on Asset Hub
-  collectionId?: number // NFT collection ID on Asset Hub
+  nftId?: number // NFT item ID on Polkadot Hub
+  collectionId?: number // NFT collection ID on Polkadot Hub
   txHash?: string // Transaction hash of NFT mint
   onChain?: boolean // Whether this pass is backed by an on-chain NFT
 }
@@ -28,8 +28,8 @@ export interface Acc3ssConfig {
   description?: string
   locations?: Location[]
   passValidityHours?: number // Default validity for access passes
-  generateNFT?: boolean // If true, mint NFT on Asset Hub
-  nftCollectionId?: number // Asset Hub collection ID for access passes
+  generateNFT?: boolean // If true, mint NFT on Polkadot Hub
+  nftCollectionId?: number // Polkadot Hub collection ID for access passes
   useRealData?: boolean
   apiEndpoint?: string
 }

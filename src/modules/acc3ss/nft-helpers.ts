@@ -16,7 +16,7 @@ export interface NFTMetadata {
   accessLevel: string
 }
 
-// RPC endpoints for Paseo Asset Hub (fallback for development)
+// RPC endpoints for Paseo Polkadot Hub (fallback for development)
 const PASEO_ASSET_HUB_RPC_ENDPOINTS = [
   'wss://paseo-asset-hub-rpc.polkadot.io',
   'wss://sys.ibp.network/asset-hub-paseo',
@@ -65,7 +65,7 @@ async function getWalletSigner(account: InjectedAccountWithMeta) {
 }
 
 /**
- * Initialize Asset Hub API connection
+ * Initialize Polkadot Hub API connection
  * Attempts light client first, falls back to RPC for development
  */
 export async function getAssetHubApi(): Promise<ApiPromise> {
@@ -73,10 +73,10 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
     return assetHubApiInstance
   }
 
-  console.log('Initializing connection to Paseo Asset Hub...')
+  console.log('Initializing connection to Paseo Polkadot Hub...')
 
   // For now, use RPC endpoints with multiple fallbacks
-  // TODO: Implement light client when Paseo Asset Hub chain spec is available
+  // TODO: Implement light client when Paseo Polkadot Hub chain spec is available
   const errors: string[] = []
 
   for (const endpoint of PASEO_ASSET_HUB_RPC_ENDPOINTS) {
@@ -104,7 +104,7 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
       })
 
       const api = await connectPromise
-      console.log(`✓ Connected to Paseo Asset Hub via ${endpoint}`)
+      console.log(`✓ Connected to Paseo Polkadot Hub via ${endpoint}`)
       assetHubApiInstance = api
       return api
 
@@ -117,7 +117,7 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
   }
 
   // All endpoints failed
-  const errorMessage = `Failed to connect to Paseo Asset Hub. Tried ${PASEO_ASSET_HUB_RPC_ENDPOINTS.length} endpoints:\n${errors.join('\n')}`
+  const errorMessage = `Failed to connect to Paseo Polkadot Hub. Tried ${PASEO_ASSET_HUB_RPC_ENDPOINTS.length} endpoints:\n${errors.join('\n')}`
   console.error(errorMessage)
   throw new Error(errorMessage)
 }
@@ -140,9 +140,9 @@ export async function createAccessPassCollection(
     console.log('Account:', account)
     console.log('Admin address:', adminAddress)
 
-    console.log('Connecting to Asset Hub API...')
+    console.log('Connecting to Polkadot Hub API...')
     const api = await getAssetHubApi()
-    console.log('Connected to Asset Hub API')
+    console.log('Connected to Polkadot Hub API')
 
     // Get the signer from the account's wallet
     console.log('Getting signer for account:', account.address)
@@ -313,7 +313,7 @@ export async function mintAccessPassNFT(
     if (errorMsg.includes('extension')) {
       errorMsg = 'Wallet extension not found or not accessible. Please install and enable a Polkadot wallet.'
     } else if (errorMsg.includes('connect')) {
-      errorMsg = 'Failed to connect to Paseo Asset Hub. Please check your internet connection.'
+      errorMsg = 'Failed to connect to Paseo Polkadot Hub. Please check your internet connection.'
     }
     return { success: false, error: errorMsg }
   }
@@ -427,7 +427,7 @@ export async function revokeAccessPassNFT(
     if (errorMsg.includes('extension')) {
       errorMsg = 'Wallet extension not found or not accessible. Please install and enable a Polkadot wallet.'
     } else if (errorMsg.includes('connect')) {
-      errorMsg = 'Failed to connect to Paseo Asset Hub. Please check your internet connection.'
+      errorMsg = 'Failed to connect to Paseo Polkadot Hub. Please check your internet connection.'
     }
     return { success: false, error: errorMsg }
   }

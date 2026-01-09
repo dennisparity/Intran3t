@@ -1,4 +1,4 @@
-# Quick Start: Deploy RBAC Smart Contract to Asset Hub
+# Quick Start: Deploy RBAC Smart Contract to Polkadot Hub
 
 ## ✅ What's Already Done
 
@@ -104,7 +104,7 @@ Add your deployment configuration:
 # Private key for deployment (DO NOT COMMIT!)
 PRIVATE_KEY=your_private_key_here
 
-# Asset Hub Testnet RPC (Paseo)
+# Polkadot Hub Testnet RPC (Paseo)
 ASSET_HUB_TESTNET_RPC=wss://paseo-asset-hub-rpc.polkadot.io
 
 # Optional: Block explorer API for verification
@@ -124,11 +124,11 @@ BLOCKSCOUT_API_KEY=
 
 ### Step 6: Get Testnet PAS Tokens
 
-You need **PAS tokens** on Asset Hub testnet (Paseo) for deployment gas fees.
+You need **PAS tokens** on Polkadot Hub testnet (Paseo) for deployment gas fees.
 
 **Option 1: Paseo Faucet**
 1. Visit: https://faucet.polkadot.io/paseo
-2. Select "Asset Hub (Paseo)"
+2. Select "Polkadot Hub (Paseo)"
 3. Enter your address
 4. Request PAS tokens
 
@@ -140,7 +140,7 @@ You need **PAS tokens** on Asset Hub testnet (Paseo) for deployment gas fees.
 
 ---
 
-### Step 7: Update Hardhat Config for Asset Hub
+### Step 7: Update Hardhat Config for Polkadot Hub
 
 The hardhat config is already set up! Check `/contracts/solidity/hardhat.config.js`:
 
@@ -150,17 +150,17 @@ module.exports = {
     assetHubTestnet: {
       url: process.env.ASSET_HUB_TESTNET_RPC || "wss://paseo-asset-hub-rpc.polkadot.io",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 420420, // Asset Hub Testnet
+      chainId: 420420, // Polkadot Hub Testnet
     }
   }
 }
 ```
 
-If you need to update the RPC endpoint for Paseo Asset Hub, edit this file.
+If you need to update the RPC endpoint for Paseo Polkadot Hub, edit this file.
 
 ---
 
-### Step 8: Deploy to Asset Hub Testnet
+### Step 8: Deploy to Polkadot Hub Testnet
 
 ```bash
 cd contracts/solidity
@@ -210,7 +210,7 @@ Replace `0xYOUR_DEPLOYED_ADDRESS_HERE` with the address from Step 8.
    - Click "Enable EVM Mode"
    - Your Polkadot wallet will prompt to connect
    - Approve the connection
-   - Wallet will ask to switch to Asset Hub EVM network
+   - Wallet will ask to switch to Polkadot Hub EVM network
    - Approve the network switch
 
 4. **Create Organization:**
@@ -261,13 +261,13 @@ npm install
 
 **Solution:**
 - Get more PAS tokens from faucet: https://faucet.polkadot.io/paseo
-- Make sure you're on Asset Hub (Paseo), not Paseo relay chain
+- Make sure you're on Polkadot Hub (Paseo), not Paseo relay chain
 - Verify your account has PAS balance
 
 ### Issue: "Wrong network"
 
 **Solution:**
-- Your wallet should be on **Asset Hub Testnet (Paseo)**
+- Your wallet should be on **Polkadot Hub Testnet (Paseo)**
 - Chain ID: 420420
 - RPC: wss://paseo-asset-hub-rpc.polkadot.io
 
@@ -282,7 +282,7 @@ npm install
 
 **Possible causes:**
 - Insufficient gas (get more PAS tokens from faucet)
-- Wrong network (switch to Asset Hub Paseo testnet)
+- Wrong network (switch to Polkadot Hub Paseo testnet)
 - Contract not deployed (check deployment step)
 - Wrong contract address (verify in frontend config)
 
@@ -298,7 +298,7 @@ After deployment, verify your contract works by:
    ```
 
 2. **View on block explorer:**
-   - Asset Hub testnet explorer
+   - Polkadot Hub testnet explorer
    - Search for your contract address
    - View transactions
 
@@ -313,7 +313,7 @@ After deployment, verify your contract works by:
 
 After completing these steps:
 
-✅ **Smart contract deployed** to Asset Hub testnet (Paseo)
+✅ **Smart contract deployed** to Polkadot Hub testnet (Paseo)
 ✅ **Frontend connected** to your contract
 ✅ **Organization created** on-chain
 ✅ **Credentials issued** as Verifiable Credentials
@@ -345,7 +345,7 @@ If you get stuck:
 
 ## 🔗 Useful Links
 
-- **Asset Hub Testnet Explorer**: https://assethub-paseo.subscan.io/
+- **Polkadot Hub Testnet Explorer**: https://assethub-paseo.subscan.io/
 - **Paseo Faucet**: https://faucet.polkadot.io/
 - **Polkadot.js Apps (Paseo)**: https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fpaseo-asset-hub-rpc.polkadot.io#/explorer
 - **Your Contract Code**: `/contracts/solidity/contracts/Intran3tRBAC.sol`

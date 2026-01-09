@@ -40,7 +40,7 @@ export const defaultAcc3ssConfig: Acc3ssConfig = {
   description: 'Generate NFT access passes for Parity locations',
   locations: LOCATIONS,
   passValidityHours: 24, // 24 hour validity
-  generateNFT: true, // Mint NFT on Paseo Asset Hub
+  generateNFT: true, // Mint NFT on Paseo Polkadot Hub
   nftCollectionId: 1000, // TODO: Replace with actual collection ID after creation
   useRealData: false
 }

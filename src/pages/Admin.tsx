@@ -234,7 +234,7 @@ function AdminRBAC() {
                 Enable EVM Mode
               </h3>
               <p className="text-sm text-blue-700 mb-4">
-                RBAC management requires your Polkadot wallet's EVM capability to interact with the smart contract on Asset Hub EVM. Supported wallets: Polkadot.js Extension, Talisman, SubWallet, Nova Wallet.
+                RBAC management requires your Polkadot wallet's EVM capability to interact with the smart contract on Polkadot Hub EVM. Supported wallets: Polkadot.js Extension, Talisman, SubWallet, Nova Wallet.
               </p>
               {evmError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -393,7 +393,7 @@ function AdminRBAC() {
                     <strong>Smart Contract:</strong> Roles and permissions are managed on-chain via Verifiable Credentials
                   </p>
                   <p className="text-xs text-[#78716c]">
-                    <strong>Chain:</strong> Asset Hub EVM (Testnet: Chain ID 420420)
+                    <strong>Chain:</strong> Polkadot Hub EVM (Testnet: Chain ID 420420)
                   </p>
                 </div>
               </div>
