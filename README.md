@@ -7,7 +7,7 @@
 ---
 
 ## 🎯 Project Overview
-<img width="1164" height="709" alt="Screenshot 2025-12-30 at 17 15 48" src="https://github.com/user-attachments/assets/6ba8cf7a-61ea-4abc-9564-275905678ca3" />
+<img width="1165" height="720" alt="Screenshot 2026-01-12 at 09 44 57" src="https://github.com/user-attachments/assets/3647821e-3da4-46c6-9877-67ad1abc956b" />
 
 ### Purpose
 Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions and functionalities as plugins under a single interface, run fully on Polkadot. The dapp demonstrates role-base access managements for web3 users while enabling isolated functionalities and chain interactions per module.
@@ -17,10 +17,14 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 <img width="282" height="196" alt="Screenshot 2025-12-18 at 18 04 49" src="https://github.com/user-attachments/assets/e4f2b7e5-eac2-4c21-b904-57c9b4b35870" />
 
 - **RBAC Smart Contracts:** Role-based access control with W3C Verifiable Credentials on Polkadot Hub EVM
+- <img width="1195" height="554" alt="Screenshot 2026-01-12 at 09 45 09" src="https://github.com/user-attachments/assets/66c53ac4-f5a0-4bf7-b0e7-7e22aaea3559" />
+
   - Organization management with on-chain credential issuance
   - Permission matrix (Admin/Member/Viewer/PeopleCulture roles)
   - Expiration and revocation support
   - Integration with Polkadot wallets (Talisman, SubWallet) for EVM operations
+  - **User Management**
+  - <img width="1167" height="451" alt="Screenshot 2026-01-12 at 09 45 15" src="https://github.com/user-attachments/assets/3dd2273f-d364-4976-a519-48c524cb84ec" />
 - **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
 - **Forms:** Create privacy-preserving forms with public submission links (no wallet required for respondents)
 - **Modular Dashboard:** Extensible widget-based interface for customization
