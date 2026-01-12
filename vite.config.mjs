@@ -7,6 +7,10 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  root: './',
+  build: {
+    outDir: 'dist',
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -17,6 +21,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/api/dotid': {
+        target: 'https://dotid.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dotid/, '/api/directory')
+      }
+    }
   }
 })

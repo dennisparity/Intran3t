@@ -78,6 +78,11 @@ export function UserSearchResults({
                       People Chain
                     </span>
                   )}
+                  {result.source === 'registry' && (
+                    <span className="px-2 py-0.5 bg-purple-50 text-purple-600 border border-purple-200 text-xs font-medium rounded-full">
+                      Registry
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-[#78716c] font-mono truncate">
                   {result.address.slice(0, 8)}...{result.address.slice(-8)}

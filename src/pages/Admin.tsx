@@ -1118,11 +1118,17 @@ function SearchPeopleChainModal({
   onAdd: (substrateAddress: string) => Promise<boolean>
   onClose: () => void
 }) {
+  const [mode, setMode] = useState<'address' | 'registry'>('registry')
   const [address, setAddress] = useState('')
   const [searching, setSearching] = useState(false)
   const [identity, setIdentity] = useState<any>(null)
   const [error, setError] = useState('')
   const [searched, setSearched] = useState(false)
+
+  // Registry browser state
+  const [registryQuery, setRegistryQuery] = useState('')
+  const [registryResults, setRegistryResults] = useState<any[]>([])
+  const [loadingRegistry, setLoadingRegistry] = useState(false)
 
   const handleSearch = async () => {
     if (!address.trim()) {
@@ -1187,19 +1193,184 @@ function SearchPeopleChainModal({
     }
   }
 
+  // Search registry by name
+  const handleRegistrySearch = async () => {
+    if (!registryQuery || registryQuery.trim().length < 2) {
+      setError('Please enter at least 2 characters')
+      return
+    }
+
+    setLoadingRegistry(true)
+    setError('')
+    try {
+      const { searchRegistryByName } = await import('../services/dotid-registry')
+      const results = await searchRegistryByName(registryQuery)
+      setRegistryResults(results.slice(0, 20)) // Limit to 20 results
+      console.log(`✅ Found ${results.length} identities in registry`)
+    } catch (err) {
+      console.error('Registry search failed:', err)
+      setError('Failed to search registry. Check console for details.')
+      setRegistryResults([])
+    } finally {
+      setLoadingRegistry(false)
+    }
+  }
+
+  // Auto-search as user types in registry mode
+  useEffect(() => {
+    if (mode === 'registry' && registryQuery.trim().length >= 2) {
+      const timer = setTimeout(() => {
+        handleRegistrySearch()
+      }, 300)
+      return () => clearTimeout(timer)
+    } else {
+      setRegistryResults([])
+    }
+  }, [registryQuery, mode])
+
+  const handleRegistryAdd = async (substrateAddress: string) => {
+    setSearching(true)
+    setError('')
+    try {
+      const success = await onAdd(substrateAddress)
+      if (!success) {
+        setError('User already exists in discovered users')
+      }
+    } catch (err) {
+      setError(`Failed to add user: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSearching(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#e7e5e4]">
           <h3 className="text-lg font-bold text-[#1c1917] font-serif">Search People Chain</h3>
           <p className="text-xs text-[#78716c] mt-1">
-            Search for users with on-chain identities on Polkadot People Chain
+            Search for users with on-chain identities
           </p>
+
+          {/* Mode Tabs */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setMode('registry')}
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                mode === 'registry'
+                  ? 'bg-accent-soft text-accent border border-accent/20'
+                  : 'bg-[#fafaf9] text-[#78716c] border border-[#e7e5e4] hover:bg-white'
+              }`}
+            >
+              Browse Registry
+            </button>
+            <button
+              onClick={() => setMode('address')}
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                mode === 'address'
+                  ? 'bg-accent-soft text-accent border border-accent/20'
+                  : 'bg-[#fafaf9] text-[#78716c] border border-[#e7e5e4] hover:bg-white'
+              }`}
+            >
+              Search by Address
+            </button>
+          </div>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-6 space-y-4">
+        <div className="px-6 py-6 space-y-4 flex-1 overflow-y-auto">{mode === 'registry' ? (
+            <>
+              {/* Registry Search */}
+              <div>
+                <label className="block text-sm font-medium text-[#1c1917] mb-2">
+                  Search by Name
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716c]" />
+                  <input
+                    type="text"
+                    value={registryQuery}
+                    onChange={(e) => setRegistryQuery(e.target.value)}
+                    placeholder="Search verified identities..."
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                  />
+                </div>
+                <p className="text-xs text-[#78716c] mt-1">
+                  Search by display name, legal name, Twitter, or Matrix handle
+                </p>
+              </div>
+
+              {/* Registry Results */}
+              {loadingRegistry ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-[#78716c]">
+                  <Search className="w-5 h-5 animate-pulse" />
+                  <span className="text-sm">Searching registry...</span>
+                </div>
+              ) : registryResults.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-[#78716c] font-medium">
+                    {registryResults.length} identities found
+                  </p>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {registryResults.map((result: any) => (
+                      <div
+                        key={result.address}
+                        className="p-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-lg hover:border-accent/20 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-semibold text-[#1c1917] truncate">
+                                {result.display || 'Unknown'}
+                              </p>
+                              {result.judgements?.some((j: any) => j.judgement === 'Reasonable' || j.judgement === 'KnownGood') && (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                              )}
+                            </div>
+                            {result.legal && (
+                              <p className="text-xs text-[#78716c]">{result.legal}</p>
+                            )}
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {result.twitter && (
+                                <p className="text-xs text-blue-600">@{result.twitter}</p>
+                              )}
+                              {result.matrix && (
+                                <p className="text-xs text-purple-600">{result.matrix}</p>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#a8a29e] font-mono mt-1">
+                              {result.address.slice(0, 8)}...{result.address.slice(-8)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleRegistryAdd(result.address)}
+                            disabled={searching}
+                            className="px-3 py-1.5 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-xs font-medium disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {searching ? 'Adding...' : 'Add'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : registryQuery.trim().length >= 2 ? (
+                <div className="py-8 text-center text-[#78716c]">
+                  <User className="w-12 h-12 text-[#a8a29e] mx-auto mb-3" />
+                  <p className="text-sm">No identities found matching "{registryQuery}"</p>
+                </div>
+              ) : null}
+
+              {/* Info */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  Browse verified identities from the Polkadot People Registry (dotid.app). Results are cached for better performance.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
           {/* Substrate Address Input */}
           <div>
             <label className="block text-sm font-medium text-[#1c1917] mb-2">
@@ -1273,19 +1444,21 @@ function SearchPeopleChainModal({
             </div>
           )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-xs text-red-700">{error}</p>
-            </div>
-          )}
-
           {/* Info */}
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-700">
               This searches the Polkadot People Chain for on-chain identity data. If found, the user will be added to your discovered users list. They'll need to connect with their EVM wallet to receive on-chain credentials.
             </p>
           </div>
+            </>
+          )}
+
+          {/* Error Message (global) */}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -1295,15 +1468,17 @@ function SearchPeopleChainModal({
             disabled={searching}
             className="px-4 py-2 text-[#78716c] hover:text-[#1c1917] transition-colors text-sm font-medium disabled:opacity-50"
           >
-            Cancel
+            Close
           </button>
-          <button
-            onClick={handleAdd}
-            disabled={searching || !identity || !searched}
-            className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {searching ? 'Adding...' : 'Add User'}
-          </button>
+          {mode === 'address' && (
+            <button
+              onClick={handleAdd}
+              disabled={searching || !identity || !searched}
+              className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {searching ? 'Adding...' : 'Add User'}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,20 @@
+# Don't deploy these to Vercel
+node_modules
+.git
+.env.local
+.DS_Store
+*.log
+
+# Development files
+.vscode
+.idea
+
+# Contract development (not needed for frontend)
+contracts/solidity/node_modules
+contracts/solidity/cache
+contracts/solidity/artifacts
+
+# Documentation
+docs
+*.md
+!README.md

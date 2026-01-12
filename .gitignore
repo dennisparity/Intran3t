@@ -42,3 +42,7 @@ temp/
 
 # OS files
 Thumbs.db
+.vercel
+
+# Backup files
+*.bak
