@@ -16,6 +16,7 @@ export default function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/f/:formId" element={<PublicForm />} />
               <Route path="/dashboard" element={<ModularDashboard />} />
+              <Route path="/profile/:address" element={<ModularDashboard />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </div>

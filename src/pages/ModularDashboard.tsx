@@ -1,6 +1,6 @@
 import { useTypink } from 'typink'
-import { useNavigate } from 'react-router-dom'
-import { Search } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Search, ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Acc3ssWidget, defaultAcc3ssConfig } from '../modules/acc3ss'
 import { GovernanceWidget, defaultGovernanceConfig } from '../modules/governance'
@@ -11,7 +11,6 @@ import { FormsWidget, defaultFormsConfig } from '../modules/forms'
 import { useState, useRef, useEffect } from 'react'
 import { useUserSearch } from '../hooks/useUserSearch'
 import { UserSearchResults } from '../components/UserSearchResults'
-import { UserProfileModal } from '../components/UserProfileModal'
 import { useAccessControl } from '../hooks/useAccessControl'
 import { LockedModule } from '../components/LockedModule'
 import { SettingsMenu } from '../components/SettingsMenu'
@@ -19,9 +18,10 @@ import { SettingsMenu } from '../components/SettingsMenu'
 export default function ModularDashboard() {
   const { connectedAccount } = useTypink()
   const navigate = useNavigate()
+  const { address: profileAddress } = useParams<{ address?: string }>()
+  const isViewingOtherProfile = !!profileAddress
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
-  const [selectedUserAddress, setSelectedUserAddress] = useState<string | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
 
   // Use search hook
@@ -35,13 +35,9 @@ export default function ModularDashboard() {
   }
 
   const handleSelectUser = (address: string) => {
-    setSelectedUserAddress(address)
+    navigate(`/profile/${address}`)
     setSearchQuery('')
     setShowSearchResults(false)
-  }
-
-  const handleCloseProfile = () => {
-    setSelectedUserAddress(null)
   }
 
   // Show/hide search results based on query
@@ -103,6 +99,17 @@ export default function ModularDashboard() {
             </h1>
           </div>
 
+          {/* Back to My Dashboard button (only shown when viewing another profile) */}
+          {isViewingOtherProfile && (
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#78716c] hover:text-[#1c1917] hover:bg-white rounded-lg transition-all border border-[#e7e5e4]"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to My Dashboard</span>
+            </button>
+          )}
+
           {/* Search Bar */}
           <div ref={searchRef} className="flex-1 max-w-2xl relative">
             <form onSubmit={handleSearch}>
@@ -133,78 +140,84 @@ export default function ModularDashboard() {
           <SettingsMenu />
         </div>
 
-        {/* Main Layout: Sidebar + Content */}
+        {/* Main Layout - Different layout when viewing another profile */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Left Sidebar */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            {/* Profile - Always accessible */}
-            <ProfileWidget config={defaultProfileConfig} />
+          {isViewingOtherProfile ? (
+            /* PROFILE VIEW LAYOUT - Only show profile module in sidebar position */
+            <div className="col-span-12 lg:col-span-3">
+              <ProfileWidget
+                config={defaultProfileConfig}
+                profileAddress={profileAddress}
+                isOwnProfile={false}
+              />
+            </div>
+          ) : (
+            /* NORMAL DASHBOARD LAYOUT - Show all modules */
+            <>
+            {/* Left Sidebar */}
+            <div className="col-span-12 lg:col-span-3 space-y-6">
+              {/* Profile - Always accessible */}
+              <ProfileWidget config={defaultProfileConfig} />
 
-            {/* Quick Navigation - Requires verified identity */}
-            {accessControl.canAccessQuickNav ? (
-              <QuickNavWidget config={defaultQuickNavConfig} />
-            ) : (
-              <LockedModule moduleName="Quick Navigation" />
-            )}
+              {/* Quick Navigation - Requires verified identity */}
+              {accessControl.canAccessQuickNav ? (
+                <QuickNavWidget config={defaultQuickNavConfig} />
+              ) : (
+                <LockedModule moduleName="Quick Navigation" />
+              )}
 
-            {/* Help Center - Requires verified identity */}
-            {accessControl.canAccessHelpCenter ? (
-              <HelpCenterWidget config={defaultHelpCenterConfig} />
-            ) : (
-              <LockedModule moduleName="Help Center" />
-            )}
-          </div>
+              {/* Help Center - Requires verified identity */}
+              {accessControl.canAccessHelpCenter ? (
+                <HelpCenterWidget config={defaultHelpCenterConfig} />
+              ) : (
+                <LockedModule moduleName="Help Center" />
+              )}
+            </div>
 
-          {/* Main Content Area */}
-          <div className="col-span-12 lg:col-span-9">
-            <div className="grid grid-cols-12 gap-6 auto-rows-[250px]">
-              {/* Parity DAO - Requires verified identity */}
-              <div className="col-span-12 xl:col-span-8 row-span-2">
-                {accessControl.canAccessGovernance ? (
-                  <GovernanceWidget config={defaultGovernanceConfig} />
-                ) : (
-                  <LockedModule
-                    moduleName="Governance"
-                    description="Participate in organization polls and decisions with a verified identity."
-                  />
-                )}
-              </div>
+            {/* Main Content Area */}
+            <div className="col-span-12 lg:col-span-9">
+              <div className="grid grid-cols-12 gap-6 auto-rows-[250px]">
+                {/* Parity DAO - Requires verified identity */}
+                <div className="col-span-12 xl:col-span-8 row-span-2">
+                  {accessControl.canAccessGovernance ? (
+                    <GovernanceWidget config={defaultGovernanceConfig} />
+                  ) : (
+                    <LockedModule
+                      moduleName="Governance"
+                      description="Participate in organization polls and decisions with a verified identity."
+                    />
+                  )}
+                </div>
 
-              {/* Acc3ss - Requires verified identity */}
-              <div className="col-span-12 xl:col-span-4 row-span-2">
-                {accessControl.canAccessAcc3ss ? (
-                  <Acc3ssWidget config={defaultAcc3ssConfig} />
-                ) : (
-                  <LockedModule
-                    moduleName="Acc3ss"
-                    description="Mint and manage NFT access passes with a verified identity."
-                  />
-                )}
-              </div>
+                {/* Acc3ss - Requires verified identity */}
+                <div className="col-span-12 xl:col-span-4 row-span-2">
+                  {accessControl.canAccessAcc3ss ? (
+                    <Acc3ssWidget config={defaultAcc3ssConfig} />
+                  ) : (
+                    <LockedModule
+                      moduleName="Acc3ss"
+                      description="Mint and manage NFT access passes with a verified identity."
+                    />
+                  )}
+                </div>
 
-              {/* Forms - Requires verified identity */}
-              <div className="col-span-12 xl:col-span-8 row-span-2">
-                {accessControl.canAccessForms ? (
-                  <FormsWidget config={defaultFormsConfig} />
-                ) : (
-                  <LockedModule
-                    moduleName="Forms"
-                    description="Create and submit forms to collect team feedback with a verified identity."
-                  />
-                )}
+                {/* Forms - Requires verified identity */}
+                <div className="col-span-12 xl:col-span-8 row-span-2">
+                  {accessControl.canAccessForms ? (
+                    <FormsWidget config={defaultFormsConfig} />
+                  ) : (
+                    <LockedModule
+                      moduleName="Forms"
+                      description="Create and submit forms to collect team feedback with a verified identity."
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
-
-      {/* User Profile Modal */}
-      {selectedUserAddress && (
-        <UserProfileModal
-          address={selectedUserAddress}
-          onClose={handleCloseProfile}
-        />
-      )}
     </div>
   )
 }

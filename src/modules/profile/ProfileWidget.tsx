@@ -18,20 +18,33 @@ function formatBalance(value: bigint | undefined, decimals: number = 10): string
   return `${wholePart}.${fractionalStr}`;
 }
 
-export function ProfileWidget({ config }: { config: ProfileConfig }) {
+interface ProfileWidgetProps {
+  config: ProfileConfig
+  profileAddress?: string  // Address to display (defaults to connected account)
+  isOwnProfile?: boolean   // Whether viewing own profile (defaults to true)
+}
+
+export function ProfileWidget({
+  config,
+  profileAddress,
+  isOwnProfile = true
+}: ProfileWidgetProps) {
   const { connectedAccount, connectedNetworks } = useTypink()
   const { account: evmAccount, provider, signer } = useEVM()
   const [userRole, setUserRole] = useState<string | null>(null)
 
+  // Use profileAddress if provided, otherwise fall back to connectedAccount
+  const displayAddress = profileAddress || connectedAccount?.address
+
   // Get balance
   const network = connectedNetworks?.[0];
-  const balance = useBalance(connectedAccount?.address || '', {
+  const balance = useBalance(displayAddress || '', {
     networkId: network?.id,
   });
 
   // Fetch on-chain identity from Polkadot People Chain
   const { data: identity, isLoading: identityLoading } = useIdentity(
-    connectedAccount?.address
+    displayAddress
   )
 
   // RBAC contract hook
@@ -65,10 +78,10 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
   }, [orgId, rbac, evmAccount])
 
   // Build profile from real data only - no mock data for connected users
-  const profile = connectedAccount
+  const profile = displayAddress
     ? {
-        address: connectedAccount.address,
-        name: connectedAccount.name || identity?.display || 'Unknown User',
+        address: displayAddress,
+        name: identity?.display || 'Unknown User',
         // Only use real identity data if available
         description: identity?.legal || undefined,
         tags: identity ? [] : undefined, // Don't show mock tags
@@ -77,8 +90,16 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
     : mockUserProfile
 
   return (
-    <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      {connectedAccount && config.useOnChainIdentity ? (
+    <div className="bg-white border border-[#e7e5e4] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      {/* Viewing Profile Banner */}
+      {!isOwnProfile && (
+        <div className="px-4 py-2 bg-purple-50 border-b border-purple-200 text-purple-700 text-xs font-medium rounded-t-2xl">
+          Viewing Profile
+        </div>
+      )}
+
+      <div className="p-6">
+        {connectedAccount && config.useOnChainIdentity ? (
         <div className="mb-4">
           {/* Compact Profile Header - Avatar + Identity - Centered */}
           <div className="flex flex-col items-center mb-3">
@@ -326,6 +347,7 @@ export function ProfileWidget({ config }: { config: ProfileConfig }) {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
