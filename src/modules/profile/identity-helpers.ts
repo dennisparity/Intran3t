@@ -14,7 +14,7 @@ let peopleChainApiInstance: ApiPromise | null = null
 /**
  * Connect to Polkadot People Chain
  */
-async function getPeopleChainApi(): Promise<ApiPromise> {
+export async function getPeopleChainApi(): Promise<ApiPromise> {
   if (peopleChainApiInstance) {
     return peopleChainApiInstance
   }

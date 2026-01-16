@@ -109,6 +109,14 @@ export async function searchRegistryByName(query: string): Promise<RegistryIdent
 }
 
 /**
+ * Search identity by exact address match
+ */
+export async function searchRegistryByAddress(address: string): Promise<RegistryIdentity | null> {
+  const identities = await fetchRegistryIdentities()
+  return identities.find(identity => identity.address === address) || null
+}
+
+/**
  * Check if an identity is verified (has positive judgement)
  */
 export function isVerified(identity: RegistryIdentity): boolean {

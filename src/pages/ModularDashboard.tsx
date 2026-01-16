@@ -2,6 +2,7 @@ import { useTypink } from 'typink'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/Button'
+import { IdentityOnboardingModal } from '../components/identity/IdentityOnboardingModal'
 import { Acc3ssWidget, defaultAcc3ssConfig } from '../modules/acc3ss'
 import { GovernanceWidget, defaultGovernanceConfig } from '../modules/governance'
 import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigation'
@@ -23,6 +24,7 @@ export default function ModularDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Use search hook
   const { data: searchResults = [], isLoading: isSearching } = useUserSearch(searchQuery)
@@ -57,31 +59,34 @@ export default function ModularDashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Show message if not connected instead of redirecting
-  if (!connectedAccount) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">
-        <div className="max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-white mb-6 shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-2" />
-          </div>
-          <h2 className="text-3xl font-bold text-[#1c1917] mb-4 font-serif">
-            Connect Your Wallet
-          </h2>
-          <p className="text-[#78716c] mb-8">
-            Please connect your Polkadot wallet to access the dashboard
-          </p>
-          <Button
-            variant="gradient"
-            size="lg"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
-            Go to Landing Page
-          </Button>
-        </div>
-      </div>
+  // Show identity onboarding modal if user doesn't have verified identity
+  useEffect(() => {
+    if (!connectedAccount || isViewingOtherProfile) {
+      console.log('🔍 Identity modal check: Not showing (no account or viewing other profile)')
+      return
+    }
+
+    const dismissed = localStorage.getItem(
+      `intran3t_identity_onboarding_dismissed_${connectedAccount.address}`
     )
+
+    console.log('🔍 Identity modal check:', {
+      address: connectedAccount.address,
+      dismissed: !!dismissed,
+      hasVerifiedIdentity: accessControl.hasVerifiedIdentity,
+      isLoading: accessControl.isLoading
+    })
+
+    // Show modal if: wallet connected + no verified identity + not dismissed
+    const shouldShow = !dismissed && !accessControl.hasVerifiedIdentity && !accessControl.isLoading
+    console.log('🔍 Should show identity modal:', shouldShow)
+    setShowOnboarding(shouldShow)
+  }, [connectedAccount, accessControl.hasVerifiedIdentity, accessControl.isLoading, isViewingOtherProfile])
+
+  // Redirect to /start if not connected
+  if (!connectedAccount) {
+    navigate('/start')
+    return null
   }
 
   return (
@@ -218,6 +223,21 @@ export default function ModularDashboard() {
           )}
         </div>
       </div>
+
+      {/* Identity Onboarding Modal */}
+      <IdentityOnboardingModal
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+        onDismiss={() => {
+          if (connectedAccount) {
+            localStorage.setItem(
+              `intran3t_identity_onboarding_dismissed_${connectedAccount.address}`,
+              'true'
+            )
+          }
+          setShowOnboarding(false)
+        }}
+      />
     </div>
   )
 }

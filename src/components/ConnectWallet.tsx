@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from './ui/Dialog'
 import Identicon from '@polkadot/react-identicon'
+import { web3Enable, web3Accounts } from '@polkadot/extension-dapp'
 
 type View = 'wallets' | 'accounts'
 
@@ -29,10 +30,43 @@ export default function ConnectWallet() {
 
   const handleConnectWallet = async (walletId: string) => {
     try {
+      console.log('Attempting to connect wallet:', walletId)
+
+      // Request permission from extension first (triggers popup)
+      console.log('Requesting wallet permission...')
+      const extensions = await web3Enable('Intran3t')
+      console.log('Extensions enabled:', extensions.length)
+
+      if (extensions.length === 0) {
+        throw new Error('No wallet extension found. Please install Polkadot.js, Talisman, or SubWallet.')
+      }
+
+      // Fetch accounts to verify permission was granted
+      const allAccounts = await web3Accounts()
+      console.log('All accounts from web3Accounts:', allAccounts)
+
+      const walletAccounts = allAccounts.filter(a => a.meta.source === walletId)
+      console.log(`Accounts for ${walletId}:`, walletAccounts)
+
+      if (walletAccounts.length === 0) {
+        throw new Error(
+          `No accounts found for ${walletId}.\n\n` +
+          `Please open the ${walletId === 'polkadot-js' ? 'Polkadot.js' : walletId} extension and:\n` +
+          `1. Click the settings (⚙️) icon\n` +
+          `2. Go to "Manage Website Access"\n` +
+          `3. Authorize "localhost:5173" or click the checkmark to allow access\n` +
+          `4. Refresh this page and try again`
+        )
+      }
+
+      // Now connect with Typink
       await connectWallet(walletId)
+      console.log('Wallet connected successfully:', walletId)
       setView('accounts')
     } catch (error) {
       console.error('Failed to connect wallet:', error)
+      // Show error to user
+      alert(`Failed to connect wallet: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -116,7 +150,7 @@ export default function ConnectWallet() {
                   return (
                     <div
                       key={wallet.id}
-                      className="group relative flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-pink-500/50 transition-all duration-300"
+                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-accent/50 transition-all duration-300"
                     >
                       <div className="flex items-center gap-3">
                         {wallet.logo ? (
@@ -132,16 +166,16 @@ export default function ConnectWallet() {
                         )}
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white">{wallet.name}</span>
+                            <span className="font-semibold text-[#1c1917]">{wallet.name}</span>
                             {isConnected && (
-                              <div className="flex items-center gap-1 text-xs text-green-400">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                              <div className="flex items-center gap-1 text-xs text-green-600">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                 Connected
                               </div>
                             )}
                           </div>
                           {isConnected && accountCount > 0 && (
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <p className="text-xs text-[#78716c] mt-0.5">
                               {accountCount} account{accountCount !== 1 ? 's' : ''}
                             </p>
                           )}
@@ -164,7 +198,7 @@ export default function ConnectWallet() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => disconnect(wallet.id)}
+                                onClick={handleDisconnect}
                               >
                                 Disconnect
                               </Button>
@@ -208,7 +242,7 @@ export default function ConnectWallet() {
               </div>
 
             {connectedAccount && (
-              <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="mt-6 pt-6 border-t border-[#e7e5e4]">
                 <Button
                   variant="destructive"
                   size="sm"
@@ -239,7 +273,7 @@ export default function ConnectWallet() {
 
             <div className="space-y-3 mt-4">
               {accounts.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-[#78716c]">
                   <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No accounts found</p>
                   <p className="text-sm mt-1">
@@ -259,8 +293,8 @@ export default function ConnectWallet() {
                         transition-all duration-300 text-left
                         ${
                           isSelected
-                            ? 'border-pink-500 bg-pink-500/10'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-violet-500/50'
+                            ? 'border-accent bg-accent/10'
+                            : 'border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-accent/50'
                         }
                       `}
                     >
@@ -271,16 +305,16 @@ export default function ConnectWallet() {
                           theme="polkadot"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-white flex items-center gap-2">
+                          <div className="font-semibold text-[#1c1917] flex items-center gap-2">
                             {account.name || 'Unnamed Account'}
                             {isSelected && (
-                              <Check className="w-4 h-4 text-pink-500" />
+                              <Check className="w-4 h-4 text-accent" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5 font-mono">
+                          <p className="text-xs text-[#78716c] mt-0.5 font-mono">
                             {truncateAddress(account.address)}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-[#a8a29e] mt-0.5">
                             {account.source}
                           </p>
                         </div>
