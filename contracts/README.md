@@ -73,12 +73,12 @@ Create a `.env` file:
 # Private key for deployment (DO NOT COMMIT!)
 PRIVATE_KEY=your_private_key_here
 
-# RPC endpoints
-ASSET_HUB_TESTNET_RPC=https://rpc.testnet.assethub.io
-ASSET_HUB_MAINNET_RPC=https://rpc.assethub.io
+# RPC endpoints (Updated Jan 2026)
+# Docs: https://docs.polkadot.com/smart-contracts/connect/
+POLKADOT_HUB_TESTNET_RPC=https://services.polkadothub-rpc.com/testnet
+KUSAMA_HUB_RPC=https://kusama-asset-hub-eth-rpc.polkadot.io
 
-# Block explorer API keys (for verification)
-BLOCKSCOUT_API_KEY=your_api_key_here
+# Faucet: https://faucet.polkadot.io/
 ```
 
 ### Compile

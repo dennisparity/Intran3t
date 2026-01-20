@@ -30,7 +30,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
         <div className="p-6 space-y-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-accent border-t-transparent" />
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#ff2867] border-t-transparent" />
             </div>
           ) : (
             <>
@@ -64,7 +64,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
 
                   {/* Role Badge */}
                   {teamMember?.role && (
-                    <div className="inline-flex items-center gap-1 px-3 py-1 bg-accent-soft border border-accent/20 text-accent text-xs font-medium rounded-full mb-2">
+                    <div className="inline-flex items-center gap-1 px-3 py-1 bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867] text-xs font-medium rounded-full mb-2">
                       <span className="capitalize">{teamMember.role}</span>
                     </div>
                   )}
@@ -117,7 +117,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
                             href={identity.web.startsWith('http') ? identity.web : `https://${identity.web}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-accent font-medium hover:underline truncate block"
+                            className="text-sm text-[#ff2867] font-medium hover:underline truncate block"
                           >
                             {identity.web}
                           </a>
@@ -135,7 +135,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
                             href={`https://twitter.com/${identity.twitter.replace('@', '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-accent font-medium hover:underline truncate block"
+                            className="text-sm text-[#ff2867] font-medium hover:underline truncate block"
                           >
                             @{identity.twitter.replace('@', '')}
                           </a>
@@ -153,7 +153,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
                             href={`https://github.com/${identity.github}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-accent font-medium hover:underline truncate block"
+                            className="text-sm text-[#ff2867] font-medium hover:underline truncate block"
                           >
                             {identity.github}
                           </a>
@@ -203,7 +203,7 @@ export function UserProfileModal({ address, onClose }: UserProfileModalProps) {
         <div className="sticky bottom-0 bg-[#fafaf9] border-t border-[#e7e5e4] px-6 py-4 flex items-center justify-end rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors font-medium"
+            className="px-6 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium"
           >
             Close
           </button>

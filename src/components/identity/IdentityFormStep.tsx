@@ -125,7 +125,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('display', e.target.value)}
             placeholder="John Doe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all ${
+            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.display ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
           />
@@ -148,7 +148,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('legal', e.target.value)}
             placeholder="John Michael Doe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all ${
+            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.legal ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
           />
@@ -168,7 +168,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder="john@example.com"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all ${
+            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.email ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
           />
@@ -188,7 +188,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('twitter', e.target.value)}
             placeholder="@johndoe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all ${
+            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.twitter ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
           />
@@ -208,7 +208,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('matrix', e.target.value)}
             placeholder="@john:matrix.org"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all ${
+            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.matrix ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
           />

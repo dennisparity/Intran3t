@@ -114,11 +114,11 @@ export function ProfileWidget({
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center">
-                    <User className="w-7 h-7 text-accent" />
+                  <div className="w-14 h-14 bg-[rgba(255,40,103,0.08)] rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-[#ff2867]" />
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#ff2867] rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
@@ -223,7 +223,7 @@ export function ProfileWidget({
                       {userRole && (
                         <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
                           userRole === 'Admin'
-                            ? 'bg-accent-soft border border-accent/20 text-accent'
+                            ? 'bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867]'
                             : userRole === 'People/Culture'
                             ? 'bg-purple-50 border border-purple-200 text-purple-700'
                             : userRole === 'Member'
@@ -276,11 +276,11 @@ export function ProfileWidget({
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center">
-                    <User className="w-7 h-7 text-accent" />
+                  <div className="w-14 h-14 bg-[rgba(255,40,103,0.08)] rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-[#ff2867]" />
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent rounded-full flex items-center justify-center border-2 border-white">
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#ff2867] rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
@@ -316,7 +316,7 @@ export function ProfileWidget({
       {connectedAccount && (
         <div className="mb-3">
           {balance?.free ? (
-            <p className="text-lg font-semibold text-accent text-center">
+            <p className="text-lg font-semibold text-[#ff2867] text-center">
               {formatBalance(balance.free)} PAS
             </p>
           ) : (
@@ -340,7 +340,7 @@ export function ProfileWidget({
           {profile.tags.map((tag, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-accent-soft border border-accent/20 text-accent text-xs font-medium rounded-full"
+              className="px-3 py-1 bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867] text-xs font-medium rounded-full"
             >
               {tag}
             </span>

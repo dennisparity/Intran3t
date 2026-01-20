@@ -16,7 +16,7 @@ function formatMarkdown(text: string) {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
     // Links: [text](url)
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-accent-hover underline decoration-accent/30 hover:decoration-accent-hover transition-colors">$1</a>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] hover:text-[#ff2867]-hover underline decoration-[#ff2867]/30 hover:decoration-[#e6245d] transition-colors">$1</a>')
     // Line breaks
     .replace(/\n/g, '<br />')
 }
@@ -175,7 +175,7 @@ export function PublicForm() {
               href="https://polkadot.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200"
             >
               <img src="/logo.png" alt="Polkadot" className="w-5 h-5" />
               Get started with Polkadot
@@ -217,9 +217,9 @@ export function PublicForm() {
           <div className="space-y-6">
             {form.fields.map((field) => (
               <div key={field.id}>
-                <label className="block text-sm font-medium text-grey-900 mb-2">
+                <label className="block text-sm font-medium text-[#1c1917] mb-2">
                   {field.label}
-                  {field.required && <span className="text-accent ml-1">*</span>}
+                  {field.required && <span className="text-[#ff2867] ml-1">*</span>}
                 </label>
 
                 {field.type === 'text' && (
@@ -229,7 +229,7 @@ export function PublicForm() {
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
                   />
                 )}
 
@@ -240,7 +240,7 @@ export function PublicForm() {
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
                   />
                 )}
 
@@ -249,7 +249,7 @@ export function PublicForm() {
                     value={answers[field.id] as string || ''}
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
                   >
                     <option value="">Select an option</option>
                     {field.options?.map(option => (
@@ -265,14 +265,14 @@ export function PublicForm() {
                     {field.options?.map(option => {
                       const selectedValues = (answers[field.id] as string[]) || []
                       return (
-                        <label key={option} className="flex items-center gap-3 p-3 border border-grey-200 rounded-lg hover:bg-grey-50 hover:border-grey-300 cursor-pointer transition-all duration-200">
+                        <label key={option} className="flex items-center gap-3 p-3 border border-[#e7e5e4] rounded-lg hover:bg-[#f5f5f4] hover:border-[#d6d3d1] cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             checked={selectedValues.includes(option)}
                             onChange={(e) => handleMultiSelectChange(field.id, option, e.target.checked)}
-                            className="w-4 h-4 text-accent border-grey-200 rounded focus:ring-4 focus:ring-accent-soft transition-all"
+                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all"
                           />
-                          <span className="text-sm text-grey-900">{option}</span>
+                          <span className="text-sm text-[#1c1917]">{option}</span>
                         </label>
                       )
                     })}
@@ -290,7 +290,7 @@ export function PublicForm() {
 
           <button
             type="submit"
-            className="w-full mt-8 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
+            className="w-full mt-8 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200"
           >
             Submit Response
           </button>
@@ -305,7 +305,7 @@ export function PublicForm() {
             href="https://polkadot.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200"
+            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200"
           >
             <img src="/logo.png" alt="Polkadot" className="w-5 h-5" />
             Set up your onchain identity

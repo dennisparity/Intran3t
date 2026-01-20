@@ -388,7 +388,7 @@ function VoteModal({
             <button
               onClick={handleVote}
               disabled={!selectedVote}
-              className="flex-1 px-6 py-3 bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {selectedVote ? `Vote ${poll.options?.[selectedVote] || selectedVote}` : 'Select an option'}
             </button>
@@ -499,7 +499,7 @@ function PollCard({
         {canVote ? (
           <button
             onClick={() => onOpenVote(poll)}
-            className="px-4 py-2 bg-grey-900 text-white text-xs font-medium rounded-xl hover:bg-grey-800 transition-colors duration-200"
+            className="px-4 py-2 bg-[#1c1917] text-white text-xs font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200"
           >
             Vote Now
           </button>
@@ -645,7 +645,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
           {config.allowPollCreation && connectedAccount && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-grey-900 text-white text-xs font-medium rounded-xl hover:bg-grey-800 transition-colors duration-200"
+              className="flex items-center gap-1 px-3 py-1.5 bg-[#1c1917] text-white text-xs font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200"
             >
               <Plus className="w-3.5 h-3.5" />
               New Poll

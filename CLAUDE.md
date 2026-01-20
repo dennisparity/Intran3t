@@ -1,9 +1,22 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-01-13
+> Last updated: 2026-01-20
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-01-20 - Polkadot Hub TestNet Migration & UI Improvements
+- **Migration**: Moved from deprecated Paseo testnet to new Polkadot Hub TestNet
+- **Contract**: Redeployed RBAC contract to `0xF1152B54404F7F4B646199072Fd3819D097c4F94`
+- **File**: `contracts/solidity/hardhat.config.js` - Updated network config (chain ID: 420420417)
+- **File**: `contracts/solidity/deployments/polkadotHubTestnet.json` - New deployment record
+- **File**: `.env` - Updated RPC endpoint and contract address
+- **File**: `.env.example` - Rewritten with complete Intran3t configuration
+- **File**: `contracts/README.md` - Updated RPC endpoints documentation
+- **UI**: Various component styling improvements (Button, Card, Dialog, Input)
+- **UI**: Enhanced form styling and module widget appearances
+- **Network**: New RPC: `https://services.polkadothub-rpc.com/testnet`
+- **Network**: New chain ID: `420420417` (was `421006`)
 
 ### 2026-01-13 - People Chain Registry Integration & Vercel Deployment
 - **File**: `src/services/dotid-registry.ts` - New API client for People Chain identity registry
@@ -61,13 +74,18 @@
 | Variable | Purpose | Example | Required |
 |----------|---------|---------|----------|
 | `VITE_NETWORK` | Network to use (testnet/mainnet) | `testnet` | Yes |
-| `VITE_RBAC_CONTRACT_ADDRESS` | RBAC smart contract address | `0xfde4dD5d4e31adDe12123b214D81c43b04921760` | Yes |
-| `VITE_ASSETHUB_EVM_CHAIN_ID` | Asset Hub EVM chain ID | `0x190F1B46` | Yes |
-| `VITE_ASSETHUB_EVM_RPC` | Asset Hub EVM RPC endpoint | `https://testnet-passet-hub-eth-rpc.polkadot.io` | Yes |
+| `VITE_RBAC_CONTRACT_ADDRESS` | RBAC smart contract address | `0xF1152B54404F7F4B646199072Fd3819D097c4F94` | Yes |
+| `VITE_ASSETHUB_EVM_CHAIN_ID` | Asset Hub EVM chain ID | `420420417` | Yes |
+| `VITE_ASSETHUB_EVM_RPC` | Asset Hub EVM RPC endpoint | `https://services.polkadothub-rpc.com/testnet` | Yes |
 | `VITE_PEOPLE_CHAIN_RPC` | People Chain WebSocket RPC | `wss://polkadot-people-rpc.polkadot.io` | Yes |
 | `VITE_DOTID_API_URL` | dotid.app proxy endpoint | `/api/dotid-proxy` | Yes |
 | `VITE_ENABLE_ANALYTICS` | Enable analytics | `false` | No |
 | `VITE_ENABLE_DEBUG_LOGS` | Enable debug logging | `true` | No |
+
+> **Updated Jan 20, 2026:** Contract redeployed to Polkadot Hub TestNet.
+> - New contract: `0xF1152B54404F7F4B646199072Fd3819D097c4F94`
+> - New RPC: `https://services.polkadothub-rpc.com/testnet`
+> - New chain ID: `420420417`
 
 **Configuration Files:**
 - `.env` - Local development (gitignored)
@@ -114,12 +132,17 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
 - **Response**: Array of identity objects with fields: `address`, `display`, `legal`, `twitter`, `matrix`, `judgements`, etc.
 - **Used by**: Dashboard search, Admin registry browser
 
-### Polkadot Asset Hub (Paseo Testnet)
-- **Network**: Paseo Asset Hub (testnet)
-- **EVM RPC**: `https://testnet-passet-hub-eth-rpc.polkadot.io`
-- **Chain ID**: `0x190F1B46` (421006 decimal)
+### Polkadot Hub TestNet (Updated Jan 20, 2026)
+- **Network**: Polkadot Hub TestNet
+- **EVM RPC**: `https://services.polkadothub-rpc.com/testnet`
+- **Chain ID**: `420420417` (decimal) / `0x1909B741` (hex)
+- **Currency**: PAS
+- **Block Explorer**: https://polkadot.testnet.routescan.io/
+- **Faucet**: https://faucet.polkadot.io/
 - **Purpose**: RBAC smart contract deployment and transactions
-- **Contract**: `0xfde4dD5d4e31adDe12123b214D81c43b04921760`
+- **Contract**: `0xF1152B54404F7F4B646199072Fd3819D097c4F94` (deployed Jan 20, 2026)
+- **Deployer**: `0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62`
+- **Block**: 4537801
 
 ### People Chain
 - **RPC**: `wss://polkadot-people-rpc.polkadot.io`

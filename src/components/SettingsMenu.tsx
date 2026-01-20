@@ -60,8 +60,8 @@ export function SettingsMenu() {
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#fafaf9] transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-accent-soft group-hover:bg-accent/10 transition-colors">
-                  <ShieldCheck className="w-4 h-4 text-accent" />
+                <div className="p-2 rounded-lg bg-[rgba(255,40,103,0.08)] group-hover:bg-[#ff2867]/10 transition-colors">
+                  <ShieldCheck className="w-4 h-4 text-[#ff2867]" />
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-[#1c1917]">Admin Panel</p>

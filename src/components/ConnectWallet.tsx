@@ -150,7 +150,7 @@ export default function ConnectWallet() {
                   return (
                     <div
                       key={wallet.id}
-                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-accent/50 transition-all duration-300"
+                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#ff2867]/50 transition-all duration-300"
                     >
                       <div className="flex items-center gap-3">
                         {wallet.logo ? (
@@ -293,8 +293,8 @@ export default function ConnectWallet() {
                         transition-all duration-300 text-left
                         ${
                           isSelected
-                            ? 'border-accent bg-accent/10'
-                            : 'border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-accent/50'
+                            ? 'border-[#ff2867] bg-[rgba(255,40,103,0.1)]'
+                            : 'border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#ff2867]/50'
                         }
                       `}
                     >
@@ -308,7 +308,7 @@ export default function ConnectWallet() {
                           <div className="font-semibold text-[#1c1917] flex items-center gap-2">
                             {account.name || 'Unnamed Account'}
                             {isSelected && (
-                              <Check className="w-4 h-4 text-accent" />
+                              <Check className="w-4 h-4 text-[#ff2867]" />
                             )}
                           </div>
                           <p className="text-xs text-[#78716c] mt-0.5 font-mono">

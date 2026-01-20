@@ -241,7 +241,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     placeholder="Enter form title"
-                    className="w-full px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                   />
                 </div>
 
@@ -255,7 +255,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Optional description"
                     rows={2}
-                    className="w-full px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft resize-none transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] resize-none transition-all duration-200"
                   />
                 </div>
 
@@ -267,7 +267,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </label>
                     <button
                       onClick={() => setShowFieldBuilder(true)}
-                      className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors duration-200"
+                      className="flex items-center gap-1 text-xs text-[#ff2867] hover:text-[#ff2867]-hover transition-colors duration-200"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Field
@@ -286,11 +286,11 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           className="flex items-center justify-between p-2 bg-[#fafaf9] rounded-lg border border-[#e7e5e4]"
                         >
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-grey-900">
+                            <div className="text-sm font-medium text-[#1c1917]">
                               {field.label}
-                              {field.required && <span className="text-accent ml-1">*</span>}
+                              {field.required && <span className="text-[#ff2867] ml-1">*</span>}
                             </div>
-                            <div className="text-xs text-grey-500 mt-0.5">
+                            <div className="text-xs text-[#78716c] mt-0.5">
                               {field.type}
                               {field.placeholder && ` • ${field.placeholder}`}
                             </div>
@@ -298,13 +298,13 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleEditField(index)}
-                              className="p-1 text-grey-500 hover:text-accent transition-colors duration-200"
+                              className="p-1 text-[#78716c] hover:text-[#ff2867] transition-colors duration-200"
                             >
                               <FileText className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleRemoveField(index)}
-                              className="p-1 text-grey-500 hover:text-error transition-colors duration-200"
+                              className="p-1 text-[#78716c] hover:text-[#dc2626] transition-colors duration-200"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -344,7 +344,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             value={fieldLabel}
                             onChange={(e) => setFieldLabel(e.target.value)}
                             placeholder="e.g., Email Address"
-                            className="w-full px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                           />
                         </div>
 
@@ -355,7 +355,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <select
                             value={fieldType}
                             onChange={(e) => setFieldType(e.target.value as FieldType)}
-                            className="w-full px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                           >
                             <option value="text">Text</option>
                             <option value="email">Email</option>
@@ -373,7 +373,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             value={fieldPlaceholder}
                             onChange={(e) => setFieldPlaceholder(e.target.value)}
                             placeholder="Optional placeholder text"
-                            className="w-full px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                           />
                         </div>
 
@@ -394,12 +394,12 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                                       updated[idx] = e.target.value
                                       setFieldOptions(updated)
                                     }}
-                                    className="flex-1 px-3 py-2 text-sm border border-grey-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                                    className="flex-1 px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                                     placeholder={`Option ${idx + 1}`}
                                   />
                                   <button
                                     onClick={() => setFieldOptions(fieldOptions.filter((_, i) => i !== idx))}
-                                    className="p-2 text-grey-500 hover:text-error transition-colors duration-200"
+                                    className="p-2 text-[#78716c] hover:text-[#dc2626] transition-colors duration-200"
                                   >
                                     <X className="w-4 h-4" />
                                   </button>
@@ -407,7 +407,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                               ))}
                               <button
                                 onClick={() => setFieldOptions([...fieldOptions, ''])}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-grey-500 border border-dashed border-grey-200 rounded-lg hover:border-accent hover:text-accent transition-colors duration-200"
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-[#78716c] border border-dashed border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:text-[#ff2867] transition-colors duration-200"
                               >
                                 <Plus className="w-4 h-4" />
                                 Add option
@@ -422,9 +422,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             id="fieldRequired"
                             checked={fieldRequired}
                             onChange={(e) => setFieldRequired(e.target.checked)}
-                            className="w-4 h-4 text-accent border-grey-200 rounded focus:ring-4 focus:ring-accent-soft transition-all duration-200"
+                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
                           />
-                          <label htmlFor="fieldRequired" className="text-sm text-grey-900">
+                          <label htmlFor="fieldRequired" className="text-sm text-[#1c1917]">
                             Required field
                           </label>
                         </div>
@@ -442,7 +442,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <button
                             onClick={handleAddField}
                             disabled={!fieldLabel.trim()}
-                            className="flex-1 px-4 py-2 text-sm bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2 text-sm bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {editingFieldIndex !== null ? 'Update' : 'Add'} Field
                           </button>
@@ -465,7 +465,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   <button
                     onClick={handleCreateForm}
                     disabled={!formTitle.trim() || fields.length === 0}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 text-sm font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
@@ -487,7 +487,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               myForms.map((form) => (
                 <div
                   key={form.id}
-                  className="border border-grey-200 rounded-xl p-4 hover:border-grey-300 transition-all duration-200 hover:shadow-sm"
+                  className="border border-[#e7e5e4] rounded-xl p-4 hover:border-grey-300 transition-all duration-200 hover:shadow-sm"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -539,20 +539,20 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                     <button
                       onClick={() => handleEditForm(form.id)}
-                      className="p-1.5 text-grey-500 hover:text-accent transition-colors duration-200"
+                      className="p-1.5 text-[#78716c] hover:text-[#ff2867] transition-colors duration-200"
                       title="Edit form"
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleToggleStatus(form.id)}
-                      className="px-3 py-1.5 text-xs border border-grey-200 text-grey-500 rounded-lg hover:bg-grey-50 hover:border-grey-300 transition-all duration-200"
+                      className="px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-grey-50 hover:border-grey-300 transition-all duration-200"
                     >
                       {form.status === 'active' ? 'Close' : 'Activate'}
                     </button>
                     <button
                       onClick={() => handleDeleteForm(form.id)}
-                      className="p-1.5 text-grey-500 hover:text-error transition-colors duration-200"
+                      className="p-1.5 text-[#78716c] hover:text-[#dc2626] transition-colors duration-200"
                       title="Delete form"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

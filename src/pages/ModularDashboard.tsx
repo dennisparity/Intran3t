@@ -96,11 +96,11 @@ export default function ModularDashboard() {
         <div className="flex items-center justify-between gap-6 mb-6">
           {/* Intran3t Branding */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-md overflow-hidden">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-sm border border-[#e7e5e4] overflow-hidden">
               <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-1.5" />
             </div>
             <h1 className="text-2xl font-bold text-[#1c1917] font-serif">
-              Intran<span className="text-accent">3</span>t
+              Intran<span className="text-[#ff2867]">3</span>t
             </h1>
           </div>
 
@@ -125,7 +125,7 @@ export default function ModularDashboard() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for team members..."
-                  className="w-full pl-12 pr-4 py-3 bg-white border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                 />
               </div>
             </form>

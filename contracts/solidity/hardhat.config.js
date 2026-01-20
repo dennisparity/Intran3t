@@ -17,17 +17,24 @@ module.exports = {
     hardhat: {
       chainId: 1337
     },
-    // Polkadot Polkadot Hub EVM (testnet) - Paseo
-    assetHubTestnet: {
-      url: process.env.ASSET_HUB_TESTNET_RPC || "https://testnet-passet-hub-eth-rpc.polkadot.io",
+    // Polkadot Hub TestNet (Updated January 2026)
+    // Docs: https://docs.polkadot.com/smart-contracts/connect/
+    polkadotHubTestnet: {
+      url: process.env.POLKADOT_HUB_TESTNET_RPC || "https://services.polkadothub-rpc.com/testnet",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 420420422, // Polkadot Hub Paseo testnet chain ID (actual)
+      chainId: 420420417, // Polkadot Hub TestNet chain ID
     },
-    // Polkadot Polkadot Hub EVM (mainnet)
-    assetHubMainnet: {
-      url: process.env.ASSET_HUB_MAINNET_RPC || "https://rpc.assethub.io",
+    // Legacy alias for backwards compatibility
+    assetHubTestnet: {
+      url: process.env.POLKADOT_HUB_TESTNET_RPC || "https://services.polkadothub-rpc.com/testnet",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 1000, // Polkadot Hub mainnet chain ID
+      chainId: 420420417, // Polkadot Hub TestNet chain ID
+    },
+    // Kusama Hub (Production)
+    kusamaHub: {
+      url: process.env.KUSAMA_HUB_RPC || "https://kusama-asset-hub-eth-rpc.polkadot.io",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 420420418, // Kusama Hub chain ID
     }
   },
   paths: {

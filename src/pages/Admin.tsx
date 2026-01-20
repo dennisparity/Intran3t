@@ -27,7 +27,7 @@ export default function Admin() {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors font-medium"
+            className="px-6 py-3 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors font-medium"
           >
             Go to Landing Page
           </button>
@@ -115,16 +115,16 @@ export default function Admin() {
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full flex items-start gap-3 px-3 py-3 rounded-lg transition-all ${
                         isActive
-                          ? 'bg-accent-soft border border-accent/20 text-accent'
+                          ? 'bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867]'
                           : 'hover:bg-[#fafaf9] text-[#57534e] hover:text-[#1c1917]'
                       }`}
                     >
                       <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                        isActive ? 'text-accent' : 'text-[#78716c]'
+                        isActive ? 'text-[#ff2867]' : 'text-[#78716c]'
                       }`} />
                       <div className="flex-1 text-left">
                         <p className={`text-sm font-medium ${
-                          isActive ? 'text-accent' : 'text-[#1c1917]'
+                          isActive ? 'text-[#ff2867]' : 'text-[#1c1917]'
                         }`}>
                           {section.name}
                         </p>
@@ -257,7 +257,7 @@ function AdminRBAC() {
       <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-accent" />
+            <Shield className="w-6 h-6 text-[#ff2867]" />
             <div>
               <h2 className="text-xl font-bold text-[#1c1917] font-serif">
                 Role-Based Access Control
@@ -291,7 +291,7 @@ function AdminRBAC() {
                 </p>
                 <button
                   onClick={() => setShowCreateOrgModal(true)}
-                  className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors font-medium text-sm"
+                  className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium text-sm"
                 >
                   Create Organization
                 </button>
@@ -332,7 +332,7 @@ function AdminRBAC() {
                       <tbody>
                         <tr className="border-b border-[#f5f5f4]">
                           <td className="py-2 px-3">
-                            <span className="inline-flex items-center px-2 py-0.5 bg-accent-soft text-accent border border-accent/20 rounded text-xs font-medium">
+                            <span className="inline-flex items-center px-2 py-0.5 bg-[rgba(255,40,103,0.08)] text-[#ff2867] border border-[#ff2867]/20 rounded text-xs font-medium">
                               Admin
                             </span>
                           </td>
@@ -428,7 +428,7 @@ function AdminRBAC() {
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 placeholder="Enter organization name..."
-                className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
                 maxLength={64}
               />
               <p className="text-xs text-[#78716c] mt-1">
@@ -449,7 +449,7 @@ function AdminRBAC() {
               <button
                 onClick={handleCreateOrganization}
                 disabled={creatingOrg || !organizationName.trim()}
-                className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingOrg ? 'Creating...' : 'Create Organization'}
               </button>
@@ -585,13 +585,13 @@ function AdminUsers() {
             onClick={() => setShowFilters(!showFilters)}
             className={`px-4 py-2 border rounded-lg transition-colors font-medium text-sm ${
               showFilters
-                ? 'bg-accent-soft border-accent/20 text-accent'
+                ? 'bg-[rgba(255,40,103,0.08)] border-[#ff2867]/20 text-[#ff2867]'
                 : 'bg-white border-[#e7e5e4] text-[#57534e] hover:bg-[#fafaf9]'
             }`}
           >
             {showFilters ? 'Hide' : 'Show'} Filters
           </button>
-          <button className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors font-medium text-sm">
+          <button className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium text-sm">
             Add Member
           </button>
         </div>
@@ -603,7 +603,7 @@ function AdminUsers() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-[#78716c] mb-2">Role</label>
-              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20">
+              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20">
                 <option value="">All Roles</option>
                 <option value="admin">Admin</option>
                 <option value="member">Member</option>
@@ -612,7 +612,7 @@ function AdminUsers() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#78716c] mb-2">Verification</label>
-              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20">
+              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20">
                 <option value="">All Status</option>
                 <option value="verified">Verified</option>
                 <option value="unverified">Unverified</option>
@@ -620,7 +620,7 @@ function AdminUsers() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#78716c] mb-2">Tags</label>
-              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20">
+              <select className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20">
                 <option value="">All Tags</option>
                 <option value="admin">Admin</option>
                 <option value="core-team">Core Team</option>
@@ -640,7 +640,7 @@ function AdminUsers() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, identity, or address..."
-            className="w-full pl-12 pr-4 py-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full pl-12 pr-4 py-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all"
           />
         </div>
         <button
@@ -653,7 +653,7 @@ function AdminUsers() {
         </button>
         <button
           onClick={() => setShowAddUserModal(true)}
-          className="px-4 py-3 bg-grey-900 text-white rounded-xl hover:bg-grey-800 transition-colors flex items-center gap-2 whitespace-nowrap"
+          className="px-4 py-3 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors flex items-center gap-2 whitespace-nowrap"
           title="Manually add user by EVM address"
         >
           <Plus className="w-4 h-4" />
@@ -714,8 +714,8 @@ function AdminUsers() {
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
                       <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center">
-                          <User className="w-5 h-5 text-accent" />
+                        <div className="w-10 h-10 rounded-full bg-[rgba(255,40,103,0.08)] flex items-center justify-center">
+                          <User className="w-5 h-5 text-[#ff2867]" />
                         </div>
                         {user.verified && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
@@ -746,7 +746,7 @@ function AdminUsers() {
                   <td className="py-4 px-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                       user.role === 'admin'
-                        ? 'bg-accent-soft text-accent border border-accent/20'
+                        ? 'bg-[rgba(255,40,103,0.08)] text-[#ff2867] border border-[#ff2867]/20'
                         : user.role === 'people/culture'
                         ? 'bg-purple-50 text-purple-700 border border-purple-200'
                         : user.role === 'member'
@@ -948,7 +948,7 @@ function EditUserModal({ userAddress, onClose }: { userAddress: string; onClose:
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
             >
               <option value="admin">Admin</option>
               <option value="peopleculture">People/Culture</option>
@@ -968,7 +968,7 @@ function EditUserModal({ userAddress, onClose }: { userAddress: string; onClose:
             <select
               value={expirationDays}
               onChange={(e) => setExpirationDays(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
             >
               <option value={0}>No expiration</option>
               <option value={7}>7 days</option>
@@ -1009,11 +1009,11 @@ function EditUserModal({ userAddress, onClose }: { userAddress: string; onClose:
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                 placeholder="Add new tag..."
-                className="flex-1 px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                className="flex-1 px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
               />
               <button
                 onClick={handleAddTag}
-                className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-sm font-medium"
               >
                 Add
               </button>
@@ -1040,7 +1040,7 @@ function EditUserModal({ userAddress, onClose }: { userAddress: string; onClose:
           <button
             onClick={handleSaveChanges}
             disabled={issuing || !connected || !orgId}
-            className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {issuing ? 'Issuing...' : 'Issue Credential'}
           </button>
@@ -1063,7 +1063,7 @@ function AdminPolls() {
             Create and manage organization polls
           </p>
         </div>
-        <button className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors font-medium text-sm">
+        <button className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium text-sm">
           Create Poll
         </button>
       </div>
@@ -1093,7 +1093,7 @@ function AdminForms() {
             View and manage all forms and submissions
           </p>
         </div>
-        <button className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors font-medium text-sm">
+        <button className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium text-sm">
           Create Form
         </button>
       </div>
@@ -1259,7 +1259,7 @@ function SearchPeopleChainModal({
               onClick={() => setMode('registry')}
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 mode === 'registry'
-                  ? 'bg-accent-soft text-accent border border-accent/20'
+                  ? 'bg-[rgba(255,40,103,0.08)] text-[#ff2867] border border-[#ff2867]/20'
                   : 'bg-[#fafaf9] text-[#78716c] border border-[#e7e5e4] hover:bg-white'
               }`}
             >
@@ -1269,7 +1269,7 @@ function SearchPeopleChainModal({
               onClick={() => setMode('address')}
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 mode === 'address'
-                  ? 'bg-accent-soft text-accent border border-accent/20'
+                  ? 'bg-[rgba(255,40,103,0.08)] text-[#ff2867] border border-[#ff2867]/20'
                   : 'bg-[#fafaf9] text-[#78716c] border border-[#e7e5e4] hover:bg-white'
               }`}
             >
@@ -1293,7 +1293,7 @@ function SearchPeopleChainModal({
                     value={registryQuery}
                     onChange={(e) => setRegistryQuery(e.target.value)}
                     placeholder="Search verified identities..."
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
                   />
                 </div>
                 <p className="text-xs text-[#78716c] mt-1">
@@ -1316,7 +1316,7 @@ function SearchPeopleChainModal({
                     {registryResults.map((result: any) => (
                       <div
                         key={result.address}
-                        className="p-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-lg hover:border-accent/20 transition-colors"
+                        className="p-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-lg hover:border-[#ff2867]/20 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -1346,7 +1346,7 @@ function SearchPeopleChainModal({
                           <button
                             onClick={() => handleRegistryAdd(result.address)}
                             disabled={searching}
-                            className="px-3 py-1.5 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-xs font-medium disabled:opacity-50 whitespace-nowrap"
+                            className="px-3 py-1.5 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-xs font-medium disabled:opacity-50 whitespace-nowrap"
                           >
                             {searching ? 'Adding...' : 'Add'}
                           </button>
@@ -1387,7 +1387,7 @@ function SearchPeopleChainModal({
                   setSearched(false)
                 }}
                 placeholder="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-                className="flex-1 px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                className="flex-1 px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] font-mono focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
               />
               <button
                 onClick={handleSearch}
@@ -1474,7 +1474,7 @@ function SearchPeopleChainModal({
             <button
               onClick={handleAdd}
               disabled={searching || !identity || !searched}
-              className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {searching ? 'Adding...' : 'Add User'}
             </button>
@@ -1532,7 +1532,7 @@ function AddUserByAddressModal({ onAdd, onClose }: { onAdd: (address: string, na
                 setError('')
               }}
               placeholder="0x..."
-              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] font-mono focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
             />
             <p className="text-xs text-[#78716c] mt-1">
               Enter the EVM address (0x... format, 42 characters)
@@ -1552,7 +1552,7 @@ function AddUserByAddressModal({ onAdd, onClose }: { onAdd: (address: string, na
                 setError('')
               }}
               placeholder="e.g., AphexTwin94"
-              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+              className="w-full px-3 py-2 bg-white border border-[#e7e5e4] rounded-lg text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867]"
             />
             <p className="text-xs text-[#78716c] mt-1">
               A friendly name to identify this user
@@ -1584,7 +1584,7 @@ function AddUserByAddressModal({ onAdd, onClose }: { onAdd: (address: string, na
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-grey-900 text-white rounded-lg hover:bg-grey-800 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-sm font-medium"
           >
             Add User
           </button>

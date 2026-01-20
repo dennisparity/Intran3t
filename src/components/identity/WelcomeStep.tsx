@@ -11,8 +11,8 @@ export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-          <Shield className="w-8 h-8 text-accent" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(255,40,103,0.1)] mb-4">
+          <Shield className="w-8 h-8 text-[#ff2867]" />
         </div>
         <h2 className="text-2xl font-bold text-[#1c1917] mb-2 font-serif">
           Set Up Your Identity
