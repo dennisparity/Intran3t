@@ -44,8 +44,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
     // Matrix is required
     if (!formData.matrix || formData.matrix.trim() === '') {
       newErrors.matrix = 'Matrix handle is required'
-    } else if (formData.matrix.length > 32) {
-      newErrors.matrix = 'Matrix must be 32 characters or less'
+    } else if (formData.matrix.length > 100) {
+      newErrors.matrix = 'Matrix must be 100 characters or less'
     }
 
     // Optional field validations
@@ -107,7 +107,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
         <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
         <div className="text-xs text-blue-900">
-          <strong>Character limit:</strong> Each field has a 32 character maximum.
+          <strong>Character limits:</strong> Most fields have a 32 character maximum. Matrix handles can be up to 100 characters.
           You have filled {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}.
         </div>
       </div>
@@ -207,7 +207,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             value={formData.matrix}
             onChange={(e) => handleChange('matrix', e.target.value)}
             placeholder="@john:matrix.org"
-            maxLength={32}
+            maxLength={100}
             className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
               errors.matrix ? 'border-red-500' : 'border-[#e7e5e4]'
             }`}
