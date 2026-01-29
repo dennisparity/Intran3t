@@ -10,7 +10,6 @@ import {
   DialogDescription,
 } from './ui/Dialog'
 import Identicon from '@polkadot/react-identicon'
-import { web3Enable, web3Accounts } from '@polkadot/extension-dapp'
 
 type View = 'wallets' | 'accounts'
 
@@ -32,41 +31,28 @@ export default function ConnectWallet() {
     try {
       console.log('Attempting to connect wallet:', walletId)
 
-      // Request permission from extension first (triggers popup)
-      console.log('Requesting wallet permission...')
-      const extensions = await web3Enable('Intran3t')
-      console.log('Extensions enabled:', extensions.length)
-
-      if (extensions.length === 0) {
-        throw new Error('No wallet extension found. Please install Polkadot.js, Talisman, or SubWallet.')
-      }
-
-      // Fetch accounts to verify permission was granted
-      const allAccounts = await web3Accounts()
-      console.log('All accounts from web3Accounts:', allAccounts)
-
-      const walletAccounts = allAccounts.filter(a => a.meta.source === walletId)
-      console.log(`Accounts for ${walletId}:`, walletAccounts)
-
-      if (walletAccounts.length === 0) {
-        throw new Error(
-          `No accounts found for ${walletId}.\n\n` +
-          `Please open the ${walletId === 'polkadot-js' ? 'Polkadot.js' : walletId} extension and:\n` +
-          `1. Click the settings (⚙️) icon\n` +
-          `2. Go to "Manage Website Access"\n` +
-          `3. Authorize "localhost:5173" or click the checkmark to allow access\n` +
-          `4. Refresh this page and try again`
-        )
-      }
-
-      // Now connect with Typink
+      // Connect with Typink - this will trigger only the selected wallet extension
       await connectWallet(walletId)
       console.log('Wallet connected successfully:', walletId)
+
       setView('accounts')
     } catch (error) {
       console.error('Failed to connect wallet:', error)
-      // Show error to user
-      alert(`Failed to connect wallet: ${error instanceof Error ? error.message : 'Unknown error'}`)
+
+      // Provide helpful error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const walletName = walletId === 'polkadot-js' ? 'Polkadot.js' :
+                        walletId === 'subwallet-js' ? 'SubWallet' :
+                        walletId.charAt(0).toUpperCase() + walletId.slice(1)
+
+      alert(
+        `Failed to connect ${walletName}:\n\n${errorMessage}\n\n` +
+        `If the wallet didn't open, please:\n` +
+        `1. Open the ${walletName} extension\n` +
+        `2. Check "Manage Website Access" settings\n` +
+        `3. Authorize this site\n` +
+        `4. Try connecting again`
+      )
     }
   }
 
