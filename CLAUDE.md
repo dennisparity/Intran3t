@@ -1,9 +1,35 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-01-20
+> Last updated: 2026-02-05
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-05 - Landing Page Redesign
+- **UI**: Redesigned `src/pages/Landing.tsx` to match the polkadot-payroll landing layout
+- **Header**: Stacked logo layout (Polkadot icon + name + "from Polkadot"), added `border-b`
+- **Hero**: Tagline heading ("Your workplace, on Polkadot."), dual CTA buttons ("Get Started →" + outlined "Learn More"), scroll indicator with animated chevron
+- **Features**: Added "Why Intran3t?" section — 3-column grid (Plugin Architecture, Identity-First, On-Chain Storage) with Polkadot icon tiles and staggered scroll-in animations
+- **CTA + Footer**: Added bottom CTA section and proper bordered footer
+- **Imports**: Added `ArrowRight`, `ChevronDown` from `lucide-react`
+
+### 2026-01-28 - dForms Statement Store Integration
+- **Feature**: Wallet-less form submissions with auto-generated wallets
+- **Feature**: On-chain form storage using Polkadot statement store
+- **File**: `src/lib/wallet.ts` - BIP39 wallet generation and derivation (from web3-meet)
+- **File**: `src/lib/storage.ts` - Browser cookie wallet storage (from web3-meet)
+- **File**: `src/lib/ss-webrtc/StatementStore.ts` - Statement store blockchain client (from web3-meet)
+- **File**: `src/lib/ss-webrtc/types.ts` - Form channel type definitions (adapted from web3-meet)
+- **File**: `src/lib/forms-statement-store.ts` - Forms-specific statement store service
+- **File**: `src/modules/forms/PublicForm.tsx` - Auto-wallet creation and statement store submission
+- **File**: `src/modules/forms/FormsWidget.tsx` - Statement store form publishing
+- **File**: `package.json` - Added @polkadot-api/* and wallet dependencies
+- **File**: `.env` - Added `VITE_SUBSTRATE_ENDPOINT=wss://pop-testnet.parity-lab.parity.io:443/9910`
+- **File**: `.env.example` - Added statement store configuration section
+- **File**: `DFORMS_STATEMENT_STORE_UPDATE.md` - Complete documentation of changes
+- **Privacy**: 2-week auto-delete for responses (ephemeral storage)
+- **UX**: Info banner: "Your wallet will be created automatically and stored securely in your browser"
+- **Source**: Based on web3-meet repository (https://github.com/Nemanya8/web3-meet)
 
 ### 2026-01-20 - Polkadot Hub TestNet Migration & UI Improvements
 - **Migration**: Moved from deprecated Paseo testnet to new Polkadot Hub TestNet
