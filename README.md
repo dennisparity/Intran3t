@@ -2,7 +2,7 @@
 
 > **Product Owner:** Dennis Schiessl, Parity Technologies
 > **Target Distribution:** Polkadot Triad (Polkadot.com, Mobile App, Desktop)
-> **Last Updated:** December 18, 2025
+> **Last Updated:** February 6, 2026
 
 ---
 
@@ -25,11 +25,15 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
   - Integration with Polkadot wallets (Talisman, SubWallet) for EVM operations
   - **User Management**
   - <img width="1167" height="451" alt="Screenshot 2026-01-12 at 09 45 15" src="https://github.com/user-attachments/assets/3dd2273f-d364-4976-a519-48c524cb84ec" />
-- **Access Passes:** Mint, manage, and verify location-based access passes as (WIP if NFTs, or smart contracts)
+- **Access Passes:** Mint, manage, and verify location-based access passes as ERC-721 NFTs via smart contracts
 - **Forms:** Create privacy-preserving forms with public submission links (no wallet required for respondents)
 - **Modular Dashboard:** Extensible widget-based interface for customization
 - **Parity DAO Governance:** Participate in on-chain governance for Parity specific refs
-- **Multi-Wallet Support:** Connect with Polkadot.js, Talisman, SubWallet, and more
+- **Smart Dual-Wallet Support:** Intelligent wallet management with account mapping
+  - Connect with Substrate wallets (Talisman, SubWallet) or MetaMask, or both simultaneously
+  - On-chain account mapping via `pallet_revive` enables Substrate wallets to sign EVM transactions
+  - Automatic address resolution (mapped EVM > MetaMask > linked > derived)
+  - Single-wallet UX: authenticate with Substrate wallet (on-chain identity) while signing smart contracts
 
 ### Status
 - **Phase:** MVP
@@ -51,10 +55,11 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 
 ### Polkadot Integration
 - **Target Chains:**
-  - Paseo Polkadot Hub (testnet) - RBAC smart contracts, NFT minting and transactions
-  - Polkadot Hub (mainnet) - Production RBAC deployment
+  - Polkadot Hub TestNet - RBAC smart contracts, AccessPass NFT minting, account mapping
+  - Polkadot Hub (mainnet) - Production RBAC deployment target
   - Polkadot People Chain (mainnet) - Identity verification
-- **Wallet Connection:** Typink (browser extensions) + EVM provider for smart contracts
+- **Wallet Connection:** Typink (Substrate extensions) + MetaMask (EVM) with smart dual-wallet support
+- **Account Mapping:** `pallet_revive.map_account()` enables Substrate wallets to sign EVM transactions
 - **Authentication:** Wallet-based (permissionless) + on-chain credentials (RBAC)
 
 ### Storage Strategy
@@ -73,6 +78,7 @@ Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions 
 - **Identicons:** @polkadot/react-identicon
 - **Data Fetching:** TanStack React Query 5.90
 - **Styling:** class-variance-authority, clsx, tailwind-merge
+- **Account Mapping:** @polkadot/api, @polkadot/util-crypto (for Substrate → EVM address derivation)
 
 ---
 
@@ -83,22 +89,28 @@ Intran3t/
 ├── contracts/                     # Smart contracts
 │   ├── solidity/                  # Solidity implementation
 │   │   ├── contracts/
-│   │   │   └── Intran3tRBAC.sol  # RBAC smart contract
-│   │   ├── scripts/               # Deployment and verification scripts
+│   │   │   ├── Intran3tRBAC.sol      # RBAC smart contract
+│   │   │   └── Intran3tAccessPass.sol # AccessPass NFT contract
+│   │   ├── scripts/               # Deployment and CLI scripts
+│   │   │   ├── check-mapping.js   # Verify account mapping status
+│   │   │   ├── grant-admin.js     # Grant admin roles
+│   │   │   └── [other scripts]    # Org management, minting, etc.
 │   │   ├── test/                  # Contract test suite
-│   │   └── hardhat.config.js      # Hardhat configuration
+│   │   └── hardhat.config.ts      # Hardhat configuration
 │   └── README.md                  # Contract documentation
 ├── src/
 │   ├── components/
 │   │   ├── ui/                    # Radix UI components
 │   │   ├── ConnectWallet.tsx      # Wallet connection UI
+│   │   ├── MapAccountModal.tsx    # Account mapping UI flow
 │   │   ├── AccountManager.tsx     # Account switching
 │   │   ├── LockedModule.tsx       # Access control UI
 │   │   ├── SettingsMenu.tsx       # Settings dropdown
 │   │   ├── UserProfileModal.tsx   # User profile display
 │   │   └── account-info.dedot.tsx # Identity display component
 │   ├── contracts/                 # Smart contract integration
-│   │   └── intran3t-rbac.ts       # ABI, types, and contract address
+│   │   ├── intran3t-rbac.ts       # RBAC ABI, types, and contract address
+│   │   └── intran3t-accesspass.ts # AccessPass ABI, types, and contract address
 │   ├── providers/                 # React contexts
 │   │   └── EVMProvider.tsx        # EVM wallet connection for smart contracts
 │   ├── modules/                   # Feature modules
@@ -106,9 +118,9 @@ Intran3t/
 │   │   │   ├── ProfileWidget.tsx  # Displays RBAC role badges
 │   │   │   ├── identity-helpers.ts # Direct People Chain connection
 │   │   │   └── use-identity.ts    # Identity React hook
-│   │   ├── acc3ss/                # NFT access control
-│   │   │   ├── Acc3ssWidget.tsx
-│   │   │   └── nft-helpers.ts     # Polkadot Hub NFT operations
+│   │   ├── acc3ss/                # NFT access control with smart dual-wallet
+│   │   │   ├── Acc3ssWidget.tsx   # Smart wallet detection & account mapping
+│   │   │   └── nft-helpers.ts     # AccessPass NFT operations
 │   │   ├── governance/            # Governance participation
 │   │   │   └── GovernanceWidget.tsx
 │   │   ├── forms/                 # Forms builder
@@ -122,7 +134,9 @@ Intran3t/
 │   ├── hooks/                     # Custom React hooks
 │   │   ├── use-identity-of.dedot.ts
 │   │   ├── use-asset-balance.dedot.ts
-│   │   ├── useRBACContract.ts     # Smart contract interaction
+│   │   ├── useRBACContract.ts     # RBAC smart contract interaction
+│   │   ├── useAccessPassContract.ts # AccessPass NFT contract interaction
+│   │   ├── useAccountMapping.ts   # Account mapping check & trigger
 │   │   ├── useAccessControl.ts    # Permission checking
 │   │   └── useUserSearch.ts       # User search functionality
 │   ├── lib/                       # Core utilities
