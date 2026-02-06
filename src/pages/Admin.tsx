@@ -194,11 +194,19 @@ function AdminRBAC() {
   const [orgId, setOrgId] = useState<string | null>(null)
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false)
 
-  // Check if user has an organization (for demo, using localStorage)
+  // Check if user has an organization (localStorage or env default)
   useEffect(() => {
     const savedOrgId = localStorage.getItem('intran3t_org_id')
     if (savedOrgId) {
       setOrgId(savedOrgId)
+    } else {
+      // Check for default org ID from environment
+      const defaultOrgId = import.meta.env.VITE_DEFAULT_ORG_ID
+      if (defaultOrgId) {
+        console.log('📋 Using default org ID from environment:', defaultOrgId)
+        setOrgId(defaultOrgId)
+        localStorage.setItem('intran3t_org_id', defaultOrgId)
+      }
     }
   }, [])
 
@@ -231,10 +239,10 @@ function AdminRBAC() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-blue-900 mb-2">
-                Enable EVM Mode
+                Connect Wallet to Manage Roles
               </h3>
               <p className="text-sm text-blue-700 mb-4">
-                RBAC management requires your Polkadot wallet's EVM capability to interact with the smart contract on Polkadot Hub EVM. Supported wallets: Polkadot.js Extension, Talisman, SubWallet, Nova Wallet.
+                Connect your wallet to issue credentials and manage team roles. Supported wallets: MetaMask, Talisman (Ethereum mode), or SubWallet.
               </p>
               {evmError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -246,7 +254,7 @@ function AdminRBAC() {
                 disabled={connecting}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {connecting ? 'Connecting...' : 'Enable EVM Mode'}
+                {connecting ? 'Connecting...' : 'Connect Wallet'}
               </button>
             </div>
           </div>
@@ -480,7 +488,7 @@ function AdminUsers() {
   const rbac = useRBACContract(provider, signer)
 
   // Get orgId from localStorage
-  const orgId = localStorage.getItem('intran3t_org_id')
+  const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
 
   // Track if we've already linked the EVM address
   const linkedRef = useRef<string | null>(null)
@@ -875,7 +883,7 @@ function EditUserModal({ userAddress, onClose }: { userAddress: string; onClose:
   const [expirationDays, setExpirationDays] = useState(0)
 
   // Get orgId from localStorage
-  const orgId = localStorage.getItem('intran3t_org_id')
+  const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {

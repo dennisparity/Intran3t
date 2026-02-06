@@ -36,13 +36,13 @@ function NavigationLinkItem({ link, showIcons }: { link: NavigationLink; showIco
       title={link.description}
     >
       {showIcons && Icon && (
-        <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#ff2867] transition-colors" />
+        <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#1c1917] transition-colors" />
       )}
-      <span className="text-sm text-[#1c1917] group-hover:text-[#ff2867] transition-colors flex-1">
+      <span className="text-sm text-[#1c1917] group-hover:text-[#1c1917] transition-colors flex-1">
         {link.label}
       </span>
       {isExternal && (
-        <ExternalLink className="w-3 h-3 text-[#a8a29e] group-hover:text-[#ff2867] transition-colors" />
+        <ExternalLink className="w-3 h-3 text-[#a8a29e] group-hover:text-[#1c1917] transition-colors" />
       )}
     </a>
   )

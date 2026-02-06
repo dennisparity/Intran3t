@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find EVM Address - Intran3t</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1c1917;
+    }
+    p {
+      color: #78716c;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .info-box {
+      background: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .info-box h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1917;
+      margin-bottom: 8px;
+    }
+    .info-box p {
+      font-size: 13px;
+      color: #78716c;
+      margin-bottom: 8px;
+    }
+    .address {
+      background: white;
+      border: 2px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      word-break: break-all;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      color: #1c1917;
+      display: none;
+    }
+    .address.visible {
+      display: block;
+    }
+    .address strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #78716c;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .button {
+      background: #ff2867;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .button:hover {
+      background: #e6007a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 40, 103, 0.3);
+    }
+    .button:disabled {
+      background: #d6d3d1;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button.secondary {
+      background: #1c1917;
+    }
+    .button.secondary:hover {
+      background: #292524;
+    }
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px;
+      color: #dc2626;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error.visible {
+      display: block;
+    }
+    .success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 12px;
+      color: #16a34a;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .success.visible {
+      display: block;
+    }
+    .steps {
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid #e7e5e4;
+    }
+    .steps h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1c1917;
+      margin-bottom: 16px;
+    }
+    .steps ol {
+      padding-left: 24px;
+      color: #57534e;
+      line-height: 1.8;
+    }
+    .steps ol li {
+      margin-bottom: 8px;
+    }
+    .steps code {
+      background: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      color: #ff2867;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔑 Find Your EVM Address</h1>
+    <p>This tool helps you discover your EVM address from your Polkadot wallet (Talisman, SubWallet, etc.)</p>
+
+    <div class="info-box">
+      <h3>Why do I need this?</h3>
+      <p><strong>Substrate Address:</strong> Used for identity verification (People Chain)</p>
+      <p><strong>EVM Address:</strong> Used for smart contract interaction (AccessPass, RBAC)</p>
+    </div>
+
+    <div id="error" class="error"></div>
+    <div id="success" class="success"></div>
+
+    <div id="substrate-address" class="address">
+      <strong>Your Substrate Address (Identity):</strong>
+      <span id="substrate-value"></span>
+    </div>
+
+    <div id="evm-address" class="address">
+      <strong>Your EVM Address (Smart Contracts):</strong>
+      <span id="evm-value"></span>
+    </div>
+
+    <button id="connect-btn" class="button">
+      Connect Wallet
+    </button>
+
+    <button id="copy-btn" class="button secondary" style="display: none;">
+      Copy EVM Address
+    </button>
+
+    <div class="steps">
+      <h3>Next Steps:</h3>
+      <ol>
+        <li>Click "Connect Wallet" above to discover your addresses</li>
+        <li>Copy your EVM address</li>
+        <li>Grant MINTER_ROLE to your EVM address:
+          <br><code>npx hardhat run scripts/grant-minter-role.js --network polkadotHubTestnet YOUR_EVM_ADDRESS</code>
+        </li>
+        <li>Refresh Intran3t app - you should now be able to mint access passes!</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const connectBtn = document.getElementById('connect-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const errorDiv = document.getElementById('error');
+    const successDiv = document.getElementById('success');
+    const substrateDiv = document.getElementById('substrate-address');
+    const evmDiv = document.getElementById('evm-address');
+    const substrateValue = document.getElementById('substrate-value');
+    const evmValue = document.getElementById('evm-value');
+
+    async function connectWallet() {
+      errorDiv.classList.remove('visible');
+      successDiv.classList.remove('visible');
+      connectBtn.disabled = true;
+      connectBtn.textContent = 'Connecting...';
+
+      try {
+        // Get EVM address
+        const ethereum = window.ethereum;
+        if (!ethereum) {
+          throw new Error('No Polkadot wallet with EVM support found. Please install Talisman or SubWallet.');
+        }
+
+        console.log('🔌 Requesting EVM accounts...');
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error('No EVM accounts found. Make sure Ethereum is enabled in your wallet settings.');
+        }
+
+        const evmAddress = accounts[0];
+        console.log('✅ EVM Address:', evmAddress);
+
+        // Show EVM address
+        evmValue.textContent = evmAddress;
+        evmDiv.classList.add('visible');
+
+        // Try to get Substrate address (if available)
+        try {
+          const injectedWeb3 = window.injectedWeb3;
+          if (injectedWeb3 && injectedWeb3.talisman) {
+            const extension = await injectedWeb3.talisman.enable('Intran3t');
+            const accounts = await extension.accounts.get();
+            if (accounts && accounts.length > 0) {
+              const substrateAddress = accounts[0].address;
+              console.log('✅ Substrate Address:', substrateAddress);
+              substrateValue.textContent = substrateAddress;
+              substrateDiv.classList.add('visible');
+            }
+          }
+        } catch (e) {
+          console.log('Could not get Substrate address:', e);
+        }
+
+        // Show success
+        successDiv.textContent = '✅ Wallet connected! Your EVM address is shown above.';
+        successDiv.classList.add('visible');
+        copyBtn.style.display = 'block';
+        connectBtn.textContent = 'Connected ✓';
+      } catch (error) {
+        console.error('Connection error:', error);
+        errorDiv.textContent = '❌ ' + error.message;
+        errorDiv.classList.add('visible');
+        connectBtn.disabled = false;
+        connectBtn.textContent = 'Connect Wallet';
+      }
+    }
+
+    async function copyAddress() {
+      const address = evmValue.textContent;
+      try {
+        await navigator.clipboard.writeText(address);
+        copyBtn.textContent = 'Copied! ✓';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy EVM Address';
+        }, 2000);
+      } catch (error) {
+        alert('Failed to copy. Please copy manually: ' + address);
+      }
+    }
+
+    connectBtn.addEventListener('click', connectWallet);
+    copyBtn.addEventListener('click', copyAddress);
+  </script>
+</body>
+</html>

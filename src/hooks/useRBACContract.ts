@@ -238,25 +238,44 @@ export function useRBACContract(provider: Provider | null, signer: Signer | null
 
     try {
       setLoading(true);
+      console.log('📝 Creating organization:', name);
       const tx = await contract.createOrganization(name);
+      console.log('📤 Transaction sent:', tx.hash);
+
       const receipt = await tx.wait();
+      console.log('✅ Transaction confirmed:', receipt.hash);
+      console.log('📋 Logs count:', receipt.logs?.length || 0);
 
       // Extract orgId from OrganizationCreated event
-      const event = receipt.logs.find((log: any) => {
-        try {
-          const parsed = contract.interface.parseLog(log);
-          return parsed?.name === 'OrganizationCreated';
-        } catch {
-          return false;
-        }
-      });
+      let orgId: string | null = null;
 
-      if (event) {
-        const parsed = contract.interface.parseLog(event);
-        return parsed?.args[0]; // orgId
+      for (const log of receipt.logs || []) {
+        try {
+          console.log('🔍 Parsing log:', log.address, log.topics?.[0]?.slice(0, 10));
+          const parsed = contract.interface.parseLog(log);
+          console.log('   Parsed event:', parsed?.name);
+
+          if (parsed?.name === 'OrganizationCreated') {
+            orgId = parsed.args[0];
+            console.log('✅ Found orgId:', orgId);
+            break;
+          }
+        } catch (e) {
+          // Skip logs that aren't from our contract
+        }
       }
 
-      throw new Error('Organization created but ID not found in events');
+      if (orgId) {
+        return orgId;
+      }
+
+      // Fallback: Try to get org ID from transaction hash
+      // The org was likely created, we just couldn't parse the event
+      console.warn('⚠️ Could not parse OrganizationCreated event from logs');
+      console.log('📋 Receipt:', JSON.stringify(receipt, null, 2));
+      console.log('🔗 Check transaction: https://polkadot.testnet.routescan.io/tx/' + receipt.hash);
+
+      throw new Error(`Organization may have been created. Check tx: ${receipt.hash}`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to create organization';
       setError(errorMsg);

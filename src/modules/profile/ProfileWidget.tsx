@@ -20,62 +20,92 @@ function formatBalance(value: bigint | undefined, decimals: number = 10): string
 
 interface ProfileWidgetProps {
   config: ProfileConfig
-  profileAddress?: string  // Address to display (defaults to connected account)
+  profileAddress?: string  // Substrate address to display (defaults to connected account)
+  profileEvmAddress?: string  // EVM address for role lookup (optional)
   isOwnProfile?: boolean   // Whether viewing own profile (defaults to true)
+}
+
+// Helper to check if address is EVM format (0x + 40 hex chars)
+function isEvmAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/i.test(address)
 }
 
 export function ProfileWidget({
   config,
   profileAddress,
+  profileEvmAddress,
   isOwnProfile = true
 }: ProfileWidgetProps) {
   const { connectedAccount, connectedNetworks } = useTypink()
   const { account: evmAccount, provider, signer } = useEVM()
   const [userRole, setUserRole] = useState<string | null>(null)
 
-  // Use profileAddress if provided, otherwise fall back to connectedAccount
-  const displayAddress = profileAddress || connectedAccount?.address
+  // Use profileAddress if provided, fall back to connectedAccount, then MetaMask
+  const displayAddress = profileAddress || connectedAccount?.address || evmAccount
 
-  // Get balance
+  // Determine which EVM address to use for role lookup
+  // Priority: profileEvmAddress prop > profileAddress if EVM format > evmAccount for own profile
+  const roleQueryAddress = profileEvmAddress
+    || (profileAddress && isEvmAddress(profileAddress) ? profileAddress : null)
+    || (isOwnProfile ? evmAccount : null)
+
+  // Check if the display address is EVM format (skip Substrate queries if so)
+  const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
+
+  // Get balance (only for Substrate addresses)
   const network = connectedNetworks?.[0];
-  const balance = useBalance(displayAddress || '', {
-    networkId: network?.id,
-  });
+  const balance = useBalance(
+    (!isEvm && displayAddress) ? displayAddress : '',
+    {
+      networkId: network?.id,
+      enabled: !isEvm && !!displayAddress
+    }
+  );
 
-  // Fetch on-chain identity from Polkadot People Chain
+  // Fetch on-chain identity from Polkadot People Chain (only for Substrate addresses)
   const { data: identity, isLoading: identityLoading } = useIdentity(
-    displayAddress
+    (!isEvm && displayAddress) ? displayAddress : undefined
   )
 
   // RBAC contract hook
   const rbac = useRBACContract(provider, signer)
 
-  // Get orgId from localStorage
-  const orgId = localStorage.getItem('intran3t_org_id')
+  // Get orgId from localStorage or environment default
+  const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
 
   // Fetch user's role from contract
   useEffect(() => {
-    if (!orgId || !rbac.contract || !evmAccount) {
+    if (!orgId || !rbac.contract || !roleQueryAddress) {
       setUserRole(null)
       return
     }
 
+    let isMounted = true
+
     const fetchRole = async () => {
       try {
-        const { role, hasRole } = await rbac.getUserRole(orgId, evmAccount)
-        if (hasRole) {
-          setUserRole(roleToString(role))
-        } else {
-          setUserRole(null)
+        const { role, hasRole } = await rbac.getUserRole(orgId, roleQueryAddress)
+        if (isMounted) {
+          if (hasRole) {
+            setUserRole(roleToString(role))
+          } else {
+            setUserRole(null)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch user role:', error)
-        setUserRole(null)
+        if (isMounted) {
+          setUserRole(null)
+        }
       }
     }
 
     fetchRole()
-  }, [orgId, rbac, evmAccount])
+
+    return () => {
+      isMounted = false
+    }
+  }, [orgId, rbac.contract, roleQueryAddress])
 
   // Build profile from real data only - no mock data for connected users
   const profile = displayAddress
@@ -114,11 +144,11 @@ export function ProfileWidget({
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-[rgba(255,40,103,0.08)] rounded-full flex items-center justify-center">
-                    <User className="w-7 h-7 text-[#ff2867]" />
+                  <div className="w-14 h-14 bg-[#f5f5f4] rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-[#78716c]" />
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#ff2867] rounded-full flex items-center justify-center border-2 border-white">
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#1c1917] rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
@@ -223,7 +253,7 @@ export function ProfileWidget({
                       {userRole && (
                         <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
                           userRole === 'Admin'
-                            ? 'bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867]'
+                            ? 'bg-[#f5f5f4] border border-[#e7e5e4] text-[#1c1917]'
                             : userRole === 'People/Culture'
                             ? 'bg-purple-50 border border-purple-200 text-purple-700'
                             : userRole === 'Member'
@@ -261,7 +291,7 @@ export function ProfileWidget({
             </div>
           </div>
         </div>
-      ) : connectedAccount ? (
+      ) : (connectedAccount || evmAccount) ? (
         <>
           {/* Compact Profile Header - Avatar + Info - Centered */}
           <div className="flex justify-center mb-3">
@@ -276,11 +306,11 @@ export function ProfileWidget({
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-[rgba(255,40,103,0.08)] rounded-full flex items-center justify-center">
-                    <User className="w-7 h-7 text-[#ff2867]" />
+                  <div className="w-14 h-14 bg-[#f5f5f4] rounded-full flex items-center justify-center">
+                    <User className="w-7 h-7 text-[#78716c]" />
                   </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#ff2867] rounded-full flex items-center justify-center border-2 border-white">
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#1c1917] rounded-full flex items-center justify-center border-2 border-white">
                   <User className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
@@ -313,10 +343,10 @@ export function ProfileWidget({
       )}
 
       {/* Balance */}
-      {connectedAccount && (
+      {(connectedAccount || evmAccount) && (
         <div className="mb-3">
           {balance?.free ? (
-            <p className="text-lg font-semibold text-[#ff2867] text-center">
+            <p className="text-lg font-semibold text-[#1c1917] text-center">
               {formatBalance(balance.free)} PAS
             </p>
           ) : (
@@ -340,7 +370,7 @@ export function ProfileWidget({
           {profile.tags.map((tag, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-[rgba(255,40,103,0.08)] border border-[#ff2867]/20 text-[#ff2867] text-xs font-medium rounded-full"
+              className="px-3 py-1 bg-[#f5f5f4] border border-[#e7e5e4] text-[#1c1917] text-xs font-medium rounded-full"
             >
               {tag}
             </span>

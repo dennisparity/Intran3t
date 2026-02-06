@@ -40,8 +40,15 @@ export const defaultAcc3ssConfig: Acc3ssConfig = {
   description: 'Generate NFT access passes for Parity locations',
   locations: LOCATIONS,
   passValidityHours: 24, // 24 hour validity
-  generateNFT: true, // Mint NFT on Paseo Polkadot Hub
-  nftCollectionId: 1000, // TODO: Replace with actual collection ID after creation
+  generateNFT: true, // Mint NFT on Polkadot Hub TestNet
+  nftCollectionId: undefined, // TODO: Replace with actual collection ID after creation
+  adminAddresses: [
+    // Substrate addresses (old NFT pallet approach - deprecated)
+    '167jTxA5TBuSXVCiJcCoLSHe5Nekp4uMTzHDRXjPxSNV2SJS',
+    '5HBSKcu1bQdy5xCCLy9oCHTVDkf77mMDPVYjGEk3QMLxr4kR',
+    // EVM addresses (smart contract approach - current)
+    '0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62', // Dennis - EVM deployer
+  ],
   useRealData: false
 }
 

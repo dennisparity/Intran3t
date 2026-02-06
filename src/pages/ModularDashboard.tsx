@@ -9,18 +9,36 @@ import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigati
 import { HelpCenterWidget, defaultHelpCenterConfig } from '../modules/help-center'
 import { ProfileWidget, defaultProfileConfig } from '../modules/profile'
 import { FormsWidget, defaultFormsConfig } from '../modules/forms'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useUserSearch } from '../hooks/useUserSearch'
 import { UserSearchResults } from '../components/UserSearchResults'
 import { useAccessControl } from '../hooks/useAccessControl'
 import { LockedModule } from '../components/LockedModule'
 import { SettingsMenu } from '../components/SettingsMenu'
+import { useDiscoveredUsers } from '../hooks/useDiscoveredUsers'
+import ConnectWallet from '../components/ConnectWallet'
+import PolkadotLogo from '../components/PolkadotLogo'
+import { useEVM } from '../providers/EVMProvider'
 
 export default function ModularDashboard() {
   const { connectedAccount } = useTypink()
+  const evm = useEVM()
   const navigate = useNavigate()
   const { address: profileAddress } = useParams<{ address?: string }>()
   const isViewingOtherProfile = !!profileAddress
+  const { discoveredUsers } = useDiscoveredUsers()
+
+  // Look up the EVM address for the profile being viewed
+  const profileEvmAddress = useMemo(() => {
+    if (!profileAddress) return undefined
+    // If profileAddress is already EVM format, use it directly
+    if (/^0x[a-fA-F0-9]{40}$/i.test(profileAddress)) {
+      return profileAddress
+    }
+    // Otherwise look it up from discovered users
+    const user = discoveredUsers.find(u => u.substrateAddress === profileAddress)
+    return user?.evmAddress || undefined
+  }, [profileAddress, discoveredUsers])
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
@@ -30,7 +48,7 @@ export default function ModularDashboard() {
   const { data: searchResults = [], isLoading: isSearching } = useUserSearch(searchQuery)
 
   // Use access control hook
-  const accessControl = useAccessControl(connectedAccount?.address)
+  const accessControl = useAccessControl(connectedAccount?.address || evm.account || undefined)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,25 +101,23 @@ export default function ModularDashboard() {
     setShowOnboarding(shouldShow)
   }, [connectedAccount, accessControl.hasVerifiedIdentity, accessControl.isLoading, isViewingOtherProfile])
 
-  // Redirect to /start if not connected
-  if (!connectedAccount) {
-    navigate('/start')
-    return null
-  }
-
   return (
-    <div className="min-h-screen p-6 bg-[#fafaf9]">
+    <>
+    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!connectedAccount && !evm.connected ? 'blur-md pointer-events-none' : ''}`}>
       <div className="max-w-[1600px] mx-auto">
         {/* Top Bar with Branding, Search, and Settings */}
         <div className="flex items-center justify-between gap-6 mb-6">
           {/* Intran3t Branding */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-sm border border-[#e7e5e4] overflow-hidden">
-              <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-1.5" />
+            <PolkadotLogo className="w-8 h-8 text-[#1c1917]" />
+            <div>
+              <div className="font-serif text-lg text-[#1c1917]">
+                Intran<span className="text-[#a8a29e]">3</span>t
+              </div>
+              <div className="text-xs text-[#78716c] flex items-center gap-1">
+                from <PolkadotLogo className="w-3 h-3 text-[#1c1917]" /> Polkadot
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-[#1c1917] font-serif">
-              Intran<span className="text-[#ff2867]">3</span>t
-            </h1>
           </div>
 
           {/* Back to My Dashboard button (only shown when viewing another profile) */}
@@ -125,7 +141,7 @@ export default function ModularDashboard() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for team members..."
-                  className="w-full pl-12 pr-4 py-3 bg-white border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-[#e7e5e4] rounded-xl text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#1c1917]/20 focus:border-[#1c1917] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                 />
               </div>
             </form>
@@ -153,6 +169,7 @@ export default function ModularDashboard() {
               <ProfileWidget
                 config={defaultProfileConfig}
                 profileAddress={profileAddress}
+                profileEvmAddress={profileEvmAddress}
                 isOwnProfile={false}
               />
             </div>
@@ -168,14 +185,14 @@ export default function ModularDashboard() {
               {accessControl.canAccessQuickNav ? (
                 <QuickNavWidget config={defaultQuickNavConfig} />
               ) : (
-                <LockedModule moduleName="Quick Navigation" />
+                <LockedModule moduleName="Quick Navigation" compact />
               )}
 
               {/* Help Center - Requires verified identity */}
               {accessControl.canAccessHelpCenter ? (
                 <HelpCenterWidget config={defaultHelpCenterConfig} />
               ) : (
-                <LockedModule moduleName="Help Center" />
+                <LockedModule moduleName="Help Center" compact />
               )}
             </div>
 
@@ -217,6 +234,19 @@ export default function ModularDashboard() {
                     />
                   )}
                 </div>
+
+                {/* Add Plugin */}
+                <div className="col-span-12 xl:col-span-4 row-span-2">
+                  <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
+                    <div className="w-14 h-14 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
+                      <span className="text-2xl text-[#a8a29e] group-hover:text-[#1c1917] transition-colors leading-none">+</span>
+                    </div>
+                    <div className="text-center px-6">
+                      <p className="text-sm font-semibold text-[#1c1917] font-serif">Add Plugin</p>
+                      <p className="text-xs text-[#78716c] mt-0.5">Build custom functionality for your dashboard</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             </>
@@ -239,5 +269,21 @@ export default function ModularDashboard() {
         }}
       />
     </div>
+
+    {!connectedAccount && !evm.connected && (
+      <div className="fixed inset-0 bg-[#0f0f0f]/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl border border-[#e7e5e4] p-10 max-w-sm w-full mx-4 shadow-xl text-center">
+          <div className="w-14 h-14 bg-[#fafaf9] rounded-xl border border-[#e7e5e4] flex items-center justify-center mx-auto mb-5">
+            <PolkadotLogo className="w-8 h-8 text-[#1c1917]" />
+          </div>
+          <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Welcome back</h2>
+          <p className="text-sm text-[#78716c] mb-6">Connect your wallet to access the dashboard</p>
+          <div className="flex justify-center">
+            <ConnectWallet />
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

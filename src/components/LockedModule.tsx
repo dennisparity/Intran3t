@@ -3,9 +3,24 @@ import { Lock, CheckCircle2, ExternalLink } from 'lucide-react'
 interface LockedModuleProps {
   moduleName: string
   description?: string
+  compact?: boolean
 }
 
-export function LockedModule({ moduleName, description }: LockedModuleProps) {
+export function LockedModule({ moduleName, description, compact }: LockedModuleProps) {
+  if (compact) {
+    return (
+      <div className="bg-white border border-[#e7e5e4] rounded-2xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-[#fafaf9] border border-[#e7e5e4] flex items-center justify-center flex-shrink-0">
+          <Lock className="w-4 h-4 text-[#a8a29e]" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#1c1917] font-serif">{moduleName}</p>
+          <p className="text-xs text-[#78716c]">Verify identity to unlock</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white border border-[#e7e5e4] rounded-2xl p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04)] h-full flex items-center justify-center">
       <div className="text-center max-w-md">
@@ -31,19 +46,19 @@ export function LockedModule({ moduleName, description }: LockedModuleProps) {
           </h4>
           <div className="space-y-2 text-left">
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#a8a29e] flex-shrink-0 mt-0.5" />
               <p className="text-sm text-[#57534e]">
                 Set up your on-chain identity on Polkadot People Chain
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#a8a29e] flex-shrink-0 mt-0.5" />
               <p className="text-sm text-[#57534e]">
                 Get your identity verified by a registrar
               </p>
             </div>
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#a8a29e] flex-shrink-0 mt-0.5" />
               <p className="text-sm text-[#57534e]">
                 Return here to access all platform features
               </p>
@@ -56,7 +71,7 @@ export function LockedModule({ moduleName, description }: LockedModuleProps) {
           href="https://wiki.polkadot.network/docs/learn-identity"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm text-accent hover:text-accent-hover font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-[#1c1917] hover:text-[#78716c] font-medium transition-colors"
         >
           <span>Learn how to set up your identity</span>
           <ExternalLink className="w-4 h-4" />

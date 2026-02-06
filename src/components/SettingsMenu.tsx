@@ -2,15 +2,18 @@ import { useState, useRef, useEffect } from 'react'
 import { Settings, ShieldCheck, LogOut, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTypink } from 'typink'
+import { useEVM } from '../providers/EVMProvider'
 
 export function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { disconnect } = useTypink()
+  const evm = useEVM()
 
   const handleDisconnect = () => {
     disconnect()
+    evm.disconnect()
     setIsOpen(false)
     navigate('/')
   }
@@ -60,8 +63,8 @@ export function SettingsMenu() {
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#fafaf9] transition-colors group"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[rgba(255,40,103,0.08)] group-hover:bg-[#ff2867]/10 transition-colors">
-                  <ShieldCheck className="w-4 h-4 text-[#ff2867]" />
+                <div className="p-2 rounded-lg bg-[#f5f5f4] group-hover:bg-[#e7e5e4] transition-colors">
+                  <ShieldCheck className="w-4 h-4 text-[#1c1917]" />
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-[#1c1917]">Admin Panel</p>

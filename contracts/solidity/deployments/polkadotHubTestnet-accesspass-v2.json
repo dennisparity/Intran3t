@@ -1,0 +1,8 @@
+{
+  "network": "polkadotHubTestnet",
+  "address": "0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94",
+  "deployer": "0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62",
+  "timestamp": "2026-01-23T16:00:05.669Z",
+  "blockNumber": 4617101,
+  "version": "v2-self-minting"
+}

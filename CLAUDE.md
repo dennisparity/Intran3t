@@ -1,9 +1,30 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-05
+> Last updated: 2026-02-06
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-06 - Smart Dual-Wallet Architecture with Account Mapping
+- **Feature**: Substrate wallet account mapping via `pallet_revive.map_account()`
+- **Feature**: Smart dual-wallet support — works with Substrate-only, MetaMask-only, or both
+- **File**: `src/hooks/useAccountMapping.ts` — Hook to check/trigger on-chain account mapping
+- **File**: `src/components/MapAccountModal.tsx` — UI flow for mapping Substrate accounts to EVM addresses
+- **File**: `src/modules/acc3ss/Acc3ssWidget.tsx` — Integrated account mapping into access pass minting flow
+- **File**: `contracts/solidity/scripts/check-mapping.js` — CLI script to verify account mapping status
+- **File**: `.env` — Updated RPC URL to `https://eth-rpc-testnet.polkadot.io` (official endpoint)
+- **Dependencies**: Added `@polkadot/api` and `@polkadot/util-crypto` to contracts/solidity
+- **Documentation**: Added account mapping reference to polkadot-smart-contracts skill
+- **UX**: Three connection modes:
+  1. Substrate-only (mapped) → Single wallet UX with mapped EVM address
+  2. Substrate-only (not mapped) → "Map Account" prompt
+  3. MetaMask-only → Standard EVM flow
+  4. Both wallets (Substrate mapped) → Prefers mapped address
+  5. Both wallets (Substrate not mapped) → Uses MetaMask, shows optional mapping tip
+- **Priority**: `mapped EVM address > MetaMask > linked address > derived address`
+- **Benefits**: Users can authenticate with Substrate wallet (on-chain identity) while signing EVM transactions (smart contracts)
+
+### 2026-02-05 - Landing Page Redesign
 
 ### 2026-02-05 - Landing Page Redesign
 - **UI**: Redesigned `src/pages/Landing.tsx` to match the polkadot-payroll landing layout
@@ -59,6 +80,44 @@
 
 ## Key Files & Components
 
+### useAccountMapping Hook
+- **File**: `src/hooks/useAccountMapping.ts`
+- **Purpose**: Check and trigger on-chain account mapping for Substrate → EVM address
+- **Key functions**:
+  - Derives fallback EVM address via `keccak256(AccountId32)` → last 20 bytes
+  - Queries `pallet_revive.OriginalAccount(evmAddress)` to check mapping status
+  - `mapAccount()` - Triggers `pallet_revive.map_account()` transaction
+- **Returns**: `{ isMapped, evmAddress, isLoading, mapAccount }`
+- **Used by**: Acc3ssWidget (smart contract interactions)
+- **Notes**: Enables single-wallet UX (Substrate wallet signs EVM transactions after mapping)
+
+### MapAccountModal Component
+- **File**: `src/components/MapAccountModal.tsx`
+- **Purpose**: UI flow for mapping Substrate accounts to EVM addresses
+- **Flow**: Info → Signing → Success → Error (with retry)
+- **Props**: `{ evmAddress, onClose, onSuccess, onMap }`
+- **Features**:
+  - Shows derived EVM address to user
+  - Handles transaction signing via Typink
+  - Auto-closes on success with 2-second delay
+- **Used by**: Acc3ssWidget
+
+### Acc3ssWidget (Smart Contract Minting)
+- **File**: `src/modules/acc3ss/Acc3ssWidget.tsx`
+- **Purpose**: Mint ERC-721 access passes via AccessPass smart contract
+- **Smart Wallet Logic**:
+  - Detects connection mode (Substrate-only, MetaMask-only, or both)
+  - Address priority: `mapped EVM > MetaMask > linked > derived`
+  - Substrate-only + not mapped → Shows "Map Account" prompt
+  - Substrate-only + mapped → Single wallet UX (uses mapped address)
+  - MetaMask-only → Standard EVM flow
+  - Both wallets → Prefers mapped address if available, else uses MetaMask
+- **Features**:
+  - RBAC membership gate (Admin or Member required)
+  - VirtualDoor animation on successful mint
+  - QR code generation for access passes
+- **Dependencies**: `useAccountMapping`, `useRBACContract`, `useAccessPassContract`
+
 ### dotid-registry Service
 - **File**: `src/services/dotid-registry.ts`
 - **Purpose**: Fetch and search verified identities from People Chain via dotid.app API
@@ -101,17 +160,21 @@
 |----------|---------|---------|----------|
 | `VITE_NETWORK` | Network to use (testnet/mainnet) | `testnet` | Yes |
 | `VITE_RBAC_CONTRACT_ADDRESS` | RBAC smart contract address | `0xF1152B54404F7F4B646199072Fd3819D097c4F94` | Yes |
+| `VITE_ACCESSPASS_CONTRACT_ADDRESS` | AccessPass NFT contract address | `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` | Yes |
 | `VITE_ASSETHUB_EVM_CHAIN_ID` | Asset Hub EVM chain ID | `420420417` | Yes |
-| `VITE_ASSETHUB_EVM_RPC` | Asset Hub EVM RPC endpoint | `https://services.polkadothub-rpc.com/testnet` | Yes |
+| `VITE_ASSETHUB_EVM_RPC` | Asset Hub EVM RPC endpoint | `https://eth-rpc-testnet.polkadot.io` | Yes |
 | `VITE_PEOPLE_CHAIN_RPC` | People Chain WebSocket RPC | `wss://polkadot-people-rpc.polkadot.io` | Yes |
 | `VITE_DOTID_API_URL` | dotid.app proxy endpoint | `/api/dotid-proxy` | Yes |
+| `VITE_SUBSTRATE_ENDPOINT` | Statement Store endpoint (dForms) | `wss://pop-testnet.parity-lab.parity.io:443/9910` | Yes |
+| `VITE_DEFAULT_ORG_ID` | Default organization ID | `0xda0dfc1c...` | Yes |
 | `VITE_ENABLE_ANALYTICS` | Enable analytics | `false` | No |
 | `VITE_ENABLE_DEBUG_LOGS` | Enable debug logging | `true` | No |
 
-> **Updated Jan 20, 2026:** Contract redeployed to Polkadot Hub TestNet.
-> - New contract: `0xF1152B54404F7F4B646199072Fd3819D097c4F94`
-> - New RPC: `https://services.polkadothub-rpc.com/testnet`
-> - New chain ID: `420420417`
+> **Updated Feb 6, 2026:** RPC endpoint changed to official URL.
+> - RBAC contract: `0xF1152B54404F7F4B646199072Fd3819D097c4F94`
+> - AccessPass contract: `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94`
+> - RPC: `https://eth-rpc-testnet.polkadot.io` (updated from services.polkadothub-rpc.com)
+> - Chain ID: `420420417`
 
 **Configuration Files:**
 - `.env` - Local development (gitignored)
@@ -136,6 +199,25 @@ vercel --prod        # Deploy to production domain
 vercel login         # Authenticate with Vercel (first time only)
 ```
 
+### Smart Contract Scripts (contracts/solidity/scripts/)
+```bash
+# Account Mapping
+node scripts/check-mapping.js <substrate-address>     # Check if account is mapped to EVM
+
+# Organization Management
+node scripts/find-my-orgs.js                          # Find orgs where you're an admin
+node scripts/create-org-simple.js                     # Create a new organization
+node scripts/check-org-details.js <org-id>            # View org details
+
+# Role Management
+node scripts/grant-admin.js <evm-address>             # Grant Admin role
+node scripts/setup-complete.js                        # Complete org setup (create + grant admin)
+
+# AccessPass NFT
+node scripts/mint-pass.js                             # Mint an access pass NFT
+node scripts/check-contract.js                        # Verify contract deployment
+```
+
 ### Vercel CLI Commands
 ```bash
 vercel curl / --deployment <URL>                    # Access deployed site with auth bypass
@@ -158,17 +240,20 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
 - **Response**: Array of identity objects with fields: `address`, `display`, `legal`, `twitter`, `matrix`, `judgements`, etc.
 - **Used by**: Dashboard search, Admin registry browser
 
-### Polkadot Hub TestNet (Updated Jan 20, 2026)
+### Polkadot Hub TestNet (Updated Feb 6, 2026)
 - **Network**: Polkadot Hub TestNet
-- **EVM RPC**: `https://services.polkadothub-rpc.com/testnet`
+- **EVM RPC**: `https://eth-rpc-testnet.polkadot.io` (updated from services.polkadothub-rpc.com)
+- **Substrate RPC**: `wss://polkadot-testnet-rpc.polkadot.io` (for account mapping via pallet_revive)
 - **Chain ID**: `420420417` (decimal) / `0x1909B741` (hex)
 - **Currency**: PAS
 - **Block Explorer**: https://polkadot.testnet.routescan.io/
 - **Faucet**: https://faucet.polkadot.io/
-- **Purpose**: RBAC smart contract deployment and transactions
-- **Contract**: `0xF1152B54404F7F4B646199072Fd3819D097c4F94` (deployed Jan 20, 2026)
+- **Purpose**: RBAC + AccessPass smart contracts, account mapping
+- **Contracts**:
+  - RBAC: `0xF1152B54404F7F4B646199072Fd3819D097c4F94` (deployed Jan 20, 2026)
+  - AccessPass: `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` (deployed Jan 23, 2026)
 - **Deployer**: `0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62`
-- **Block**: 4537801
+- **Account Mapping**: Use `pallet_revive.map_account()` to enable Substrate wallets to sign EVM transactions
 
 ### People Chain
 - **RPC**: `wss://polkadot-people-rpc.polkadot.io`
@@ -202,8 +287,16 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
 
 ### Manual Testing Checklist - Preview Deployment
 - [ ] Visit preview URL (provided by Vercel after `vercel` command)
-- [ ] Connect wallet (ensure Asset Hub network is added)
-- [ ] Create or access an organization
+- [ ] Connect wallet (ensure Polkadot Hub TestNet is added to MetaMask)
+- [ ] Test account mapping (Substrate wallet only):
+  - [ ] Connect Talisman/SubWallet (Substrate mode)
+  - [ ] Verify "Map Account" prompt appears
+  - [ ] Map account via modal
+  - [ ] Verify mapping succeeded (check console logs)
+- [ ] Test dual-wallet modes:
+  - [ ] Substrate-only (mapped) → Single wallet UX
+  - [ ] MetaMask-only → Standard EVM flow
+  - [ ] Both wallets → Prefers mapped address
 - [ ] Test Dashboard search:
   - [ ] Search for existing team members
   - [ ] Search for People Chain identities (should show "Registry" badge)
@@ -213,7 +306,12 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
   - [ ] Search registry by name
   - [ ] Add team member from registry
   - [ ] Add team member by address
-- [ ] Test role assignment
+- [ ] Test Acc3ss module:
+  - [ ] Select location
+  - [ ] Verify RBAC membership check (Admin/Member required)
+  - [ ] Mint access pass
+  - [ ] Verify VirtualDoor animation plays
+  - [ ] View pass in NFT modal
 - [ ] Verify transactions execute successfully
 
 ### Feature Testing - People Chain Registry Search
@@ -246,6 +344,40 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
 - Displays: name, address (truncated), Matrix handle, Twitter
 - Can add users to organization from registry
 - Added users get default "Member" role
+
+### Feature Testing - Account Mapping & Dual-Wallet Support
+
+**How to test (Substrate-only)**:
+1. Connect Talisman or SubWallet (Substrate mode)
+2. Navigate to Acc3ss module
+3. Verify "Map Account" prompt appears
+4. Click "Map Account" → review derived EVM address → sign transaction
+5. Wait for confirmation (~12 seconds)
+6. Verify UI updates to show mint button
+
+**How to test (MetaMask-only)**:
+1. Connect MetaMask (ensure chain ID 420420417)
+2. Navigate to Acc3ss module
+3. Should skip mapping check, show mint button directly (if member)
+
+**How to test (Both wallets)**:
+1. Connect both Talisman (Substrate) and MetaMask
+2. If Substrate not mapped: Uses MetaMask, shows optional mapping tip
+3. If Substrate is mapped: Prefers mapped address, ignores MetaMask
+
+**Expected behavior**:
+- Console shows: `🗺️ Account mapping check: { isMapped: true/false }`
+- Substrate-only + not mapped → Blue "Map Account" card
+- Substrate-only + mapped → Mint button (uses mapped address)
+- MetaMask-only → Mint button (uses MetaMask)
+- Both + Substrate mapped → Mint button (prefers mapped)
+- Both + Substrate not mapped → Mint button + mapping tip (uses MetaMask)
+
+**Verify account mapping**:
+```bash
+cd contracts/solidity
+node scripts/check-mapping.js <substrate-address>
+```
 
 ## Deployment Workflow
 

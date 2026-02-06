@@ -30,29 +30,29 @@ interface EVMContextValue {
 const EVMContext = createContext<EVMContextValue | undefined>(undefined);
 
 /**
- * Polkadot Hub EVM Chain Configuration
+ * Polkadot Hub EVM Chain Configuration (Updated Jan 2026)
  */
 const ASSET_HUB_CHAIN_CONFIG = {
   testnet: {
-    chainId: '0x190F1B46', // 420420422 in hex (Paseo Polkadot Hub)
-    chainName: 'Paseo Polkadot Hub',
-    rpcUrls: ['https://testnet-passet-hub-eth-rpc.polkadot.io'],
-    blockExplorerUrls: ['https://assethub-paseo.subscan.io'],
+    chainId: '0x1909B741', // 420420417 in decimal (Polkadot Hub TestNet)
+    chainName: 'Polkadot Hub TestNet',
+    rpcUrls: ['https://services.polkadothub-rpc.com/testnet'],
+    blockExplorerUrls: ['https://polkadot.testnet.routescan.io'],
     nativeCurrency: {
       name: 'PAS',
       symbol: 'PAS',
-      decimals: 10
+      decimals: 18 // MetaMask requires 18; actual on-chain decimals are 10
     }
   },
   mainnet: {
-    chainId: '0x3E8', // 1000 in hex
-    chainName: 'Polkadot Hub',
-    rpcUrls: ['https://rpc.assethub.io'],
-    blockExplorerUrls: ['https://explorer.assethub.io'],
+    chainId: '0x1909B742', // 420420418 in decimal (Kusama Hub)
+    chainName: 'Kusama Hub',
+    rpcUrls: ['https://kusama-asset-hub-eth-rpc.polkadot.io'],
+    blockExplorerUrls: ['https://kusama-asset-hub.subscan.io'],
     nativeCurrency: {
-      name: 'DOT',
-      symbol: 'DOT',
-      decimals: 10
+      name: 'KSM',
+      symbol: 'KSM',
+      decimals: 12
     }
   }
 };
@@ -149,17 +149,33 @@ export function EVMProvider({ children }: EVMProviderProps) {
         window.location.reload();
       });
 
-      // Check if already connected
-      ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+      // Check if already connected and auto-initialize signer
+      ethereum.request({ method: 'eth_accounts' }).then(async (accounts: string[]) => {
         if (accounts.length > 0) {
+          // Skip auto-connect if user explicitly disconnected
+          if (localStorage.getItem('evm_explicitly_disconnected')) {
+            console.log('⏭️ Skipping EVM auto-connect (explicitly disconnected)');
+            return;
+          }
+          console.log('✅ EVM accounts found, auto-initializing...');
           setAccount(accounts[0]);
           setConnected(true);
-          web3Provider.getSigner().then(setSigner);
+
+          try {
+            const web3Signer = await web3Provider.getSigner(accounts[0]);
+            setSigner(web3Signer);
+            console.log('   ✅ Signer auto-initialized for:', accounts[0]);
+          } catch (err) {
+            console.error('Failed to initialize signer:', err);
+          }
 
           ethereum.request({ method: 'eth_chainId' }).then((chainId: string) => {
             setChainId(parseInt(chainId, 16));
+            console.log('   ✅ Chain ID:', parseInt(chainId, 16));
           });
         }
+      }).catch(err => {
+        console.warn('No existing EVM connection');
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to initialize EVM provider');
@@ -170,25 +186,36 @@ export function EVMProvider({ children }: EVMProviderProps) {
    * Connect to Polkadot wallet's EVM capability
    */
   const connect = async () => {
+    localStorage.removeItem('evm_explicitly_disconnected');
     console.log('🔌 Attempting EVM connection...');
     const ethereum = getEVMProvider();
 
     console.log('   window.ethereum:', (window as any).ethereum);
-    console.log('   window.injectedWeb3:', (window as any).injectedWeb3);
+    console.log('   window.ethereum.isTalisman:', (window as any).ethereum?.isTalisman);
+    console.log('   window.injectedWeb3:', Object.keys((window as any).injectedWeb3 || {}));
     console.log('   Found EVM provider:', ethereum);
 
     if (!ethereum) {
-      const errorMsg = 'No EVM-compatible Polkadot wallet found. Please use Polkadot.js Extension, Talisman, SubWallet, or Nova Wallet.';
+      const errorMsg = 'No EVM provider found. Make sure Talisman has Ethereum accounts enabled (Settings → Networks & Tokens → Ethereum).';
       console.error('❌', errorMsg);
       setError(errorMsg);
       return;
     }
 
-    if (!provider) {
-      const errorMsg = 'Provider not initialized';
-      console.error('❌', errorMsg);
-      setError(errorMsg);
-      return;
+    // Initialize provider if not yet done (race condition fix)
+    let activeProvider = provider;
+    if (!activeProvider) {
+      console.log('   ⚠️ Provider not initialized, initializing now...');
+      try {
+        activeProvider = new BrowserProvider(ethereum);
+        setProvider(activeProvider);
+        console.log('   ✅ Provider initialized');
+      } catch (err) {
+        const errorMsg = 'Failed to initialize EVM provider';
+        console.error('❌', errorMsg, err);
+        setError(errorMsg);
+        return;
+      }
     }
 
     try {
@@ -196,11 +223,23 @@ export function EVMProvider({ children }: EVMProviderProps) {
       setError(null);
 
       console.log('📞 Requesting EVM accounts from wallet...');
-      console.log('   ⏳ Waiting for Talisman popup - check if popup appeared!');
+      console.log('   ⏳ Waiting for wallet popup - check if popup appeared!');
+
+      // First check what accounts are already available
+      const existingAccounts = await ethereum.request({ method: 'eth_accounts' });
+      console.log('   Existing accounts:', existingAccounts);
 
       // Request account access
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       console.log('   ✅ Received accounts:', accounts);
+
+      if (accounts.length === 0) {
+        const errorMsg = 'No EVM accounts returned. In Talisman: Settings → Networks & Tokens → Enable Ethereum, then create/import an Ethereum account.';
+        console.error('❌', errorMsg);
+        setError(errorMsg);
+        setConnecting(false);
+        return;
+      }
 
       if (accounts.length > 0) {
         const accountAddress = accounts[0];
@@ -210,18 +249,22 @@ export function EVMProvider({ children }: EVMProviderProps) {
 
         // Get signer for the connected account
         console.log('   🖊️  Getting signer...');
-        const web3Signer = await provider.getSigner(accountAddress);
+        const web3Signer = await activeProvider.getSigner(accountAddress);
         setSigner(web3Signer);
         console.log('   ✅ Signer initialized for account:', accountAddress);
 
-        const network = await provider.getNetwork();
+        const network = await activeProvider.getNetwork();
         setChainId(Number(network.chainId));
         console.log('✅ Connected to network:', network.chainId);
 
         // Prompt to switch to Polkadot Hub if not already
         if (Number(network.chainId) !== parseInt(CURRENT_NETWORK.chainId, 16)) {
-          console.log('⚠️ Wrong network, switching to Paseo Polkadot Hub...');
-          await switchToAssetHub();
+          console.log('⚠️ Wrong network, switching to Polkadot Hub TestNet...');
+          try {
+            await switchToAssetHub();
+          } catch (switchErr) {
+            console.warn('Chain switch failed, but account is connected:', switchErr);
+          }
         }
       }
     } catch (err) {
@@ -240,6 +283,7 @@ export function EVMProvider({ children }: EVMProviderProps) {
     setSigner(null);
     setConnected(false);
     setError(null);
+    localStorage.setItem('evm_explicitly_disconnected', 'true');
   };
 
   /**

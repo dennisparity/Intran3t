@@ -10,6 +10,7 @@ import {
   DialogDescription,
 } from './ui/Dialog'
 import Identicon from '@polkadot/react-identicon'
+import { useEVM } from '../providers/EVMProvider'
 
 type View = 'wallets' | 'accounts'
 
@@ -26,6 +27,9 @@ export default function ConnectWallet() {
     disconnect,
     setConnectedAccount,
   } = useTypink()
+
+  const evm = useEVM()
+  const isMetaMaskInstalled = !!(window as any).ethereum?.isMetaMask
 
   const handleConnectWallet = async (walletId: string) => {
     try {
@@ -83,22 +87,27 @@ export default function ConnectWallet() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <Button
-        variant={connectedAccount ? 'gradient' : 'default'}
+        variant="default"
         size="lg"
         onClick={() => setOpen(true)}
         className="gap-2"
       >
         {connectedAccount ? (
-          <>
-            <div className="flex items-center gap-2">
-              <Identicon
-                value={connectedAccount.address}
-                size={24}
-                theme="polkadot"
-              />
-              <span>{connectedAccount.name || truncateAddress(connectedAccount.address)}</span>
+          <div className="flex items-center gap-2">
+            <Identicon
+              value={connectedAccount.address}
+              size={24}
+              theme="polkadot"
+            />
+            <span>{connectedAccount.name || truncateAddress(connectedAccount.address)}</span>
+          </div>
+        ) : evm.connected && evm.account ? (
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-[#fff3e0] flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5 text-[#e65100]" />
             </div>
-          </>
+            <span>{truncateAddress(evm.account)}</span>
+          </div>
         ) : (
           <>
             <Wallet className="w-5 h-5" />
@@ -111,7 +120,7 @@ export default function ConnectWallet() {
         {view === 'wallets' ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-gradient">
+              <DialogTitle>
                 {connectedWallets.length > 0 ? 'Connected Wallets' : 'Connect Wallet'}
               </DialogTitle>
               <DialogDescription>
@@ -122,7 +131,56 @@ export default function ConnectWallet() {
             </DialogHeader>
 
             <div className="space-y-3 mt-4">
-              {/* Sort: installed first, then not installed */}
+              {/* MetaMask */}
+              <div className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1] transition-all duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#fff3e0] flex items-center justify-center">
+                    <Wallet className="w-6 h-6 text-[#e65100]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[#1c1917]">MetaMask</span>
+                      {evm.connected && evm.account && isMetaMaskInstalled && (
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          Connected
+                        </div>
+                      )}
+                    </div>
+                    {evm.connected && evm.account && isMetaMaskInstalled && (
+                      <p className="text-xs text-[#78716c] mt-0.5 font-mono">
+                        {truncateAddress(evm.account)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isMetaMaskInstalled ? (
+                    evm.connected ? (
+                      <Button variant="outline" size="sm" onClick={evm.disconnect}>
+                        Disconnect
+                      </Button>
+                    ) : (
+                      <Button variant="default" size="sm" onClick={evm.connect} className="gap-1">
+                        Connect
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('https://metamask.io/', '_blank')}
+                      className="gap-1"
+                    >
+                      <Download className="w-4 h-4" />
+                      Install
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Polkadot Wallets — Sort: installed first, then not installed */}
               {[...wallets]
                 .sort((a, b) => {
                   if (a.installed && !b.installed) return -1
@@ -136,7 +194,7 @@ export default function ConnectWallet() {
                   return (
                     <div
                       key={wallet.id}
-                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#ff2867]/50 transition-all duration-300"
+                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1] transition-all duration-300"
                     >
                       <div className="flex items-center gap-3">
                         {wallet.logo ? (
@@ -146,8 +204,8 @@ export default function ConnectWallet() {
                             className="w-10 h-10 rounded-lg"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center">
-                            <Wallet className="w-6 h-6 text-white" />
+                          <div className="w-10 h-10 rounded-lg bg-[#f5f5f4] flex items-center justify-center">
+                            <Wallet className="w-6 h-6 text-[#78716c]" />
                           </div>
                         )}
                         <div>
@@ -191,7 +249,7 @@ export default function ConnectWallet() {
                             </>
                           ) : (
                             <Button
-                              variant="gradient"
+                              variant="default"
                               size="sm"
                               onClick={() => handleConnectWallet(wallet.id)}
                               className="gap-1"
@@ -227,12 +285,12 @@ export default function ConnectWallet() {
                 })}
               </div>
 
-            {connectedAccount && (
+            {(connectedAccount || evm.connected) && (
               <div className="mt-6 pt-6 border-t border-[#e7e5e4]">
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleDisconnect}
+                  onClick={() => { handleDisconnect(); evm.disconnect(); }}
                   className="w-full"
                 >
                   Disconnect All
@@ -251,7 +309,7 @@ export default function ConnectWallet() {
               >
                 ← Back to Wallets
               </Button>
-              <DialogTitle className="text-gradient">Select Account</DialogTitle>
+              <DialogTitle>Select Account</DialogTitle>
               <DialogDescription>
                 Choose an account to use with this application
               </DialogDescription>
@@ -279,8 +337,8 @@ export default function ConnectWallet() {
                         transition-all duration-300 text-left
                         ${
                           isSelected
-                            ? 'border-[#ff2867] bg-[rgba(255,40,103,0.1)]'
-                            : 'border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#ff2867]/50'
+                            ? 'border-[#1c1917] bg-[#f5f5f4]'
+                            : 'border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1]'
                         }
                       `}
                     >
@@ -294,7 +352,7 @@ export default function ConnectWallet() {
                           <div className="font-semibold text-[#1c1917] flex items-center gap-2">
                             {account.name || 'Unnamed Account'}
                             {isSelected && (
-                              <Check className="w-4 h-4 text-[#ff2867]" />
+                              <Check className="w-4 h-4 text-[#1c1917]" />
                             )}
                           </div>
                           <p className="text-xs text-[#78716c] mt-0.5 font-mono">

@@ -4,8 +4,8 @@
  * Contract ABI, types, and constants for frontend integration
  */
 
-// Contract address (deployed to Paseo Polkadot Hub - 2026-01-07 - Updated with custom roles)
-export const RBAC_CONTRACT_ADDRESS = '0xfde4dD5d4e31adDe12123b214D81c43b04921760';
+// Contract address - read from environment variable (deployed to Polkadot Hub TestNet - 2026-01-20)
+export const RBAC_CONTRACT_ADDRESS = import.meta.env.VITE_RBAC_CONTRACT_ADDRESS || '0xF1152B54404F7F4B646199072Fd3819D097c4F94';
 
 // Enums matching Solidity contract
 export enum Role {

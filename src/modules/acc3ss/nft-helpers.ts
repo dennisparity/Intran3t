@@ -16,11 +16,12 @@ export interface NFTMetadata {
   accessLevel: string
 }
 
-// RPC endpoints for Paseo Polkadot Hub (fallback for development)
-const PASEO_ASSET_HUB_RPC_ENDPOINTS = [
-  'wss://paseo-asset-hub-rpc.polkadot.io',
-  'wss://sys.ibp.network/asset-hub-paseo',
-  'wss://paseo-asset-hub.dotters.network'
+// RPC endpoints for Polkadot Hub TestNet (Asset Hub)
+// Note: Using WebSocket endpoints for native Substrate calls (NFT pallet)
+const POLKADOT_HUB_TESTNET_RPC_ENDPOINTS = [
+  'wss://services.polkadothub-rpc.com/testnet',
+  'wss://polkadot-hub-testnet-rpc.polkadot.io', // Fallback (may not exist yet)
+  'wss://sys.ibp.network/polkadot-hub-testnet'  // Fallback (may not exist yet)
 ]
 
 // Singleton API instance to avoid multiple connections
@@ -73,13 +74,13 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
     return assetHubApiInstance
   }
 
-  console.log('Initializing connection to Paseo Polkadot Hub...')
+  console.log('Initializing connection to Polkadot Hub TestNet...')
 
   // For now, use RPC endpoints with multiple fallbacks
-  // TODO: Implement light client when Paseo Polkadot Hub chain spec is available
+  // TODO: Implement light client when Polkadot Hub TestNet chain spec is available
   const errors: string[] = []
 
-  for (const endpoint of PASEO_ASSET_HUB_RPC_ENDPOINTS) {
+  for (const endpoint of POLKADOT_HUB_TESTNET_RPC_ENDPOINTS) {
     try {
       console.log(`Attempting connection to ${endpoint}...`)
 
@@ -104,7 +105,7 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
       })
 
       const api = await connectPromise
-      console.log(`✓ Connected to Paseo Polkadot Hub via ${endpoint}`)
+      console.log(`✓ Connected to Polkadot Hub TestNet via ${endpoint}`)
       assetHubApiInstance = api
       return api
 
@@ -117,7 +118,7 @@ export async function getAssetHubApi(): Promise<ApiPromise> {
   }
 
   // All endpoints failed
-  const errorMessage = `Failed to connect to Paseo Polkadot Hub. Tried ${PASEO_ASSET_HUB_RPC_ENDPOINTS.length} endpoints:\n${errors.join('\n')}`
+  const errorMessage = `Failed to connect to Polkadot Hub TestNet. Tried ${POLKADOT_HUB_TESTNET_RPC_ENDPOINTS.length} endpoints:\n${errors.join('\n')}`
   console.error(errorMessage)
   throw new Error(errorMessage)
 }
@@ -313,7 +314,7 @@ export async function mintAccessPassNFT(
     if (errorMsg.includes('extension')) {
       errorMsg = 'Wallet extension not found or not accessible. Please install and enable a Polkadot wallet.'
     } else if (errorMsg.includes('connect')) {
-      errorMsg = 'Failed to connect to Paseo Polkadot Hub. Please check your internet connection.'
+      errorMsg = 'Failed to connect to Polkadot Hub TestNet. Please check your internet connection.'
     }
     return { success: false, error: errorMsg }
   }
@@ -427,7 +428,7 @@ export async function revokeAccessPassNFT(
     if (errorMsg.includes('extension')) {
       errorMsg = 'Wallet extension not found or not accessible. Please install and enable a Polkadot wallet.'
     } else if (errorMsg.includes('connect')) {
-      errorMsg = 'Failed to connect to Paseo Polkadot Hub. Please check your internet connection.'
+      errorMsg = 'Failed to connect to Polkadot Hub TestNet. Please check your internet connection.'
     }
     return { success: false, error: errorMsg }
   }

@@ -18,9 +18,9 @@ if [ ! -f .env ]; then
     echo "Creating .env with testnet configuration..."
     cat > .env << 'ENVEOF'
 VITE_NETWORK=testnet
-VITE_RBAC_CONTRACT_ADDRESS=0xfde4dD5d4e31adDe12123b214D81c43b04921760
-VITE_ASSETHUB_EVM_CHAIN_ID=0x190F1B46
-VITE_ASSETHUB_EVM_RPC=https://testnet-passet-hub-eth-rpc.polkadot.io
+VITE_RBAC_CONTRACT_ADDRESS=0xF1152B54404F7F4B646199072Fd3819D097c4F94
+VITE_ASSETHUB_EVM_CHAIN_ID=420420417
+VITE_ASSETHUB_EVM_RPC=https://services.polkadothub-rpc.com/testnet
 VITE_PEOPLE_CHAIN_RPC=wss://polkadot-people-rpc.polkadot.io
 VITE_DOTID_API_URL=/api/dotid-proxy
 VITE_ENABLE_ANALYTICS=false

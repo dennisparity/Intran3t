@@ -54,10 +54,10 @@ function HelpArticleItem({
         className="group flex items-start gap-2 px-3 py-2 rounded-lg hover:bg-[#fafaf9] transition-all duration-200"
       >
         {Icon && (
-          <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#ff2867] transition-colors flex-shrink-0 mt-0.5" />
+          <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#1c1917] transition-colors flex-shrink-0 mt-0.5" />
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-[#1c1917] group-hover:text-[#ff2867] transition-colors">
+          <div className="text-sm text-[#1c1917] group-hover:text-[#1c1917] transition-colors">
             {article.title}
           </div>
           {article.description && (
@@ -66,7 +66,7 @@ function HelpArticleItem({
             </div>
           )}
         </div>
-        <ExternalLink className="w-3 h-3 text-[#a8a29e] group-hover:text-[#ff2867] transition-colors flex-shrink-0 mt-1" />
+        <ExternalLink className="w-3 h-3 text-[#a8a29e] group-hover:text-[#1c1917] transition-colors flex-shrink-0 mt-1" />
       </a>
     )
   }
@@ -77,10 +77,10 @@ function HelpArticleItem({
       className="group flex items-start gap-2 px-3 py-2 rounded-lg hover:bg-[#fafaf9] transition-all duration-200 w-full text-left"
     >
       {Icon && (
-        <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#ff2867] transition-colors flex-shrink-0 mt-0.5" />
+        <Icon className="w-4 h-4 text-[#78716c] group-hover:text-[#1c1917] transition-colors flex-shrink-0 mt-0.5" />
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-[#1c1917] group-hover:text-[#ff2867] transition-colors">
+        <div className="text-sm text-[#1c1917] group-hover:text-[#1c1917] transition-colors">
           {article.title}
         </div>
         {article.description && (
@@ -175,7 +175,7 @@ export function HelpCenterWidget({ config }: { config: HelpCenterConfig }) {
 
   return (
     <>
-      <div className="bg-white border border-[#e7e5e4] rounded-2xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] h-full flex flex-col">
+      <div className="bg-white border border-[#e7e5e4] rounded-2xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col">
         {config.title && (
           <h3 className="text-base font-bold text-[#1c1917] mb-3 font-serif px-3">
             {config.title}

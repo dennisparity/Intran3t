@@ -20,6 +20,7 @@ export interface AccessControl {
  * - With verified identity: Access to all modules (subject to future RBAC rules)
  *
  * TODO: Integrate with RBAC smart contract for role-based permissions
+ * TODO: Add @parity.io matrix handle verification
  */
 export function useAccessControl(userAddress: string | undefined): AccessControl {
   const { data: identity, isLoading } = useIdentity(userAddress)

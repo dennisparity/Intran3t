@@ -39,12 +39,10 @@ contract Intran3tRBAC {
     // ============ Structs ============
 
     struct Organization {
-        bytes32 id;
         string name;
         address owner;
         uint256 createdAt;
         uint32 memberCount;
-        bool exists;
     }
 
     struct Credential {
@@ -107,27 +105,26 @@ contract Intran3tRBAC {
 
     // ============ Errors ============
 
-    error Unauthorized();
-    error CredentialNotFound();
-    error OrganizationNotFound();
-    error OrganizationExists();
-    error CredentialExpired();
-    error CredentialAlreadyRevoked();
-    error InvalidOrganizationName();
-    error CannotRevokeSelf();
+    error Intran3tRBAC__Unauthorized();
+    error Intran3tRBAC__CredentialNotFound();
+    error Intran3tRBAC__OrganizationNotFound();
+    error Intran3tRBAC__OrganizationExists();
+    error Intran3tRBAC__CredentialAlreadyRevoked();
+    error Intran3tRBAC__InvalidOrganizationName();
+    error Intran3tRBAC__CannotRevokeSelf();
 
     // ============ Modifiers ============
 
     modifier onlyAdmin(bytes32 orgId) {
         if (!_isAdmin(orgId, msg.sender)) {
-            revert Unauthorized();
+            revert Intran3tRBAC__Unauthorized();
         }
         _;
     }
 
     modifier organizationExists(bytes32 orgId) {
-        if (!organizations[orgId].exists) {
-            revert OrganizationNotFound();
+        if (organizations[orgId].owner == address(0)) {
+            revert Intran3tRBAC__OrganizationNotFound();
         }
         _;
     }
@@ -147,22 +144,20 @@ contract Intran3tRBAC {
      */
     function createOrganization(string memory name) external returns (bytes32 orgId) {
         if (bytes(name).length == 0 || bytes(name).length > 64) {
-            revert InvalidOrganizationName();
+            revert Intran3tRBAC__InvalidOrganizationName();
         }
 
         orgId = _generateOrgId(name, msg.sender);
 
-        if (organizations[orgId].exists) {
-            revert OrganizationExists();
+        if (organizations[orgId].owner != address(0)) {
+            revert Intran3tRBAC__OrganizationExists();
         }
 
         organizations[orgId] = Organization({
-            id: orgId,
             name: name,
             owner: msg.sender,
             createdAt: block.timestamp,
-            memberCount: 1,
-            exists: true
+            memberCount: 1
         });
 
         // Auto-grant admin role to creator
@@ -211,11 +206,11 @@ contract Intran3tRBAC {
         Credential storage cred = credentials[orgId][subject];
 
         if (cred.subject == address(0)) {
-            revert CredentialNotFound();
+            revert Intran3tRBAC__CredentialNotFound();
         }
 
         if (subject == msg.sender) {
-            revert CannotRevokeSelf();
+            revert Intran3tRBAC__CannotRevokeSelf();
         }
 
         cred.revoked = true;
@@ -247,11 +242,11 @@ contract Intran3tRBAC {
         Credential storage cred = credentials[orgId][subject];
 
         if (cred.subject == address(0)) {
-            revert CredentialNotFound();
+            revert Intran3tRBAC__CredentialNotFound();
         }
 
         if (cred.revoked) {
-            revert CredentialAlreadyRevoked();
+            revert Intran3tRBAC__CredentialAlreadyRevoked();
         }
 
         Role oldRole = cred.role;
@@ -274,7 +269,7 @@ contract Intran3tRBAC {
         Action action,
         Resource resource
     ) external view returns (bool) {
-        if (!organizations[orgId].exists) {
+        if (organizations[orgId].owner == address(0)) {
             return false;
         }
 

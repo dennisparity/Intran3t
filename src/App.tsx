@@ -13,7 +13,7 @@ export default function App() {
     <PolkadotProvider appName="Intran3t">
       <EVMProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-[#fafafa]">
+          <div className="dark min-h-screen bg-background">
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/start" element={<Start />} />

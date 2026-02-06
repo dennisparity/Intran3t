@@ -3,6 +3,9 @@ import { useTypink } from 'typink'
 import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical } from 'lucide-react'
 import type { Form, FormField, FormsConfig, FieldType } from './types'
 import { loadForms, saveForms, defaultFormsConfig, FORMS_STORAGE_KEY, RESPONSES_STORAGE_KEY } from './config'
+import { createFormsStatementStore } from '../../lib/forms-statement-store'
+import { getMnemonic, saveMnemonic } from '../../lib/storage'
+import { generateRandomMnemonic } from '../../lib/wallet'
 
 export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsConfig }) {
   const { connectedAccount } = useTypink()
@@ -47,47 +50,78 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     return `form-${Date.now()}-${Math.random().toString(36).slice(2)}`
   }
 
-  const handleCreateForm = () => {
+  const handleCreateForm = async () => {
     if (!formTitle.trim() || !connectedAccount) return
 
     let updatedForms: Form[]
 
-    if (editingFormId) {
-      // Update existing form
-      updatedForms = forms.map(f =>
-        f.id === editingFormId
-          ? {
-              ...f,
-              title: formTitle.trim(),
-              description: formDescription.trim(),
-              fields
-            }
-          : f
-      )
-    } else {
-      // Create new form
-      const newForm: Form = {
-        id: generateFormId(),
-        title: formTitle.trim(),
-        description: formDescription.trim(),
-        creator: connectedAccount.address,
-        createdAt: Date.now(),
-        status: 'active',
-        fields,
-        responses: []
+    try {
+      if (editingFormId) {
+        // Update existing form
+        updatedForms = forms.map(f =>
+          f.id === editingFormId
+            ? {
+                ...f,
+                title: formTitle.trim(),
+                description: formDescription.trim(),
+                fields
+              }
+            : f
+        )
+      } else {
+        // Create new form
+        const formId = generateFormId()
+        const newForm: Form = {
+          id: formId,
+          title: formTitle.trim(),
+          description: formDescription.trim(),
+          creator: connectedAccount.address,
+          createdAt: Date.now(),
+          status: 'active',
+          fields,
+          responses: []
+        }
+
+        // NOTE: Statement store publishing disabled due to "Store is full" error on testnet
+        // Forms are stored in localStorage only for now
+        // TODO: Implement System Remarks for permanent on-chain storage (requires gas fees)
+        console.log('✓ Form saved to localStorage:', formId)
+        console.log('  Creator:', connectedAccount.address)
+        console.warn('⚠️ Statement store disabled (testnet capacity reached)')
+
+        /*
+        // Disabled: Statement store publishing (testnet full)
+        try {
+          let mnemonic = getMnemonic()
+          if (!mnemonic) {
+            mnemonic = generateRandomMnemonic()
+            saveMnemonic(mnemonic)
+          }
+
+          const store = createFormsStatementStore()
+          await store.connect(mnemonic, formId)
+          await store.publishForm({...}, connectedAccount.address)
+          store.disconnect()
+        } catch (err) {
+          console.error('Statement store error:', err)
+        }
+        */
+
+        updatedForms = [newForm, ...forms]
       }
-      updatedForms = [newForm, ...forms]
+
+      setForms(updatedForms)
+      saveForms(updatedForms)
+
+      // Reset form
+      setFormTitle('')
+      setFormDescription('')
+      setFields([])
+      setEditingFormId(null)
+      setActiveTab('submissions')
+    } catch (err) {
+      console.error('Failed to create form:', err)
     }
-
-    setForms(updatedForms)
-    saveForms(updatedForms)
-
-    // Reset form
-    setFormTitle('')
-    setFormDescription('')
-    setFields([])
-    setEditingFormId(null)
-    setActiveTab('submissions')
   }
 
   const handleAddField = () => {
@@ -241,7 +275,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     placeholder="Enter form title"
-                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                   />
                 </div>
 
@@ -255,7 +289,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Optional description"
                     rows={2}
-                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] resize-none transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] resize-none transition-all duration-200"
                   />
                 </div>
 
@@ -267,7 +301,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </label>
                     <button
                       onClick={() => setShowFieldBuilder(true)}
-                      className="flex items-center gap-1 text-xs text-[#ff2867] hover:text-[#ff2867]-hover transition-colors duration-200"
+                      className="flex items-center gap-1 text-xs text-[#1c1917] hover:text-[#292524] transition-colors duration-200"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Field
@@ -288,7 +322,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <div className="flex-1">
                             <div className="text-sm font-medium text-[#1c1917]">
                               {field.label}
-                              {field.required && <span className="text-[#ff2867] ml-1">*</span>}
+                              {field.required && <span className="text-[#dc2626] ml-1">*</span>}
                             </div>
                             <div className="text-xs text-[#78716c] mt-0.5">
                               {field.type}
@@ -298,7 +332,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleEditField(index)}
-                              className="p-1 text-[#78716c] hover:text-[#ff2867] transition-colors duration-200"
+                              className="p-1 text-[#78716c] hover:text-[#1c1917] transition-colors duration-200"
                             >
                               <FileText className="w-3.5 h-3.5" />
                             </button>
@@ -344,7 +378,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             value={fieldLabel}
                             onChange={(e) => setFieldLabel(e.target.value)}
                             placeholder="e.g., Email Address"
-                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                           />
                         </div>
 
@@ -355,7 +389,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           <select
                             value={fieldType}
                             onChange={(e) => setFieldType(e.target.value as FieldType)}
-                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                           >
                             <option value="text">Text</option>
                             <option value="email">Email</option>
@@ -373,7 +407,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             value={fieldPlaceholder}
                             onChange={(e) => setFieldPlaceholder(e.target.value)}
                             placeholder="Optional placeholder text"
-                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                            className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                           />
                         </div>
 
@@ -394,7 +428,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                                       updated[idx] = e.target.value
                                       setFieldOptions(updated)
                                     }}
-                                    className="flex-1 px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                                    className="flex-1 px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                                     placeholder={`Option ${idx + 1}`}
                                   />
                                   <button
@@ -407,7 +441,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                               ))}
                               <button
                                 onClick={() => setFieldOptions([...fieldOptions, ''])}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-[#78716c] border border-dashed border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:text-[#ff2867] transition-colors duration-200"
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-[#78716c] border border-dashed border-[#e7e5e4] rounded-lg hover:border-[#d6d3d1] hover:text-[#1c1917] transition-colors duration-200"
                               >
                                 <Plus className="w-4 h-4" />
                                 Add option
@@ -422,7 +456,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                             id="fieldRequired"
                             checked={fieldRequired}
                             onChange={(e) => setFieldRequired(e.target.checked)}
-                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all duration-200"
+                            className="w-4 h-4 text-[#1c1917] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] transition-all duration-200"
                           />
                           <label htmlFor="fieldRequired" className="text-sm text-[#1c1917]">
                             Required field
@@ -539,7 +573,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                     <button
                       onClick={() => handleEditForm(form.id)}
-                      className="p-1.5 text-[#78716c] hover:text-[#ff2867] transition-colors duration-200"
+                      className="p-1.5 text-[#78716c] hover:text-[#1c1917] transition-colors duration-200"
                       title="Edit form"
                     >
                       <Edit className="w-3.5 h-3.5" />
