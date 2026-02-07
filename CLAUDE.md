@@ -1,7 +1,31 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-06
+> Last updated: 2026-02-07
 > Architecture overview: See [README.md](./README.md)
+
+## Recent Changes
+
+### 2026-02-07 - DotNS Decentralized Web Hosting Deployment
+- **Feature**: Complete DotNS + Bulletin deployment pipeline for decentralized hosting
+- **Deployment**: Successfully deployed to `intran3t-app42.dot` on Polkadot testnet
+- **Live URL**: https://intran3t-app42.paseo.li
+- **Scripts**: Added complete deployment infrastructure:
+  - `scripts/deploy.js` - Bulletin storage with chunking and DAG-PB
+  - `scripts/dotns.js` - DotNS domain registration and contenthash management
+  - `scripts/deploy-nextjs.js` - Next.js build deployment wrapper
+- **Dependencies**: Added IPFS/IPLD libraries (@ipld/car, @ipld/dag-pb, ipfs-unixfs, multiformats)
+- **Configuration**: Updated `.env.example` with DotNS deployment variables
+- **PAPI Integration**: Added `.papi/` directory with Paseo Asset Hub and Bulletin chain descriptors
+- **Key Insights**:
+  - RPC endpoint must be `wss://sys.ibp.network/asset-hub-paseo` (not testnet-passet-hub.polkadot.io)
+  - Contract addresses are different per RPC endpoint
+  - Use `NODE_OPTIONS="--max-old-space-size=8192"` to prevent heap errors
+  - Domain registration succeeded but ownership verification requires dotns-cli tool
+  - Working gateway: `paseo.li` (bigtava.online not functional)
+- **External Repository**: Cloned `paritytech/product-infrastructure` for reference implementations
+- **Tools**: Installed Bun runtime for dotns-cli usage
+- **Transaction**: Registration tx `0xf7332036e93d340c632676ae3842e7ad4f6fde8293ebd2fa1f4708037ce7ef2c`
+- **Transaction**: Contenthash tx `0x20c5e634131732c64e1fc8a66f4700b30b99e20c2f3916c920ee5fd00aaa553f`
 
 ## Recent Changes
 
@@ -192,12 +216,32 @@ npm run lint         # Run ESLint
 ```
 
 ### Deployment
+
+**Vercel (Traditional):**
 ```bash
 ./deploy.sh          # Interactive deployment script (preview or production)
 vercel               # Deploy to preview environment (generates unique URL)
 vercel --prod        # Deploy to production domain
 vercel login         # Authenticate with Vercel (first time only)
 ```
+
+**DotNS (Decentralized - Polkadot):**
+```bash
+# Full deployment (build + storage + registration)
+NODE_OPTIONS="--max-old-space-size=8192" npm run deploy:dotns
+
+# Deploy with existing CID (skip storage)
+IPFS_CID="bafk..." NODE_OPTIONS="--max-old-space-size=8192" npm run deploy:dotns
+
+# Set contenthash only (using dotns-cli)
+cd ~/product-infrastructure/examples/pop-dotns
+bun run dev content set <domain-name> <cid> --mnemonic "<your-mnemonic>"
+
+# Transfer domain ownership
+bun run dev transfer <domain-name> <new-owner-address> --mnemonic "<current-owner-mnemonic>"
+```
+
+**CRITICAL:** Use `wss://sys.ibp.network/asset-hub-paseo` RPC endpoint for DotNS deployments.
 
 ### Smart Contract Scripts (contracts/solidity/scripts/)
 ```bash
@@ -379,9 +423,109 @@ cd contracts/solidity
 node scripts/check-mapping.js <substrate-address>
 ```
 
+## DotNS Decentralized Deployment
+
+### Architecture
+
+Two chains, two jobs:
+
+| Chain | Role | RPC Endpoint |
+|-------|------|--------------|
+| **Bulletin** | Content storage | `wss://bulletin.dotspark.app` |
+| **Paseo Asset Hub** | DotNS contracts | `wss://sys.ibp.network/asset-hub-paseo` |
+
+### Contract Addresses (Paseo Asset Hub)
+
+**CRITICAL:** These addresses are specific to `wss://sys.ibp.network/asset-hub-paseo`
+
+```javascript
+{
+  DOTNS_REGISTRAR: "0x329aAA5b6bEa94E750b2dacBa74Bf41291E6c2BD",
+  DOTNS_REGISTRAR_CONTROLLER: "0xd09e0F1c1E6CE8Cf40df929ef4FC778629573651",
+  DOTNS_REGISTRY: "0x4Da0d37aBe96C06ab19963F31ca2DC0412057a6f",
+  DOTNS_RESOLVER: "0x95645C7fD0fF38790647FE13F87Eb11c1DCc8514",
+  DOTNS_CONTENT_RESOLVER: "0x7756DF72CBc7f062e7403cD59e45fBc78bed1cD7",
+  STORE_FACTORY: "0x030296782F4d3046B080BcB017f01837561D9702",
+  POP_ORACLE: "0x4e8920B1E69d0cEA9b23CBFC87A17Ee6fE02d2d3",
+}
+```
+
+### Key Scripts
+
+- **`scripts/deploy.js`** - Core deployment logic (Bulletin storage, CID generation, DAG-PB)
+- **`scripts/dotns.js`** - DotNS client (registration, contenthash management, ReviveClientWrapper)
+- **`scripts/deploy-nextjs.js`** - Next.js deployment wrapper
+- **`.papi/`** - PAPI descriptors for Paseo Asset Hub and Bulletin chains
+
+### Environment Variables
+
+Add to `.env`:
+
+```bash
+DOTNS_MNEMONIC="your twelve word mnemonic here"
+DOTNS_DOMAIN=intran3t-app42
+BULLETIN_RPC=wss://bulletin.dotspark.app
+PASEO_ASSETHUB_RPC=wss://sys.ibp.network/asset-hub-paseo
+```
+
+### Domain Naming Rules
+
+- **8+ characters** total
+- **Exactly 2 trailing digits** (e.g., `intran3t-app42`, `my-site99`)
+- Lowercase letters, digits, hyphens only
+- No leading/trailing hyphens
+
+### Deployment Flow
+
+1. **Build:** `npm run build` (creates `dist/`)
+2. **Merkleize:** IPFS CLI creates CAR file from directory
+3. **Store on Bulletin:** Chunked upload (1.5MB chunks) with DAG-PB root
+4. **Register Domain:** Commit-reveal on Paseo Asset Hub
+5. **Set Contenthash:** Links domain to Bulletin CID
+6. **Gateway Resolution:** `<domain>.paseo.li` fetches from Bulletin
+
+### Current Deployment
+
+- **Domain:** `intran3t-app42.dot`
+- **Owner:** `0x35Cdb23fF7fc86E8DCcd577CA309bFEA9c978D20` (DEV_PHRASE - transfer pending)
+- **CID:** `bafybeibm6rfptryqpmfvffd65qsw5xkuj2l3wwjodtj5ksjkff3hxf7rcy`
+- **Live URL:** https://intran3t-app42.paseo.li
+- **Registration Tx:** `0xf7332036e93d340c632676ae3842e7ad4f6fde8293ebd2fa1f4708037ce7ef2c`
+- **Contenthash Tx:** `0x20c5e634131732c64e1fc8a66f4700b30b99e20c2f3916c920ee5fd00aaa553f`
+
+### Known Issues
+
+1. **Gateway:** Only `paseo.li` works; `bigtava.online` returns errors
+2. **RPC Endpoints:** Contract addresses are **different** per RPC endpoint - always use `wss://sys.ibp.network/asset-hub-paseo`
+3. **Memory:** Use `NODE_OPTIONS="--max-old-space-size=8192"` to prevent heap errors with large chain responses
+4. **Ownership Verification:** Built-in verification fails; use dotns-cli tool for post-deployment operations
+5. **Reference Repo Required:** Need `paritytech/product-infrastructure` cloned locally for dotns-cli
+
+### External Tools
+
+**dotns-cli** (from product-infrastructure repo):
+```bash
+# Clone reference repository
+git clone git@github.com:paritytech/product-infrastructure.git ~/product-infrastructure
+
+# Setup
+cd ~/product-infrastructure/examples/pop-dotns
+bun install
+bun papi
+
+# Set contenthash
+bun run dev content set <domain> <cid> --mnemonic "<mnemonic>"
+
+# Transfer ownership
+bun run dev transfer <domain> <new-owner> --mnemonic "<current-owner-mnemonic>"
+
+# View domain info
+bun run dev lookup name <domain>
+```
+
 ## Deployment Workflow
 
-### Staging → Production Flow
+### Vercel: Staging → Production Flow
 
 1. **Development**: Make changes, test locally with `npm run dev`
 2. **Preview Deployment**: Deploy to staging
