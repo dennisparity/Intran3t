@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTypink } from 'typink'
 import { MapPin, Check, CheckCircle2, Download, KeyRound, Lock, Loader2 } from 'lucide-react'
 import type { Acc3ssConfig, Location, AccessPass } from './types'
@@ -13,6 +13,10 @@ import { useSubstrateEvmLink } from '../../hooks/useSubstrateEvmLink'
 import { useRBACContract, Role } from '../../hooks/useRBACContract'
 import { useAccountMapping } from '../../hooks/useAccountMapping'
 import { MapAccountModal } from '../../components/MapAccountModal'
+import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
+import { encodeFunctionData } from 'viem'
+import { ACCESSPASS_ABI } from '../../contracts/intran3t-accesspass'
+import { JsonRpcProvider } from 'ethers'
 
 async function generateQRCode(data: string): Promise<string> {
   try {
@@ -288,6 +292,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const { connectedAccount } = useTypink()
   const accessPassContract = useAccessPassContract(provider, signer)
   const { getEvmAddress, linkAddresses, areLinked } = useSubstrateEvmLink()
+  const substrateSigner = useSubstrateEVMSigner()
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [passes, setPasses] = useState<AccessPass[]>([])
@@ -300,8 +305,16 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const accountMapping = useAccountMapping(connectedAccount?.address)
   const [showMapModal, setShowMapModal] = useState(false)
 
-  // RBAC membership gate
-  const rbac = useRBACContract(provider, signer)
+  // Create stable read-only provider for RBAC queries when no MetaMask
+  const readOnlyProvider = useMemo(() => {
+    if (provider) return null
+    return new JsonRpcProvider(
+      import.meta.env.VITE_ASSETHUB_EVM_RPC || 'https://eth-rpc-testnet.polkadot.io'
+    )
+  }, [provider])
+
+  // RBAC membership gate (use fallback provider if no MetaMask)
+  const rbac = useRBACContract(provider || readOnlyProvider, signer)
   const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
   const [isMember, setIsMember] = useState<boolean | null>(null)
 
@@ -341,7 +354,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const isSubstrateMapped = accountMapping.isMapped === true
 
   const effectiveEvmAddress =
-    (hasSubstrateWallet && isSubstrateMapped && accountMapping.evmAddress) // Substrate mapped
+    substrateSigner.evmAddress // Substrate signer's derived address (primary)
     || evmAccount // MetaMask
     || getEvmAddress(connectedAccount?.address || '') // Linked
     || derivedEvmAddress // Derived fallback
@@ -349,13 +362,14 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   // DEBUG: Log address resolution
   useEffect(() => {
     console.log('🔍 Acc3ss Address Debug:', {
+      substrateSignerAddress: substrateSigner.evmAddress,
       evmAccount,
       linkedAddress: getEvmAddress(connectedAccount?.address || ''),
       derivedEvmAddress,
       effectiveEvmAddress,
       substrateAddress: connectedAccount?.address
     })
-  }, [evmAccount, connectedAccount?.address, derivedEvmAddress, effectiveEvmAddress])
+  }, [substrateSigner.evmAddress, evmAccount, connectedAccount?.address, derivedEvmAddress, effectiveEvmAddress])
 
   useEffect(() => {
     setPasses(loadAccessPasses())
@@ -401,16 +415,11 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       return
     }
 
-    // If Substrate wallet ONLY (no MetaMask) and not mapped → block
-    if (hasSubstrateWallet && !hasMetaMask && !isSubstrateMapped) {
-      console.log('⏭️ Skipping RBAC check (Substrate not mapped, no MetaMask fallback)')
-      setIsMember(null)
-      return
-    }
-
-    // If mapping check is still loading for Substrate-only mode, wait
-    if (hasSubstrateWallet && !hasMetaMask && accountMapping.isMapped === null) {
-      console.log('⏳ Waiting for mapping check...')
+    // Note: We have an effectiveEvmAddress (linked/derived), so we can check RBAC
+    // Even if account mapping status is unknown, we'll use the available address
+    // The effectiveEvmAddress comes from linkedAddress or derivedEvmAddress
+    if (hasSubstrateWallet && !hasMetaMask && accountMapping.isMapped === null && !effectiveEvmAddress) {
+      console.log('⏳ Waiting for address resolution...')
       return
     }
 
@@ -453,14 +462,55 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
       // Mint NFT via smart contract
       console.log('Minting access pass for:', effectiveEvmAddress)
-      const tokenId = await accessPassContract.mintAccessPass(
-        effectiveEvmAddress,
-        selectedLocation.name,
-        selectedLocation.id,
-        Math.floor(expiresAt / 1000), // Convert to seconds
-        'standard',
-        identityDisplay || 'User'
-      )
+
+      let tokenId: number
+
+      // Use Substrate signer if no MetaMask signer available
+      if (!signer && substrateSigner.isMapped) {
+        console.log('🔗 Using Substrate EVM Signer (mapped account)')
+
+        // Encode the contract call data
+        const callData = encodeFunctionData({
+          abi: ACCESSPASS_ABI,
+          functionName: 'mintAccessPass',
+          args: [
+            effectiveEvmAddress as `0x${string}`,
+            selectedLocation.name,
+            selectedLocation.id,
+            BigInt(Math.floor(expiresAt / 1000)),
+            'standard',
+            identityDisplay || 'User'
+          ]
+        })
+
+        // Send transaction via pallet_revive
+        const txHash = await substrateSigner.sendTransaction({
+          to: ACCESSPASS_CONTRACT_ADDRESS,
+          data: callData,
+          value: 0n,
+          gasLimit: 500000n
+        })
+
+        console.log(`✅ Transaction submitted: ${txHash}`)
+
+        // TODO: Extract token ID from transaction events
+        // For now, query the contract to get the latest token ID
+        tokenId = await accessPassContract.getTotalMinted()
+      } else if (signer) {
+        console.log('🦊 Using MetaMask signer')
+
+        // Use regular ethers.js contract
+        tokenId = await accessPassContract.mintAccessPass(
+          effectiveEvmAddress,
+          selectedLocation.name,
+          selectedLocation.id,
+          Math.floor(expiresAt / 1000),
+          'standard',
+          identityDisplay || 'User'
+        )
+      } else {
+        throw new Error('No signer available. Please connect MetaMask or map your Substrate account.')
+      }
 
       console.log(`✅ Minted token ID: ${tokenId}`)
 

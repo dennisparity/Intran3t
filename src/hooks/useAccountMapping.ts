@@ -92,8 +92,8 @@ export function useAccountMapping(substrateAddress?: string) {
    * Requires user to sign transaction in wallet
    */
   const mapAccount = async () => {
-    if (!apiClient || !connectedAccount?.polkadotSigner) {
-      throw new Error('API client or signer not available')
+    if (!apiClient || !connectedAccount?.address) {
+      throw new Error('API client or connected account not available')
     }
 
     try {
@@ -102,11 +102,13 @@ export function useAccountMapping(substrateAddress?: string) {
       // Create the map_account transaction
       const tx = apiClient.tx.Revive.map_account({})
 
-      // Sign the transaction
-      const signed = await tx.signAsync(connectedAccount.polkadotSigner)
+      // Sign and submit the transaction using Typink's signer
+      // The signer is retrieved from connectedAccount.wallet
+      const result = await tx.signSubmitAndWatch(connectedAccount.wallet.signer)
 
-      // Submit and wait for inclusion
-      await signed.submit()
+      // Wait for finalization
+      console.log('⏳ Waiting for transaction finalization...')
+      await result.ok
 
       console.log('✅ Account mapping successful!')
 

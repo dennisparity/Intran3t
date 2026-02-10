@@ -9,6 +9,7 @@ import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigati
 import { HelpCenterWidget, defaultHelpCenterConfig } from '../modules/help-center'
 import { ProfileWidget, defaultProfileConfig } from '../modules/profile'
 import { FormsWidget, defaultFormsConfig } from '../modules/forms'
+import { AddressConverterWidget } from '../modules/address-converter'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useUserSearch } from '../hooks/useUserSearch'
 import { UserSearchResults } from '../components/UserSearchResults'
@@ -235,8 +236,13 @@ export default function ModularDashboard() {
                   )}
                 </div>
 
-                {/* Add Plugin */}
+                {/* Address Converter - Utility module, always accessible */}
                 <div className="col-span-12 xl:col-span-4 row-span-2">
+                  <AddressConverterWidget />
+                </div>
+
+                {/* Add Plugin - Moved below Forms */}
+                <div className="col-span-12 xl:col-span-8 row-span-1">
                   <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
                     <div className="w-14 h-14 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
                       <span className="text-2xl text-[#a8a29e] group-hover:text-[#1c1917] transition-colors leading-none">+</span>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Start from "./pages/Start";
 import ModularDashboard from "./pages/ModularDashboard";
@@ -12,7 +12,7 @@ export default function App() {
   return (
     <PolkadotProvider appName="Intran3t">
       <EVMProvider>
-        <BrowserRouter>
+        <HashRouter>
           <div className="dark min-h-screen bg-background">
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -24,7 +24,7 @@ export default function App() {
               <Route path="/identity-test" element={<IdentityTest />} />
             </Routes>
           </div>
-        </BrowserRouter>
+        </HashRouter>
       </EVMProvider>
     </PolkadotProvider>
   );

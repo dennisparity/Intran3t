@@ -9,10 +9,10 @@ export const RBAC_CONTRACT_ADDRESS = import.meta.env.VITE_RBAC_CONTRACT_ADDRESS 
 
 // Enums matching Solidity contract
 export enum Role {
-  Admin = 0,
-  Member = 1,
-  Viewer = 2,
-  PeopleCulture = 3
+  Admin = 0,        // Full access
+  Member = 1,       // Create forms, limited access
+  Viewer = 2,       // Read-only
+  PeopleCulture = 3 // Can create polls + limited admin
 }
 
 export enum Action {
@@ -59,15 +59,15 @@ export interface Credential {
 export function roleToString(role: Role): string {
   switch (role) {
     case Role.Admin:
-      return 'Admin';
+      return 'Admin'
     case Role.Member:
-      return 'Member';
+      return 'Member'
     case Role.Viewer:
-      return 'Viewer';
+      return 'Viewer'
     case Role.PeopleCulture:
-      return 'People/Culture';
+      return 'People & Culture'
     default:
-      return 'Unknown';
+      return 'Unknown'
   }
 }
 
@@ -75,16 +75,16 @@ export function roleToString(role: Role): string {
 export function stringToRole(role: string): Role {
   switch (role.toLowerCase()) {
     case 'admin':
-      return Role.Admin;
+      return Role.Admin
     case 'member':
-      return Role.Member;
+      return Role.Member
     case 'viewer':
-      return Role.Viewer;
-    case 'people/culture':
+      return Role.Viewer
+    case 'people & culture':
     case 'peopleculture':
-      return Role.PeopleCulture;
+      return Role.PeopleCulture
     default:
-      return Role.Viewer;
+      return Role.Viewer
   }
 }
 
