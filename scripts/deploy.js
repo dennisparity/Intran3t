@@ -47,9 +47,10 @@ export function createCID(data, codec = CID_CONFIG.codec, hashCode = CID_CONFIG.
 export function encodeContenthash(cidString) {
   const decoder = cidString.startsWith("Qm") ? base58btc : base32;
   const cid = CID.parse(cidString, decoder);
+  // ENSIP-7 IPFS contenthash format: 0xe3 (namespace) + 0x01 (IPFS version) + CID bytes
   const contenthash = new Uint8Array(cid.bytes.length + 2);
-  contenthash[0] = 0xe3;
-  contenthash[1] = 0x01;
+  contenthash[0] = 0xe3; // IPFS namespace
+  contenthash[1] = 0x01; // IPFS version
   contenthash.set(cid.bytes, 2);
   return Buffer.from(contenthash).toString("hex");
 }

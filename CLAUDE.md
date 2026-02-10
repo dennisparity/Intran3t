@@ -1,9 +1,25 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-07
+> Last updated: 2026-02-10
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-10 - DotNS Contenthash Encoding Fix (CRITICAL)
+- **Fix**: Corrected IPFS contenthash encoding in `scripts/deploy.js` to comply with ENSIP-7 standard
+- **Issue**: Gateway returned HTTP 422 "Unsupported contenthash" due to missing IPFS version byte
+- **Root Cause**: Contenthash was encoded as `0xe3 + CID bytes` (37 bytes) instead of `0xe3 + 0x01 + CID bytes` (38 bytes)
+- **Format**: ENSIP-7 requires: `0xe3` (IPFS namespace) + `0x01` (IPFS version) + CID bytes
+- **Impact**: All deployments prior to this fix would fail at gateway resolution despite successful on-chain registration
+- **Investigation**: Cross-referenced `polkadot-bulletin-chain` and `product-infrastructure` repositories
+- **Discovery**: `product-infrastructure` had two conflicting implementations:
+  - `src/bulletin/cid.ts` → ✅ Correct (with 0x01 version byte)
+  - `src/commands/content-hash.ts` → ❌ Incorrect (missing version byte)
+  - dotns-cli was using the incorrect version
+- **Fix Applied**: Updated `encodeContenthash()` function in `scripts/deploy.js` to add IPFS version byte
+- **Verification**: Domain `intran3t-app42.dot` now resolves correctly at https://intran3t-app42.paseo.li
+- **Transaction**: Corrected contenthash tx `0xaa34f10740b333d4eeec4deab34be78ee80a931dc83e90b324660feac5d895d4`
+- **Reference**: See GitHub issue for detailed technical analysis
 
 ### 2026-02-07 - DotNS Decentralized Web Hosting Deployment
 - **Feature**: Complete DotNS + Bulletin deployment pipeline for decentralized hosting
@@ -305,6 +321,17 @@ vercel env add VITE_VAR_NAME production            # Add environment variable to
 - **Integration**: Read-only via dotid.app API
 
 ## Known Issues & Workarounds
+
+### DotNS Gateway 422 - Incorrect Contenthash Encoding
+**Problem**: Gateway returned HTTP 422 "Unsupported contenthash" even though domain was registered and content existed on Bulletin
+**Root Cause**: IPFS contenthash was missing the required IPFS version byte per ENSIP-7 standard
+- Incorrect: `0xe3 + CID bytes` (37 bytes)
+- Correct: `0xe3 + 0x01 + CID bytes` (38 bytes)
+**Workaround**: Updated `scripts/deploy.js` `encodeContenthash()` function to include version byte
+**Status**: Fixed (2026-02-10)
+**Reference**:
+- ENSIP-7: https://docs.ens.domains/ens-improvement-proposals/ensip-7-contenthash-field
+- Fixed in commit with contenthash encoding update
 
 ### CORS with dotid.app API
 **Problem**: Browser CORS policy blocks direct calls to `https://dotid.app/api/directory/identities`
