@@ -5,6 +5,25 @@
 
 ## Recent Changes
 
+### 2026-02-10 - Address Converter Module + Typink Signer Fix (CRITICAL)
+- **Feature**: Address Converter utility added as dashboard module
+- **File**: `src/components/AddressConverter.tsx` - Converts between H160, SS58 Generic, and SS58 Polkadot formats
+- **File**: `src/modules/address-converter/` - Dashboard module wrapper
+- **Integration**: Added to ModularDashboard (4 cols × 2 rows, positioned next to Forms module)
+- **Conversion Methods**:
+  - SS58 → H160: `keccak256(AccountId32)` → last 20 bytes
+  - H160 → SS58: Queries `pallet_revive.OriginalAccount` on-chain for mapped address
+- **Styling**: Applied Polkadot brand (warm grey palette, font-serif headers, Lucide icons, white background)
+- **CRITICAL FIX**: Typink signer access pattern corrected
+  - **File**: `src/hooks/useAccountMapping.ts` - Fixed from `connectedAccount.polkadotSigner` to `connectedAccount.wallet.signer`
+  - **File**: `src/hooks/useSubstrateEVMSigner.ts` - New hook with correct signer pattern using `tx.signSubmitAndWatch()`
+  - **Impact**: Substrate wallet users can now sign EVM transactions (was completely broken before)
+  - **Pattern**: ALWAYS use `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()` for PAPI transactions
+- **Configuration Fix**: Removed invalid URL-as-key entry from `.papi/polkadot-api.json`
+- **Contract Types**: Fixed Role enum in `src/contracts/intran3t-rbac.ts` to match Solidity (Admin=0, Member=1, Viewer=2, PeopleCulture=3)
+- **Routing**: Removed standalone `/address-converter` route from `src/App.tsx` (dashboard-only now)
+- **Layout Update**: Moved "+ Add Plugin" below Forms module to new row (8 columns)
+
 ### 2026-02-10 - DotNS Contenthash Encoding Fix (CRITICAL)
 - **Fix**: Corrected IPFS contenthash encoding in `scripts/deploy.js` to comply with ENSIP-7 standard
 - **Issue**: Gateway returned HTTP 422 "Unsupported contenthash" due to missing IPFS version byte
@@ -43,8 +62,6 @@
 - **Transaction**: Registration tx `0xf7332036e93d340c632676ae3842e7ad4f6fde8293ebd2fa1f4708037ce7ef2c`
 - **Transaction**: Contenthash tx `0x20c5e634131732c64e1fc8a66f4700b30b99e20c2f3916c920ee5fd00aaa553f`
 
-## Recent Changes
-
 ### 2026-02-06 - Smart Dual-Wallet Architecture with Account Mapping
 - **Feature**: Substrate wallet account mapping via `pallet_revive.map_account()`
 - **Feature**: Smart dual-wallet support — works with Substrate-only, MetaMask-only, or both
@@ -63,8 +80,6 @@
   5. Both wallets (Substrate not mapped) → Uses MetaMask, shows optional mapping tip
 - **Priority**: `mapped EVM address > MetaMask > linked address > derived address`
 - **Benefits**: Users can authenticate with Substrate wallet (on-chain identity) while signing EVM transactions (smart contracts)
-
-### 2026-02-05 - Landing Page Redesign
 
 ### 2026-02-05 - Landing Page Redesign
 - **UI**: Redesigned `src/pages/Landing.tsx` to match the polkadot-payroll landing layout
@@ -130,6 +145,7 @@
 - **Returns**: `{ isMapped, evmAddress, isLoading, mapAccount }`
 - **Used by**: Acc3ssWidget (smart contract interactions)
 - **Notes**: Enables single-wallet UX (Substrate wallet signs EVM transactions after mapping)
+- **CRITICAL Pattern**: Uses `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()` (NOT `polkadotSigner`)
 
 ### MapAccountModal Component
 - **File**: `src/components/MapAccountModal.tsx`
@@ -157,6 +173,37 @@
   - VirtualDoor animation on successful mint
   - QR code generation for access passes
 - **Dependencies**: `useAccountMapping`, `useRBACContract`, `useAccessPassContract`
+
+### AddressConverter Component
+- **File**: `src/components/AddressConverter.tsx`
+- **Purpose**: Utility for converting between address formats (H160, SS58 Generic, SS58 Polkadot)
+- **Features**:
+  - Real-time conversion with debounced input (300ms)
+  - Format validation with helpful error messages
+  - Copy-to-clipboard for both input and output
+  - Swap formats button
+  - Chain status indicator (connects to Paseo Asset Hub)
+- **Conversion Methods**:
+  - **SS58 → H160**: `keccak256(decodeAddress(ss58))` → last 20 bytes (deterministic derivation)
+  - **H160 → SS58**: Queries `pallet_revive.OriginalAccount(h160)` on-chain (requires account mapping)
+  - **SS58 ↔ SS58**: Re-encodes with different prefix (42 for Generic, 0 for Polkadot)
+- **Styling**: Polkadot brand (warm grey #1c1917, #78716c, #a8a29e, #e7e5e4), font-serif headers, Lucide icons
+- **Module Wrapper**: `src/modules/address-converter/AddressConverterWidget.tsx`
+- **Used by**: ModularDashboard (4 cols × 2 rows, next to Forms)
+- **Dependencies**: `polkadot-api`, `viem`, `@polkadot/util-crypto`, `lucide-react`
+
+### useSubstrateEVMSigner Hook
+- **File**: `src/hooks/useSubstrateEVMSigner.ts`
+- **Purpose**: Enables Substrate wallets to sign EVM transactions via `pallet_revive`
+- **Key functions**:
+  - `sendTransaction(txData)` - Sends EVM transactions using Substrate wallet
+  - Wraps EVM call data in `pallet_revive.call()` extrinsic
+  - Handles gas limits and storage deposits
+- **Pattern**: Uses `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()`
+- **Returns**: `{ sendTransaction, isLoading, error, txHash }`
+- **Used by**: Components that need to send EVM transactions with Substrate wallets
+- **Prerequisites**: Account must be mapped via `pallet_revive.map_account()` first
+- **Notes**: This is the bridge that makes single-wallet UX possible (Substrate auth + EVM contracts)
 
 ### dotid-registry Service
 - **File**: `src/services/dotid-registry.ts`
@@ -588,6 +635,11 @@ vercel --prod
 
 ### Important Patterns
 
+- **Typink + PAPI Signer Access (CRITICAL)**: When using Typink with PAPI to build Substrate transactions:
+  - ✅ ALWAYS: `tx.signSubmitAndWatch(connectedAccount.wallet.signer)` then `await result.ok`
+  - ❌ NEVER: `connectedAccount.polkadotSigner` (doesn't exist)
+  - ❌ NEVER: `tx.signAsync()` (wrong pattern for wallet signing)
+  - This pattern applies to ALL PAPI transactions requiring wallet signatures (account mapping, EVM calls via pallet_revive, etc.)
 - **Parallel Search**: Registry search runs in parallel with local search for better UX (both promises resolve independently)
 - **Client-side Caching**: Registry data cached 5 minutes to reduce API load and improve performance
 - **Conditional API URLs**: Use `import.meta.env.DEV` to switch between dev proxy and production serverless function
