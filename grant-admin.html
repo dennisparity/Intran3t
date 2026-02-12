@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grant Admin Role</title>
+  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #fafafa;
+    }
+    .card {
+      background: #1c1917;
+      border: 1px solid #292524;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #78716c;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 12px;
+    }
+    button:hover {
+      background: #57534e;
+    }
+    button:disabled {
+      background: #292524;
+      cursor: not-allowed;
+    }
+    .info {
+      background: #292524;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 12px 0;
+      font-family: monospace;
+      font-size: 14px;
+      word-break: break-all;
+    }
+    .success {
+      background: #166534;
+      color: #bbf7d0;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    .error {
+      background: #991b1b;
+      color: #fecaca;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    h1 { margin-top: 0; }
+    .status { margin-top: 12px; color: #a8a29e; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Grant Admin Role</h1>
+    <p>This will grant Admin role to your derived Substrate EVM address.</p>
+
+    <div class="info">
+      <strong>Organization:</strong><br>
+      0xda0dfc1c44fa23815556554502d3d60780123f046c95672cf200d7b6517f5bcc
+    </div>
+
+    <div class="info">
+      <strong>New Admin Address (derived):</strong><br>
+      0xed041713db3374bac7b4963c574739fdc5da3604
+    </div>
+
+    <div class="info">
+      <strong>RBAC Contract:</strong><br>
+      0xF1152B54404F7F4B646199072Fd3819D097c4F94
+    </div>
+
+    <button id="connectBtn" onclick="connect()">Connect MetaMask</button>
+    <button id="grantBtn" onclick="grantAdmin()" disabled>Grant Admin Role</button>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script>
+    const RBAC_ADDRESS = '0xF1152B54404F7F4B646199072Fd3819D097c4F94';
+    const ORG_ID = '0xda0dfc1c44fa23815556554502d3d60780123f046c95672cf200d7b6517f5bcc';
+    const NEW_ADMIN = '0xed041713db3374bac7b4963c574739fdc5da3604';
+
+    const RBAC_ABI = [
+      {
+        name: 'issueCredential',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'orgId', type: 'bytes32' },
+          { name: 'subject', type: 'address' },
+          { name: 'role', type: 'uint8' },
+          { name: 'expiresAt', type: 'uint256' }
+        ],
+        outputs: [{ name: 'credentialId', type: 'bytes32' }]
+      },
+      {
+        name: 'getUserRole',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [
+          { name: 'orgId', type: 'bytes32' },
+          { name: 'user', type: 'address' }
+        ],
+        outputs: [
+          { name: 'role', type: 'uint8' },
+          { name: 'hasRole', type: 'bool' }
+        ]
+      }
+    ];
+
+    let provider, signer, contract;
+
+    async function connect() {
+      const statusDiv = document.getElementById('status');
+      const connectBtn = document.getElementById('connectBtn');
+      const grantBtn = document.getElementById('grantBtn');
+
+      try {
+        statusDiv.textContent = 'Connecting to MetaMask...';
+
+        if (!window.ethereum) {
+          throw new Error('MetaMask not found');
+        }
+
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+
+        contract = new ethers.Contract(RBAC_ADDRESS, RBAC_ABI, signer);
+
+        // Check current role
+        const [role, hasRole] = await contract.getUserRole(ORG_ID, NEW_ADMIN);
+        const roleNames = ['NoRole', 'Member', 'Admin'];
+
+        statusDiv.innerHTML = `<div class="success">
+          Connected: ${address}<br>
+          Current role for ${NEW_ADMIN}: ${roleNames[role]} (${role})
+        </div>`;
+
+        if (role === 2 && hasRole) {
+          statusDiv.innerHTML += '<div class="success">✅ Already has Admin role!</div>';
+          grantBtn.disabled = true;
+        } else {
+          connectBtn.disabled = true;
+          grantBtn.disabled = false;
+        }
+      } catch (error) {
+        statusDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function grantAdmin() {
+      const statusDiv = document.getElementById('status');
+      const grantBtn = document.getElementById('grantBtn');
+
+      try {
+        grantBtn.disabled = true;
+        statusDiv.textContent = 'Sending transaction...';
+
+        const tx = await contract.issueCredential(
+          ORG_ID,
+          NEW_ADMIN,
+          2, // Admin role
+          0  // No expiration
+        );
+
+        statusDiv.textContent = `Transaction sent: ${tx.hash}\nWaiting for confirmation...`;
+
+        await tx.wait();
+
+        // Verify
+        const [role, hasRole] = await contract.getUserRole(ORG_ID, NEW_ADMIN);
+        const roleNames = ['NoRole', 'Member', 'Admin'];
+
+        statusDiv.innerHTML = `<div class="success">
+          ✅ Success!<br>
+          Transaction: ${tx.hash}<br>
+          New role: ${roleNames[role]} (${role})
+        </div>`;
+      } catch (error) {
+        statusDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        grantBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

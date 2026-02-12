@@ -23,6 +23,7 @@ import { base32 } from "multiformats/bases/base32";
 import { base58btc } from "multiformats/bases/base58";
 import * as dagPB from "@ipld/dag-pb";
 import { UnixFS } from "ipfs-unixfs";
+import { encode as encodeContentHash } from "@ensdomains/content-hash";
 import { DotNS } from "./dotns.js";
 
 config();
@@ -45,14 +46,10 @@ export function createCID(data, codec = CID_CONFIG.codec, hashCode = CID_CONFIG.
 }
 
 export function encodeContenthash(cidString) {
-  const decoder = cidString.startsWith("Qm") ? base58btc : base32;
-  const cid = CID.parse(cidString, decoder);
-  // ENSIP-7 IPFS contenthash format: 0xe3 (namespace) + 0x01 (IPFS version) + CID bytes
-  const contenthash = new Uint8Array(cid.bytes.length + 2);
-  contenthash[0] = 0xe3; // IPFS namespace
-  contenthash[1] = 0x01; // IPFS version
-  contenthash.set(cid.bytes, 2);
-  return Buffer.from(contenthash).toString("hex");
+  // Use official ENS library for contenthash encoding
+  // Automatically handles ENSIP-7 format: 0xe3 (IPFS namespace) + 0x01 (version) + CID bytes
+  const encoded = encodeContentHash('ipfs', cidString);
+  return encoded; // Already returns hex without '0x' prefix
 }
 
 function toHashingEnum(mhCode) {
@@ -261,10 +258,13 @@ export async function merkleize(directoryPath, outputCarPath) {
   }
   console.log(`   Merkleizing: ${directoryPath}`);
   const cid = execSync(
-    `ipfs add -Q -r --cid-version=1 --raw-leaves --pin=false "${directoryPath}"`,
+    `ipfs add -Q -r --cid-version=1 --raw-leaves --pin=true "${directoryPath}"`,
     { encoding: "utf-8" }
   ).trim();
   if (!cid) throw new Error("Failed to get CID from IPFS");
+  console.log(`   IPFS CID: ${cid} (pinned to local node)`);
+  console.log(`   ⚠️  IMPORTANT: Content must be available on public IPFS network`);
+  console.log(`   Verify: https://dweb.link/ipfs/${cid}`);
   execSync(`ipfs dag export ${cid} > "${outputCarPath}"`);
   if (!fs.existsSync(outputCarPath)) {
     throw new Error("Failed to create CAR file");
@@ -307,6 +307,8 @@ export async function deploy(content, domainName = null) {
       const result = await storeDirectory(contentPath);
       cid = result.storageCid;
       ipfsCid = result.ipfsCid;
+      console.log(`   Storage CID (Bulletin DAG): ${cid}`);
+      console.log(`   IPFS CID (original directory): ${ipfsCid}`);
     } else {
       console.log(`\n   Mode: File`);
       console.log(`   Path: ${contentPath}`);
@@ -351,7 +353,12 @@ export async function deploy(content, domainName = null) {
     await dotns.register(name, { status: "none" });
   }
 
-  const contenthashHex = `0x${encodeContenthash(cid)}`;
+  // TEAM RECOMMENDATION (2026-02-12): Use ipfsCid until paseo.li gateway's Bulletin integration matures
+  // Gateway resolution works correctly, but Bulletin fetching not yet stable
+  // Future: Switch to storageCid when "Bulletin Chain gets its shit together" (team quote)
+  const cidForContenthash = ipfsCid || cid; // Prefer ipfsCid (original IPFS directory structure)
+  console.log(`   Using CID for contenthash: ${cidForContenthash} ${ipfsCid ? '(ipfsCid - original directory)' : '(fallback)'}`);
+  const contenthashHex = `0x${encodeContenthash(cidForContenthash)}`;
   await dotns.setContenthash(name, contenthashHex);
   dotns.disconnect();
 

@@ -1,9 +1,30 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-10
+> Last updated: 2026-02-12
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-12 - DotNS Asset Loading Fix (CRITICAL)
+- **Fix**: Assets now load correctly from paseo.li gateway (HTTP 200 instead of HTTP 500)
+- **Root Cause**: Using `storageCid` (CAR chunks DAG) created non-traversable structure; gateway couldn't resolve nested paths
+- **Solution**: Use `ipfsCid` (original IPFS directory structure) for contenthash instead of `storageCid`
+- **Implementation**:
+  - **File**: `scripts/deploy.js` (lines 353-358) - Prefer `ipfsCid` over `storageCid` for contenthash
+  - **File**: `scripts/deploy.js` (line 261) - Enable IPFS pinning (`--pin=true`)
+  - **File**: `scripts/deploy.js` (lines 263-265, 307-308) - Add logging for CID tracking
+  - **File**: `DOTNS_ASSET_LOADING_FIX.md` - Complete documentation of issue, fix, and workflow
+- **Team Guidance**: paseo.li gateway's Bulletin integration not yet mature; use public IPFS until ready
+- **Verification**:
+  - ✅ Root page: `https://intran3t-app42.paseo.li/` → HTTP/2 200
+  - ✅ CSS: `https://intran3t-app42.paseo.li/assets/index-CBwU4fPO.css` → HTTP/2 200
+  - ✅ JS: `https://intran3t-app42.paseo.li/assets/index-BhVU0qzW.js` → HTTP/2 200
+  - ✅ Public IPFS: `https://dweb.link/ipfs/{cid}/` → HTTP/2 200
+- **New CID**: `bafybeidj74ay4huaep73rrgofywumchlcidbqmgggwtso3i2dxsj55ci5q`
+- **Transaction**: Contenthash update tx `0x4d0dd3c967423642912af529574c5b1eaf2c109ed6b3170647a65d5fbc3736c2`
+- **Trade-off**: Relies on public IPFS network availability; clear migration path to full Bulletin when gateway integration matures
+- **Long-term**: Switch to SDK's block-by-block storage or back to `storageCid` when Bulletin integration is stable
+- **Key Insight**: Gateway resolution logic works correctly; issue was CAR file structure, not contenthash encoding
 
 ### 2026-02-10 - Address Converter Module + Typink Signer Fix (CRITICAL)
 - **Feature**: Address Converter utility added as dashboard module
