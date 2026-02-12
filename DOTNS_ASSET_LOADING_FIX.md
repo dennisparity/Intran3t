@@ -1,5 +1,10 @@
 # DotNS Asset Loading Fix - Implementation Guide
 
+> **Note:** This documents the February 12, 2026 asset loading fix discovery and resolution.
+> **For current deployment instructions**, see [DOTNS_DEPLOYMENT.md](./DOTNS_DEPLOYMENT.md)
+
+---
+
 > **Date:** 2026-02-12
 > **Status:** ✅ Fix Implemented
 > **Issue:** Assets fail to load (HTTP 500) from paseo.li gateway

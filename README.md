@@ -259,57 +259,37 @@ pnpm preview
 
 ### Deployment Options
 
-#### Option 1: DotNS (Decentralized - Polkadot Native)
-Deploy to Polkadot's decentralized web hosting via DotNS + IPFS:
+#### Option 1: DotNS (Decentralized - Polkadot Native) ✅ Current
+Deploy to Polkadot's decentralized web hosting:
 
 ```bash
-# Prerequisites
-brew install ipfs  # Install IPFS CLI
-ipfs daemon &      # Start IPFS daemon
-
-# Configure environment
-cp .env.example .env
-# Add DOTNS_MNEMONIC and DOTNS_DOMAIN to .env
-
-# Build and deploy
+# Quick deploy
 npm run build
-IPFS_CID="your-ipfs-cid" npm run deploy:dotns
+npm run deploy:dotns
 
-# Or update only contenthash
+# Update contenthash only
 node scripts/update-dotns.js <cid>
 ```
 
-**Live URL:** `https://<your-domain>.paseo.li`
-
-**Key Points:**
-- Domain naming: 8+ chars, exactly 2 trailing digits (e.g., `intran3t-app42`)
-- Uses public IPFS network for content distribution
-- Gateway automatically resolves contenthash from DotNS contracts
-- See [DOTNS_ASSET_LOADING_FIX.md](./DOTNS_ASSET_LOADING_FIX.md) for complete guide
-
-**Current Deployment:**
+**Live Deployment:**
 - Domain: `intran3t-app42.dot`
 - URL: https://intran3t-app42.paseo.li
-- Status: ✅ Fully functional with assets loading correctly
+- Status: ✅ Fully functional
 
-#### Option 2: Vercel (Quick & Traditional)
-Deploy to Vercel for fast iteration:
+**Complete Guide:** [DOTNS_DEPLOYMENT.md](./DOTNS_DEPLOYMENT.md)
+
+#### Option 2: Vercel (Traditional CDN)
+Quick iteration with centralized hosting:
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy to preview
-vercel
-
-# Deploy to production
-vercel --prod
+vercel          # Preview
+vercel --prod   # Production
 ```
 
 **Documentation:**
-- [DOTNS_ASSET_LOADING_FIX.md](./DOTNS_ASSET_LOADING_FIX.md) - DotNS deployment guide with troubleshooting
+- [DOTNS_DEPLOYMENT.md](./DOTNS_DEPLOYMENT.md) - Complete DotNS guide (manual + GitHub Actions reference)
+- [DOTNS_ASSET_LOADING_FIX.md](./DOTNS_ASSET_LOADING_FIX.md) - Feb 12 asset loading fix (historical)
 - [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) - Traditional deployment options
-- [QUICK_START_DEPLOYMENT.md](./QUICK_START_DEPLOYMENT.md) - Quick reference
 
 ---
 

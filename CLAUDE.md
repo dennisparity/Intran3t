@@ -5,6 +5,19 @@
 
 ## Recent Changes
 
+### 2026-02-12 - DotNS Documentation Consolidation & GitHub Actions Reference
+- **Cleanup**: Consolidated scattered DotNS documentation into single authoritative guide
+- **File**: `DOTNS_DEPLOYMENT.md` - Complete deployment guide (current manual approach + future GitHub Actions reference)
+- **File**: `.github/workflows/deploy-dotns.yml` - GitHub Actions workflow example (reference for future apps, not active)
+- **Removed**: `DOTNS_DEPLOYMENT_FINDINGS.md` (outdated, superseded by consolidated guide)
+- **Archived**: `DOTNS_BULLETIN_FINDINGS.md` → `docs/archive/DOTNS_BULLETIN_FINDINGS_2026-02-06.md` (historical reference)
+- **Updated**: `DOTNS_ASSET_LOADING_FIX.md` - Added note pointing to consolidated guide (kept for historical value)
+- **Working Example**: Based on https://github.com/andrew-ifrita/amateur_dentistry (https://amateurdentistry00.paseo.li/)
+- **Official Workflow**: Referenced `paritytech/dotns-sdk/.github/workflows/deploy.yml@main` for future use
+- **Current Approach**: Manual deployment via scripts (works perfectly, will transition to Bulletin native storage later)
+- **Future Ready**: GitHub Actions workflow provided as reference for when we deploy via Bulletin Chain natively
+- **Documentation**: Single source of truth for all DotNS deployment scenarios
+
 ### 2026-02-12 - DotNS Asset Loading Fix (CRITICAL)
 - **Fix**: Assets now load correctly from paseo.li gateway (HTTP 200 instead of HTTP 500)
 - **Root Cause**: Using `storageCid` (CAR chunks DAG) created non-traversable structure; gateway couldn't resolve nested paths

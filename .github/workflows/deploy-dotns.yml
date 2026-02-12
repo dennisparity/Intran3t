@@ -1,0 +1,90 @@
+# DotNS Deployment Workflow (REFERENCE EXAMPLE)
+#
+# This workflow is provided as a reference for future deployments using the
+# official paritytech/dotns-sdk reusable workflow. It demonstrates:
+# - Automated deployment to Bulletin Chain
+# - Preview deployments for pull requests
+# - Integration with GitHub Actions CI/CD
+#
+# Current Status: NOT ACTIVE (manual deployment used)
+# To enable: Uncomment the 'on:' section below and add DOTNS_MNEMONIC secret
+#
+# Based on: https://github.com/andrew-ifrita/amateur_dentistry
+
+name: Deploy to DotNS
+
+# Uncomment to enable automated deployments:
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    name: Build Intran3t
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to DotNS
+    needs: [build]
+    uses: paritytech/dotns-sdk/.github/workflows/deploy.yml@main
+    with:
+      basename: intran3t-app42
+      artifact-name: dist
+      mode: ${{ github.event_name == 'push' && 'production' || 'preview' }}
+      register-base: true
+    secrets:
+      mnemonic: ${{ secrets.DOTNS_MNEMONIC }}
+
+  comment:
+    name: Comment on PR
+    needs: [deploy]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post deployment URL
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: deploy-preview
+          message: |
+            ### 🚀 Deployed to DotNS
+
+            **URL:** https://${{ needs.deploy.outputs.fqdn }}.paseo.li
+            **Domain:** `${{ needs.deploy.outputs.fqdn }}`
+            **CID:** `${{ needs.deploy.outputs.cid }}`
+
+            ---
+
+            ✅ All assets should load correctly
+            🔍 Check DevTools Network tab for verification
+
+            *Deployment powered by [paritytech/dotns-sdk](https://github.com/paritytech/dotns-sdk)*
