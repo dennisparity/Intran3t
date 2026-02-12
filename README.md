@@ -7,7 +7,8 @@
 ---
 
 ## 🎯 Project Overview
-<img width="1165" height="720" alt="Screenshot 2026-01-12 at 09 44 57" src="https://github.com/user-attachments/assets/3647821e-3da4-46c6-9877-67ad1abc956b" />
+<img width="1140" height="712" alt="Screenshot 2026-02-11 at 11 35 28" src="https://github.com/user-attachments/assets/1f0f5912-1f09-432c-9223-46e9df21c21b" />
+
 
 ### Purpose
 Intran3t is a fully web3 "intran3t-app" that integrates key workplace functions and functionalities as plugins under a single interface, run fully on Polkadot. The dapp demonstrates role-base access managements for web3 users while enabling isolated functionalities and chain interactions per module.
