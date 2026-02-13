@@ -54,7 +54,7 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  */
 export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
   const typinkState = useTypink()
-  const { connectedAccount } = typinkState
+  const { connectedAccount, signer } = typinkState
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -146,17 +146,17 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     // Get fresh connectedAccount from ref to avoid stale closure
     const currentAccount = typinkStateRef.current.connectedAccount
 
+    // Get fresh signer from Typink state
+    const currentSigner = typinkStateRef.current.signer
+
     console.log('🔍 sendTransaction called with state:', {
       hasAssetHubApi: !!assetHubApiRef.current,
       hasConnectedAccount: !!currentAccount,
       accountAddress: currentAccount?.address,
-      hasWallet: !!currentAccount?.wallet,
-      hasWalletSigner: !!currentAccount?.wallet?.signer,
+      hasSigner: !!currentSigner,
       evmAddress,
       accountKeys: currentAccount ? Object.keys(currentAccount) : []
     })
-
-    console.log('🔍 Full currentAccount object:', currentAccount)
 
     if (!assetHubApiRef.current) {
       throw new Error('Asset Hub API not initialized')
@@ -166,12 +166,8 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       throw new Error('Substrate wallet not connected - no address')
     }
 
-    if (!currentAccount?.wallet) {
-      throw new Error('Substrate wallet not connected - no wallet object. Please ensure your Substrate wallet (Talisman/SubWallet) is properly connected.')
-    }
-
-    if (!currentAccount?.wallet?.signer) {
-      throw new Error('Substrate wallet not connected - no signer')
+    if (!currentSigner) {
+      throw new Error('Substrate wallet signer not available. Please ensure your wallet is properly connected.')
     }
 
     if (!evmAddress) {
@@ -202,7 +198,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
       // Sign and submit with Substrate wallet using Typink's signer
       console.log('⏳ Signing and submitting transaction...')
-      const result = await tx.signSubmitAndWatch(currentAccount.wallet.signer)
+      const result = await tx.signSubmitAndWatch(currentSigner)
 
       console.log('✅ Transaction submitted, waiting for finalization...')
 

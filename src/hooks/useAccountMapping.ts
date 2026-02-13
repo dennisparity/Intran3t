@@ -30,7 +30,7 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  * }
  */
 export function useAccountMapping(substrateAddress?: string) {
-  const { apiClient, connectedAccount } = useTypink()
+  const { apiClient, connectedAccount, signer } = useTypink()
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -103,8 +103,10 @@ export function useAccountMapping(substrateAddress?: string) {
       const tx = apiClient.tx.Revive.map_account({})
 
       // Sign and submit the transaction using Typink's signer
-      // The signer is retrieved from connectedAccount.wallet
-      const result = await tx.signSubmitAndWatch(connectedAccount.wallet.signer)
+      if (!signer) {
+        throw new Error('Signer not available. Please ensure your wallet is connected.')
+      }
+      const result = await tx.signSubmitAndWatch(signer)
 
       // Wait for finalization
       console.log('⏳ Waiting for transaction finalization...')
