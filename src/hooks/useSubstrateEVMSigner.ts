@@ -53,15 +53,25 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  * Hook to provide EVM signing capabilities using Substrate wallet
  */
 export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
-  const { connectedAccount } = useTypink()
+  const typinkState = useTypink()
+  const { connectedAccount } = typinkState
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const assetHubClientRef = useRef<any>(null)
   const assetHubApiRef = useRef<any>(null)
+  const typinkStateRef = useRef(typinkState)
 
-  console.log('🎯 useSubstrateEVMSigner hook called')
+  // Keep typink state ref updated
+  useEffect(() => {
+    typinkStateRef.current = typinkState
+  }, [typinkState])
+
+  console.log('🎯 useSubstrateEVMSigner hook called', {
+    hasAccount: !!connectedAccount,
+    address: connectedAccount?.address
+  })
 
   // Initialize Asset Hub client
   useEffect(() => {
@@ -133,12 +143,32 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     value?: bigint
     gasLimit?: bigint
   }): Promise<string> => {
+    // Get fresh connectedAccount from ref to avoid stale closure
+    const currentAccount = typinkStateRef.current.connectedAccount
+
+    console.log('🔍 sendTransaction called with state:', {
+      hasAssetHubApi: !!assetHubApiRef.current,
+      hasConnectedAccount: !!currentAccount,
+      accountAddress: currentAccount?.address,
+      hasWallet: !!currentAccount?.wallet,
+      hasWalletSigner: !!currentAccount?.wallet?.signer,
+      evmAddress
+    })
+
     if (!assetHubApiRef.current) {
       throw new Error('Asset Hub API not initialized')
     }
 
-    if (!connectedAccount?.address || !connectedAccount?.wallet) {
-      throw new Error('Substrate wallet not connected')
+    if (!currentAccount?.address) {
+      throw new Error('Substrate wallet not connected - no address')
+    }
+
+    if (!currentAccount?.wallet) {
+      throw new Error('Substrate wallet not connected - no wallet object. Please ensure your Substrate wallet (Talisman/SubWallet) is properly connected.')
+    }
+
+    if (!currentAccount?.wallet?.signer) {
+      throw new Error('Substrate wallet not connected - no signer')
     }
 
     if (!evmAddress) {
@@ -169,7 +199,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
       // Sign and submit with Substrate wallet using Typink's signer
       console.log('⏳ Signing and submitting transaction...')
-      const result = await tx.signSubmitAndWatch(connectedAccount.wallet.signer)
+      const result = await tx.signSubmitAndWatch(currentAccount.wallet.signer)
 
       console.log('✅ Transaction submitted, waiting for finalization...')
 
