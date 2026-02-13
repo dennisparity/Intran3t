@@ -397,9 +397,21 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
       let tokenId: number
 
-      // Use Substrate signer if no MetaMask signer available
-      if (!signer && substrateSigner.isMapped) {
-        console.log('🔗 Using Substrate EVM Signer (mapped account)')
+      // Check wallet connection
+      if (!connectedAccount?.address) {
+        throw new Error('Please connect your Substrate wallet (Talisman or SubWallet)')
+      }
+
+      // For Substrate wallet: Use Substrate EVM Signer via pallet_revive
+      if (!signer) {
+        console.log('🔗 Using Substrate wallet for EVM transaction')
+        console.log('Substrate account:', connectedAccount.address)
+        console.log('Mapped EVM address:', effectiveEvmAddress)
+        console.log('Is mapped?', substrateSigner.isMapped)
+
+        if (!substrateSigner.isMapped) {
+          throw new Error('Please map your Substrate account first (use the Map Account button)')
+        }
 
         // Encode the contract call data
         const callData = encodeFunctionData({
@@ -415,6 +427,8 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           ]
         })
 
+        console.log('📝 Encoded call data:', callData)
+
         // Send transaction via pallet_revive
         const txHash = await substrateSigner.sendTransaction({
           to: ACCESSPASS_CONTRACT_ADDRESS,
@@ -425,13 +439,13 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
         console.log(`✅ Transaction submitted: ${txHash}`)
 
-        // TODO: Extract token ID from transaction events
-        // For now, query the contract to get the latest token ID
+        // Query the contract to get the latest token ID
+        // (Since we can't easily parse events from pallet_revive)
+        await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for block
         tokenId = await accessPassContract.getTotalMinted()
-      } else if (signer) {
+      } else {
+        // For MetaMask: Use regular ethers.js
         console.log('🦊 Using MetaMask signer')
-
-        // Use regular ethers.js contract
         tokenId = await accessPassContract.mintAccessPass(
           effectiveEvmAddress,
           selectedLocation.name,
@@ -440,8 +454,6 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           'standard',
           identityDisplay || 'User'
         )
-      } else {
-        throw new Error('No signer available. Please connect MetaMask or map your Substrate account.')
       }
 
       console.log(`✅ Minted token ID: ${tokenId}`)
