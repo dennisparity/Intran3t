@@ -68,10 +68,10 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     typinkStateRef.current = typinkState
   }, [typinkState])
 
-  console.log('🎯 useSubstrateEVMSigner hook called', {
-    hasAccount: !!connectedAccount,
-    address: connectedAccount?.address
-  })
+  console.log('🎯 useSubstrateEVMSigner hook called')
+  console.log('  connectedAccount:', connectedAccount)
+  console.log('  connectedAccount keys:', connectedAccount ? Object.keys(connectedAccount) : 'none')
+  console.log('  Full typink state keys:', Object.keys(typinkState))
 
   // Initialize Asset Hub client
   useEffect(() => {
@@ -152,8 +152,11 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       accountAddress: currentAccount?.address,
       hasWallet: !!currentAccount?.wallet,
       hasWalletSigner: !!currentAccount?.wallet?.signer,
-      evmAddress
+      evmAddress,
+      accountKeys: currentAccount ? Object.keys(currentAccount) : []
     })
+
+    console.log('🔍 Full currentAccount object:', currentAccount)
 
     if (!assetHubApiRef.current) {
       throw new Error('Asset Hub API not initialized')
