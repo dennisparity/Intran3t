@@ -7,7 +7,7 @@ import { useIdentity } from './use-identity'
 import { useState, useEffect } from 'react'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { useEVM } from '../../providers/EVMProvider'
-import { useRBACContract, roleToString } from '../../hooks/useRBACContract'
+// RBAC removed - simplified to permissionless model
 
 function formatBalance(value: bigint | undefined, decimals: number = 10): string {
   if (!value) return "0";
@@ -38,7 +38,7 @@ export function ProfileWidget({
 }: ProfileWidgetProps) {
   const { connectedAccount, connectedNetworks } = useTypink()
   const { account: evmAccount, provider, signer } = useEVM()
-  const [userRole, setUserRole] = useState<string | null>(null)
+  // RBAC removed - no role tracking needed
 
   // Use profileAddress if provided, fall back to connectedAccount, then MetaMask
   const displayAddress = profileAddress || connectedAccount?.address || evmAccount
@@ -66,46 +66,6 @@ export function ProfileWidget({
   const { data: identity, isLoading: identityLoading } = useIdentity(
     (!isEvm && displayAddress) ? displayAddress : undefined
   )
-
-  // RBAC contract hook
-  const rbac = useRBACContract(provider, signer)
-
-  // Get orgId from localStorage or environment default
-  const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
-
-  // Fetch user's role from contract
-  useEffect(() => {
-    if (!orgId || !rbac.contract || !roleQueryAddress) {
-      setUserRole(null)
-      return
-    }
-
-    let isMounted = true
-
-    const fetchRole = async () => {
-      try {
-        const { role, hasRole } = await rbac.getUserRole(orgId, roleQueryAddress)
-        if (isMounted) {
-          if (hasRole) {
-            setUserRole(roleToString(role))
-          } else {
-            setUserRole(null)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch user role:', error)
-        if (isMounted) {
-          setUserRole(null)
-        }
-      }
-    }
-
-    fetchRole()
-
-    return () => {
-      isMounted = false
-    }
-  }, [orgId, rbac.contract, roleQueryAddress])
 
   // Build profile from real data only - no mock data for connected users
   const profile = displayAddress
@@ -247,25 +207,9 @@ export function ProfileWidget({
                   </div>
                 </HoverCardContent>
                     </HoverCard>
-                    {/* Role & Verification Badges - Visible */}
+                    {/* Verification Badge - Visible */}
                     <div className="flex items-center gap-2 mt-1">
-                      {/* Role Badge - Only show if role is fetched */}
-                      {userRole && (
-                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                          userRole === 'Admin'
-                            ? 'bg-[#f5f5f4] border border-[#e7e5e4] text-[#1c1917]'
-                            : userRole === 'People/Culture'
-                            ? 'bg-purple-50 border border-purple-200 text-purple-700'
-                            : userRole === 'Member'
-                            ? 'bg-blue-50 border border-blue-200 text-blue-700'
-                            : 'bg-gray-50 border border-gray-200 text-gray-700'
-                        }`}>
-                          {userRole === 'Admin' && <Shield className="w-3 h-3" />}
-                          {userRole === 'People/Culture' && <UsersIcon className="w-3 h-3" />}
-                          <span>{userRole}</span>
-                        </div>
-                      )}
-                      {/* Verification Badge */}
+                      {/* Verification Badge (People Chain Identity) */}
                       {identity.verified && (
                         <div className="flex items-center gap-1 text-xs text-green-600">
                           <CheckCircle2 className="w-3 h-3" />
