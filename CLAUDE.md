@@ -41,7 +41,17 @@
 - **Skill Update**: Added Intran3t deployment patterns to `~/.claude/skills/polkadot-smart-contracts/SKILL.md`
 - **Deployment Method**: Derived address pattern (keccak256 truncation) for admin operations
 - **User Flow**: Preserved account mapping via `pallet_revive.map_account()` for runtime interactions
-- **Next Steps**: Deploy PolkaVM contract to testnet, update contract address in `.env`, test end-to-end
+- **Status**: ✅ Implementation complete, ⏸️ Deployment paused due to API compatibility issues
+- **Current Issue**: PolkaVM contract build fails with `pallet-revive-uapi v0.1.1` API changes
+  - Functions `get_storage`, `set_storage`, `clear_storage` not found in crate `api`
+  - Rust toolchain upgraded to `nightly-2025-01-15` for Apple Silicon compatibility
+  - Added `llvm-abiname: "lp64"` to RISC-V target specification
+- **Temporary Approach**: Using existing Solidity contract for testing/deployment (feature flag OFF)
+- **Next Steps**:
+  1. Update storage.rs to use correct pallet-revive-uapi v0.1.1 API
+  2. Deploy PolkaVM contract to testnet
+  3. Enable feature flag in `.env`
+  4. Test end-to-end with PolkaVM contract
 
 ### 2026-02-12 - DotNS Documentation Consolidation & GitHub Actions Reference
 - **Cleanup**: Consolidated scattered DotNS documentation into single authoritative guide
