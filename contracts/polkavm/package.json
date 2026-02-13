@@ -1,0 +1,29 @@
+{
+  "name": "intran3t-polkavm-contracts",
+  "version": "0.1.0",
+  "description": "PolkaVM smart contracts for Intran3t",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cargo build --release",
+    "build:accesspass": "cargo build --release --bin accesspass",
+    "deploy:accesspass": "tsx scripts/deploy-accesspass.ts",
+    "test": "tsx test/accesspass.test.ts",
+    "test:integration": "tsx test/integration.test.ts",
+    "compute-selectors": "node scripts/compute-selectors.js"
+  },
+  "dependencies": {
+    "@polkadot/api": "^14.3.1",
+    "@polkadot/keyring": "^13.2.3",
+    "@polkadot/util": "^13.2.3",
+    "@polkadot/util-crypto": "^13.2.3",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
+    "viem": "^2.21.54"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

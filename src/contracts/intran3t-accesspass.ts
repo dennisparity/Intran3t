@@ -3,10 +3,29 @@
  *
  * ERC-721 NFT contract for location-based access control
  * Contract ABI, types, and constants for frontend integration
+ *
+ * Supports both Solidity (legacy) and PolkaVM (current) deployments
  */
 
-// Contract address V2 (Self-Minting) - Deployed Jan 23, 2026
-export const ACCESSPASS_CONTRACT_ADDRESS = import.meta.env.VITE_ACCESSPASS_CONTRACT_ADDRESS || '0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94';
+// Feature flag: Use PolkaVM contracts when true
+const USE_POLKAVM = import.meta.env.VITE_USE_POLKAVM_CONTRACTS === 'true';
+
+// Legacy Solidity contract (deprecated)
+const SOLIDITY_CONTRACT = '0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94';
+
+// PolkaVM contract (current)
+const POLKAVM_CONTRACT = import.meta.env.VITE_ACCESSPASS_CONTRACT_ADDRESS_POLKAVM;
+
+// Active contract address (determined by feature flag)
+export const ACCESSPASS_CONTRACT_ADDRESS =
+  USE_POLKAVM && POLKAVM_CONTRACT
+    ? POLKAVM_CONTRACT
+    : import.meta.env.VITE_ACCESSPASS_CONTRACT_ADDRESS || SOLIDITY_CONTRACT;
+
+// Contract type indicator
+export const CONTRACT_TYPE = USE_POLKAVM && POLKAVM_CONTRACT ? 'PolkaVM' : 'Solidity';
+
+console.log(`🔗 Using ${CONTRACT_TYPE} AccessPass contract:`, ACCESSPASS_CONTRACT_ADDRESS);
 
 // TypeScript interface matching Solidity struct
 export interface AccessPassMetadata {

@@ -1,0 +1,25 @@
+[package]
+name = "intran3t-polkavm-contracts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+polkavm-derive = "0.14"
+pallet-revive-uapi = "0.1"
+ethabi = { version = "18.0", default-features = false }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+overflow-checks = false
+
+[[bin]]
+name = "accesspass"
+path = "src/accesspass.rs"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]

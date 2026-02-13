@@ -10,13 +10,11 @@ import { queryOnChainIdentity } from '../profile/identity-helpers'
 import { ACCESSPASS_CONTRACT_ADDRESS } from '../../contracts/intran3t-accesspass'
 import { substrateToEvm } from '../../lib/address-conversion'
 import { useSubstrateEvmLink } from '../../hooks/useSubstrateEvmLink'
-import { useRBACContract, Role } from '../../hooks/useRBACContract'
 import { useAccountMapping } from '../../hooks/useAccountMapping'
 import { MapAccountModal } from '../../components/MapAccountModal'
 import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
 import { encodeFunctionData } from 'viem'
 import { ACCESSPASS_ABI } from '../../contracts/intran3t-accesspass'
-import { JsonRpcProvider } from 'ethers'
 
 async function generateQRCode(data: string): Promise<string> {
   try {
@@ -305,24 +303,6 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const accountMapping = useAccountMapping(connectedAccount?.address)
   const [showMapModal, setShowMapModal] = useState(false)
 
-  // Create stable read-only provider for RBAC queries when no MetaMask
-  const readOnlyProvider = useMemo(() => {
-    if (provider) return null
-    return new JsonRpcProvider(
-      import.meta.env.VITE_ASSETHUB_EVM_RPC || 'https://eth-rpc-testnet.polkadot.io'
-    )
-  }, [provider])
-
-  // RBAC membership gate (use fallback provider if no MetaMask)
-  const rbac = useRBACContract(provider || readOnlyProvider, signer)
-  const orgId = localStorage.getItem('intran3t_org_id') || import.meta.env.VITE_DEFAULT_ORG_ID
-  const [isMember, setIsMember] = useState<boolean | null>(null)
-
-  // DEBUG: Log state changes
-  useEffect(() => {
-    console.log('🎯 Acc3ss isMember state:', isMember, '| orgId:', orgId)
-  }, [isMember, orgId])
-
   const locations = config.locations || []
 
   // Derive EVM address from Substrate address
@@ -390,55 +370,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     })
   }, [connectedAccount?.address])
 
-  // RBAC membership check — smart dual-wallet support
-  // Modes:
-  //   1. Substrate only + mapped → Check RBAC with mapped address
-  //   2. Substrate only + not mapped → Blocked (will show map prompt)
-  //   3. MetaMask only → Check RBAC with MetaMask address
-  //   4. Both connected + Substrate mapped → Check RBAC with mapped address
-  //   5. Both connected + Substrate not mapped → Check RBAC with MetaMask address
-  useEffect(() => {
-    console.log('🔐 RBAC Check:', {
-      orgId,
-      hasContract: !!rbac.contract,
-      effectiveEvmAddress,
-      hasSubstrateWallet,
-      hasMetaMask,
-      isSubstrateMapped,
-      isMapped: accountMapping.isMapped
-    })
-
-    // Skip if missing required dependencies
-    if (!orgId || !rbac.contract || !effectiveEvmAddress) {
-      console.log('⏭️ Skipping RBAC check (missing deps)')
-      setIsMember(null)
-      return
-    }
-
-    // Note: We have an effectiveEvmAddress (linked/derived), so we can check RBAC
-    // Even if account mapping status is unknown, we'll use the available address
-    // The effectiveEvmAddress comes from linkedAddress or derivedEvmAddress
-    if (hasSubstrateWallet && !hasMetaMask && accountMapping.isMapped === null && !effectiveEvmAddress) {
-      console.log('⏳ Waiting for address resolution...')
-      return
-    }
-
-    // Proceed with RBAC check
-    let cancelled = false
-
-    console.log('📞 Calling getUserRole...', { orgId, address: effectiveEvmAddress })
-    rbac.getUserRole(orgId, effectiveEvmAddress).then(({ role, hasRole }) => {
-      console.log('✅ getUserRole result:', { role, hasRole, isMember: hasRole && (role === Role.Admin || role === Role.Member) })
-      if (!cancelled) {
-        setIsMember(hasRole && (role === Role.Admin || role === Role.Member))
-      }
-    }).catch((err) => {
-      console.error('❌ getUserRole error:', err)
-      if (!cancelled) setIsMember(null)
-    })
-
-    return () => { cancelled = true }
-  }, [orgId, rbac.contract, effectiveEvmAddress, accountMapping.isMapped, hasSubstrateWallet, hasMetaMask, isSubstrateMapped])
+  // No RBAC checks - anyone can mint to themselves
 
   const handleGeneratePass = async () => {
     if (!selectedLocation || !effectiveEvmAddress || !accessPassContract.contract) {
@@ -643,9 +575,8 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                   Map Account
                 </button>
               </div>
-            ) :
-            /* Optional info banner: Both wallets connected but Substrate not mapped */
-            hasSubstrateWallet && hasMetaMask && accountMapping.isMapped === false ? (
+            ) : hasSubstrateWallet && hasMetaMask && accountMapping.isMapped === false ? (
+              /* Optional info banner: Both wallets connected but Substrate not mapped */
               <>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3 flex items-start gap-2">
                   <div className="text-xs text-blue-700">
@@ -658,83 +589,14 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     </button>
                   </div>
                 </div>
-                {/* Show normal mint flow below */}
-                {/* RBAC gate: locked card when orgId is set but user is not a member */}
-                {orgId && isMember === false ? (
-                  <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-4 flex items-start gap-3">
-                    <Lock className="w-5 h-5 text-[#78716c] mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-[#1c1917]">Membership Required</p>
-                      <p className="text-xs text-[#78716c] mt-0.5">
-                        You must be a Member or Admin of this organization to mint an access pass.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleGeneratePass}
-                      disabled={
-                        !selectedLocation ||
-                        isGenerating ||
-                        !accessPassContract.contract ||
-                        accountMapping.isLoading ||
-                        (!!orgId && isMember === null)
-                      }
-                      className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Minting NFT...
-                        </>
-                      ) : accountMapping.isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Checking account...
-                        </>
-                      ) : (!!orgId && isMember === null) ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Checking membership...
-                        </>
-                      ) : (
-                        <>
-                          <KeyRound className="w-4 h-4" />
-                          Get Your Access Pass
-                        </>
-                      )}
-                    </button>
 
-                    {selectedLocation && (
-                      <p className="text-xs text-center text-[#78716c]">
-                        Sign to get your access pass for {selectedLocation.name}
-                      </p>
-                    )}
-                  </>
-                )}
-              </>
-            ) : /* RBAC gate: locked card when orgId is set but user is not a member */
-            orgId && isMember === false ? (
-              <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-4 flex items-start gap-3">
-                <Lock className="w-5 h-5 text-[#78716c] mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-[#1c1917]">Membership Required</p>
-                  <p className="text-xs text-[#78716c] mt-0.5">
-                    You must be a Member or Admin of this organization to mint an access pass.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
                 <button
                   onClick={handleGeneratePass}
                   disabled={
                     !selectedLocation ||
                     isGenerating ||
                     !accessPassContract.contract ||
-                    accountMapping.isLoading ||
-                    (!!orgId && isMember === null)
+                    accountMapping.isLoading
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
@@ -748,10 +610,42 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Checking account...
                     </>
-                  ) : (!!orgId && isMember === null) ? (
+                  ) : (
+                    <>
+                      <KeyRound className="w-4 h-4" />
+                      Get Your Access Pass
+                    </>
+                  )}
+                </button>
+
+                {selectedLocation && (
+                  <p className="text-xs text-center text-[#78716c]">
+                    Sign to get your access pass for {selectedLocation.name}
+                  </p>
+                )}
+              </>
+            ) : (
+              /* No mapping required - show mint button */
+              <>
+                <button
+                  onClick={handleGeneratePass}
+                  disabled={
+                    !selectedLocation ||
+                    isGenerating ||
+                    !accessPassContract.contract ||
+                    accountMapping.isLoading
+                  }
+                  className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Checking membership...
+                      Minting NFT...
+                    </>
+                  ) : accountMapping.isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Checking account...
                     </>
                   ) : (
                     <>

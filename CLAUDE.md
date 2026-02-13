@@ -1,9 +1,47 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-12
+> Last updated: 2026-02-13
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-13 - PolkaVM Smart Contract Migration (MAJOR)
+- **Migration**: Complete migration from Solidity to PolkaVM Rust contracts
+- **Architecture**: Removed RBAC dependency, simplified to permissionless minting
+- **Deployment**: Now uses Substrate accounts (no MetaMask) via `pallet_revive`
+- **Contract Owner**: Automatically set to derived EVM address from deployer's Substrate account
+- **New Directory**: `contracts/polkavm/` - Complete PolkaVM implementation
+  - `src/accesspass.rs` - AccessPass contract in Rust (643 lines)
+  - `src/lib.rs`, `src/storage.rs`, `src/abi.rs` - Shared utilities
+  - `scripts/deploy-accesspass.ts` - Deployment script using @polkadot/api
+  - `scripts/compute-selectors.js` - Function selector calculator
+  - `scripts/setup-toolchain.sh` - Rust nightly + polkatool installer
+  - `Cargo.toml`, `rust-toolchain.toml`, `.cargo/config.toml` - Build configuration
+- **Frontend Changes**:
+  - **File**: `src/modules/acc3ss/Acc3ssWidget.tsx` - Removed all RBAC membership checks (simplified from 807 to 627 lines)
+  - **File**: `src/contracts/intran3t-accesspass.ts` - Added feature flag `VITE_USE_POLKAVM_CONTRACTS` for migration
+  - **Removed**: `src/contracts/intran3t-rbac.ts` (8,817 bytes)
+  - **Removed**: `src/hooks/useRBACContract.ts` (11,826 bytes)
+- **Configuration**:
+  - **File**: `.env.example` - Updated with PolkaVM contract address variables
+  - **Added**: `VITE_USE_POLKAVM_CONTRACTS` feature flag
+  - **Added**: `VITE_ACCESSPASS_CONTRACT_ADDRESS_POLKAVM` for new contract
+  - **Deprecated**: `VITE_RBAC_CONTRACT_ADDRESS`, `VITE_DEFAULT_ORG_ID` (no longer used)
+- **Deprecation**:
+  - **File**: `contracts/solidity/deployments/deprecated.json` - Marked old contracts as deprecated
+  - **File**: `contracts/solidity/scripts/deprecate-contracts.ts` - Deprecation record generator
+  - Old Solidity AccessPass: `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` → deprecated
+  - Old Solidity RBAC: `0xF1152B54404F7F4B646199072Fd3819D097c4F94` → removed
+- **Benefits**:
+  - ✅ No MetaMask dependency in deployment flow
+  - ✅ Uses native Substrate accounts and wallets (Talisman, SubWallet)
+  - ✅ Simplified permission model (anyone can mint to themselves)
+  - ✅ ABI compatible with existing frontend (same function selectors)
+  - ✅ Aligns with Polkadot ecosystem best practices
+- **Skill Update**: Added Intran3t deployment patterns to `~/.claude/skills/polkadot-smart-contracts/SKILL.md`
+- **Deployment Method**: Derived address pattern (keccak256 truncation) for admin operations
+- **User Flow**: Preserved account mapping via `pallet_revive.map_account()` for runtime interactions
+- **Next Steps**: Deploy PolkaVM contract to testnet, update contract address in `.env`, test end-to-end
 
 ### 2026-02-12 - DotNS Documentation Consolidation & GitHub Actions Reference
 - **Cleanup**: Consolidated scattered DotNS documentation into single authoritative guide
@@ -280,27 +318,114 @@
 | Variable | Purpose | Example | Required |
 |----------|---------|---------|----------|
 | `VITE_NETWORK` | Network to use (testnet/mainnet) | `testnet` | Yes |
-| `VITE_RBAC_CONTRACT_ADDRESS` | RBAC smart contract address | `0xF1152B54404F7F4B646199072Fd3819D097c4F94` | Yes |
-| `VITE_ACCESSPASS_CONTRACT_ADDRESS` | AccessPass NFT contract address | `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` | Yes |
+| `VITE_USE_POLKAVM_CONTRACTS` | Feature flag for PolkaVM contracts | `true` | Yes |
+| `VITE_ACCESSPASS_CONTRACT_ADDRESS_POLKAVM` | PolkaVM AccessPass contract address | `0x...` (set after deployment) | Yes (when using PolkaVM) |
+| `VITE_ACCESSPASS_CONTRACT_ADDRESS` | Legacy Solidity AccessPass address (deprecated) | `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` | No (fallback) |
 | `VITE_ASSETHUB_EVM_CHAIN_ID` | Asset Hub EVM chain ID | `420420417` | Yes |
 | `VITE_ASSETHUB_EVM_RPC` | Asset Hub EVM RPC endpoint | `https://eth-rpc-testnet.polkadot.io` | Yes |
 | `VITE_PEOPLE_CHAIN_RPC` | People Chain WebSocket RPC | `wss://polkadot-people-rpc.polkadot.io` | Yes |
 | `VITE_DOTID_API_URL` | dotid.app proxy endpoint | `/api/dotid-proxy` | Yes |
 | `VITE_SUBSTRATE_ENDPOINT` | Statement Store endpoint (dForms) | `wss://pop-testnet.parity-lab.parity.io:443/9910` | Yes |
-| `VITE_DEFAULT_ORG_ID` | Default organization ID | `0xda0dfc1c...` | Yes |
 | `VITE_ENABLE_ANALYTICS` | Enable analytics | `false` | No |
 | `VITE_ENABLE_DEBUG_LOGS` | Enable debug logging | `true` | No |
 
-> **Updated Feb 6, 2026:** RPC endpoint changed to official URL.
-> - RBAC contract: `0xF1152B54404F7F4B646199072Fd3819D097c4F94`
-> - AccessPass contract: `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94`
-> - RPC: `https://eth-rpc-testnet.polkadot.io` (updated from services.polkadothub-rpc.com)
+> **Updated Feb 13, 2026:** Migrated to PolkaVM contracts.
+> - **Current (PolkaVM)**: Deploy via `contracts/polkavm/scripts/deploy-accesspass.ts`
+> - **Deprecated (Solidity)**: Old contracts remain on-chain but are no longer maintained
+>   - Old AccessPass: `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94`
+>   - Old RBAC: `0xF1152B54404F7F4B646199072Fd3819D097c4F94` (removed from project)
+> - RPC: `https://eth-rpc-testnet.polkadot.io`
 > - Chain ID: `420420417`
+> - **Removed**: `VITE_RBAC_CONTRACT_ADDRESS`, `VITE_DEFAULT_ORG_ID` (RBAC removed)
 
 **Configuration Files:**
 - `.env` - Local development (gitignored)
 - `.env.production` - Production deployment template (committed for reference)
 - `.npmrc` - npm configuration (`legacy-peer-deps=true` for compatibility)
+
+## Smart Contracts - PolkaVM Deployment
+
+### Architecture
+
+Intran3t uses PolkaVM Rust contracts deployed via `pallet_revive` with Substrate accounts (no MetaMask required).
+
+**Deployment Pattern:**
+- **Admin Operations**: Uses derived EVM addresses (`keccak256(AccountId32)` → last 20 bytes)
+- **User Operations**: Uses mapped addresses via `pallet_revive.map_account()`
+
+**Current Contracts:**
+- **AccessPass** (PolkaVM Rust): To be deployed - simplified, permissionless minting
+
+**Deprecated Contracts:**
+- AccessPass (Solidity): `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` - no longer maintained
+- RBAC (Solidity): `0xF1152B54404F7F4B646199072Fd3819D097c4F94` - removed from project
+
+### PolkaVM Build & Deploy
+
+```bash
+# Setup toolchain (first time)
+cd contracts/polkavm
+./scripts/setup-toolchain.sh
+
+# Install dependencies
+npm install
+
+# Build AccessPass contract
+cargo build --release --bin accesspass
+# Output: target/riscv64emac-unknown-none-polkavm/release/accesspass.polkavm
+
+# Deploy to testnet (requires MNEMONIC in .env)
+MNEMONIC="your twelve word phrase" npm run deploy:accesspass
+
+# Compute function selectors (for reference)
+node scripts/compute-selectors.js
+```
+
+### Deployment Record
+
+After deployment, the script creates `contracts/polkavm/deployment_polkavm.json` with:
+- Contract address
+- Deployer Substrate address
+- Deployer EVM address (derived)
+- Migration details
+- Timestamp
+
+### Contract Owner
+
+The contract owner is automatically set to the **derived EVM address** from your Substrate account:
+```
+Substrate Address (ss25519) → keccak256(AccountId32) → last 20 bytes → EVM Address
+```
+
+This address can revoke access passes and manage the contract.
+
+### Frontend Integration
+
+The frontend automatically switches between Solidity and PolkaVM contracts based on the `VITE_USE_POLKAVM_CONTRACTS` feature flag:
+
+```typescript
+// src/contracts/intran3t-accesspass.ts
+const USE_POLKAVM = import.meta.env.VITE_USE_POLKAVM_CONTRACTS === 'true';
+const POLKAVM_CONTRACT = import.meta.env.VITE_ACCESSPASS_CONTRACT_ADDRESS_POLKAVM;
+const SOLIDITY_CONTRACT = '0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94';
+
+export const ACCESSPASS_CONTRACT_ADDRESS =
+  USE_POLKAVM && POLKAVM_CONTRACT ? POLKAVM_CONTRACT : SOLIDITY_CONTRACT;
+```
+
+**ABI Compatibility:** PolkaVM contract uses the same function selectors as the Solidity version, so no frontend code changes are needed (only address update).
+
+### Key Benefits
+
+- ✅ No MetaMask dependency in deployment
+- ✅ Native Substrate wallet support
+- ✅ Simplified permission model (no RBAC)
+- ✅ ABI compatible with existing frontend
+- ✅ Aligns with Polkadot ecosystem standards
+
+### Reference
+
+See `~/.claude/skills/polkadot-smart-contracts/SKILL.md` for complete Intran3t deployment patterns and examples.
 
 ## Commands & Scripts
 
@@ -340,24 +465,29 @@ bun run dev transfer <domain-name> <new-owner-address> --mnemonic "<current-owne
 
 **CRITICAL:** Use `wss://sys.ibp.network/asset-hub-paseo` RPC endpoint for DotNS deployments.
 
-### Smart Contract Scripts (contracts/solidity/scripts/)
+### Smart Contract Scripts
+
+**PolkaVM Scripts (contracts/polkavm/scripts/):**
 ```bash
-# Account Mapping
+# Build & Deploy
+./scripts/setup-toolchain.sh              # Setup Rust nightly + polkatool (first time)
+npm run build:accesspass                  # Build AccessPass contract
+MNEMONIC="..." npm run deploy:accesspass  # Deploy to testnet
+
+# Utilities
+node scripts/compute-selectors.js         # Compute EVM function selectors
+```
+
+**Legacy Solidity Scripts (contracts/solidity/scripts/ - deprecated):**
+```bash
+# Account Mapping (still useful)
 node scripts/check-mapping.js <substrate-address>     # Check if account is mapped to EVM
 
-# Organization Management
-node scripts/find-my-orgs.js                          # Find orgs where you're an admin
-node scripts/create-org-simple.js                     # Create a new organization
-node scripts/check-org-details.js <org-id>            # View org details
-
-# Role Management
-node scripts/grant-admin.js <evm-address>             # Grant Admin role
-node scripts/setup-complete.js                        # Complete org setup (create + grant admin)
-
-# AccessPass NFT
-node scripts/mint-pass.js                             # Mint an access pass NFT
-node scripts/check-contract.js                        # Verify contract deployment
+# Deprecation
+npx tsx scripts/deprecate-contracts.ts                # Generate deprecation record
 ```
+
+**Note:** RBAC-related scripts (find-my-orgs, create-org, grant-admin) have been removed as RBAC is no longer used.
 
 ### Vercel CLI Commands
 ```bash
