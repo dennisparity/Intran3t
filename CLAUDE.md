@@ -96,11 +96,13 @@
   - SS58 → H160: `keccak256(AccountId32)` → last 20 bytes
   - H160 → SS58: Queries `pallet_revive.OriginalAccount` on-chain for mapped address
 - **Styling**: Applied Polkadot brand (warm grey palette, font-serif headers, Lucide icons, white background)
-- **CRITICAL FIX**: Typink signer access pattern corrected
-  - **File**: `src/hooks/useAccountMapping.ts` - Fixed from `connectedAccount.polkadotSigner` to `connectedAccount.wallet.signer`
-  - **File**: `src/hooks/useSubstrateEVMSigner.ts` - New hook with correct signer pattern using `tx.signSubmitAndWatch()`
-  - **Impact**: Substrate wallet users can now sign EVM transactions (was completely broken before)
-  - **Pattern**: ALWAYS use `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()` for PAPI transactions
+- **CRITICAL FIX**: Typink signer access pattern corrected (2026-02-13)
+  - **File**: `src/hooks/useAccountMapping.ts` - Fixed to use `signer` from top-level Typink state
+  - **File**: `src/hooks/useSubstrateEVMSigner.ts` - Fixed to use `signer` from top-level Typink state
+  - **Previous (WRONG)**: `connectedAccount.wallet.signer` (wallet property doesn't exist)
+  - **Correct**: `const { signer } = useTypink()` then `tx.signSubmitAndWatch(signer)`
+  - **connectedAccount structure**: Only contains `{ source, address, name }` - no wallet property
+  - **Pattern**: ALWAYS use `signer` from useTypink() hook, NOT from connectedAccount
 - **Configuration Fix**: Removed invalid URL-as-key entry from `.papi/polkadot-api.json`
 - **Contract Types**: Fixed Role enum in `src/contracts/intran3t-rbac.ts` to match Solidity (Admin=0, Member=1, Viewer=2, PeopleCulture=3)
 - **Routing**: Removed standalone `/address-converter` route from `src/App.tsx` (dashboard-only now)
@@ -227,7 +229,7 @@
 - **Returns**: `{ isMapped, evmAddress, isLoading, mapAccount }`
 - **Used by**: Acc3ssWidget (smart contract interactions)
 - **Notes**: Enables single-wallet UX (Substrate wallet signs EVM transactions after mapping)
-- **CRITICAL Pattern**: Uses `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()` (NOT `polkadotSigner`)
+- **CRITICAL Pattern**: Uses `signer` from useTypink() with `tx.signSubmitAndWatch()` (NOT connectedAccount.wallet)
 
 ### MapAccountModal Component
 - **File**: `src/components/MapAccountModal.tsx`
@@ -281,7 +283,7 @@
   - `sendTransaction(txData)` - Sends EVM transactions using Substrate wallet
   - Wraps EVM call data in `pallet_revive.call()` extrinsic
   - Handles gas limits and storage deposits
-- **Pattern**: Uses `connectedAccount.wallet.signer` with `tx.signSubmitAndWatch()`
+- **Pattern**: Uses `signer` from useTypink() with `tx.signSubmitAndWatch()`
 - **Returns**: `{ sendTransaction, isLoading, error, txHash }`
 - **Used by**: Components that need to send EVM transactions with Substrate wallets
 - **Prerequisites**: Account must be mapped via `pallet_revive.map_account()` first
@@ -810,7 +812,8 @@ vercel --prod
 ### Important Patterns
 
 - **Typink + PAPI Signer Access (CRITICAL)**: When using Typink with PAPI to build Substrate transactions:
-  - ✅ ALWAYS: `tx.signSubmitAndWatch(connectedAccount.wallet.signer)` then `await result.ok`
+  - ✅ ALWAYS: `const { signer } = useTypink()` then `tx.signSubmitAndWatch(signer)` then `await result.ok`
+  - ❌ NEVER: `connectedAccount.wallet.signer` (wallet property doesn't exist on connectedAccount)
   - ❌ NEVER: `connectedAccount.polkadotSigner` (doesn't exist)
   - ❌ NEVER: `tx.signAsync()` (wrong pattern for wallet signing)
   - This pattern applies to ALL PAPI transactions requiring wallet signatures (account mapping, EVM calls via pallet_revive, etc.)
