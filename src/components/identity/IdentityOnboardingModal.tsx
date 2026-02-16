@@ -198,13 +198,13 @@ export function IdentityOnboardingModal({
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-4 animate-pulse">
               <div className="w-8 h-8 border-4 border-[#1c1917] border-t-transparent rounded-full animate-spin" />
             </div>
-            <h2 className="text-xl font-bold text-[#1c1917] mb-2">
+            <h2 className="text-xl font-bold text-[#1c1917] dark:text-[#fafaf9] mb-2">
               Submitting Transactions...
             </h2>
-            <p className="text-sm text-[#78716c] mb-2">
+            <p className="text-sm text-[#78716c] dark:text-[#a8a29e] mb-2">
               Please sign both transactions in your wallet
             </p>
-            <p className="text-xs text-[#a8a29e]">
+            <p className="text-xs text-[#a8a29e] dark:text-[#78716c]">
               1. Set Identity<br />
               2. Request Registrar Verification
             </p>
@@ -217,14 +217,14 @@ export function IdentityOnboardingModal({
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold text-[#1c1917] mb-2">
+            <h2 className="text-xl font-bold text-[#1c1917] dark:text-[#fafaf9] mb-2">
               Identity Verification Requested!
             </h2>
-            <p className="text-sm text-[#78716c] mb-4">
+            <p className="text-sm text-[#78716c] dark:text-[#a8a29e] mb-4">
               Your identity has been set and verification requested from {selectedRegistrar?.index !== undefined ? `Registrar #${selectedRegistrar.index}` : 'the registrar'}
             </p>
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
-              <p className="text-xs text-blue-900">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-left">
+              <p className="text-xs text-blue-900 dark:text-blue-200">
                 <strong>What happens next?</strong><br />
                 The registrar will review your identity information. Once approved, all Intran3t modules will unlock automatically.
               </p>
@@ -238,10 +238,10 @@ export function IdentityOnboardingModal({
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h2 className="text-xl font-bold text-[#1c1917] mb-2">
+            <h2 className="text-xl font-bold text-[#1c1917] dark:text-[#fafaf9] mb-2">
               Submission Failed
             </h2>
-            <div className="text-sm text-[#78716c] mb-6 max-w-md mx-auto">
+            <div className="text-sm text-[#78716c] dark:text-[#a8a29e] mb-6 max-w-md mx-auto">
               {error ? (
                 <pre className="whitespace-pre-wrap text-left font-sans">
                   {error}

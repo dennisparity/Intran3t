@@ -77,6 +77,11 @@ export default function ConnectWallet() {
     if (!isOpen) {
       // Reset to wallets view when closing
       setTimeout(() => setView('wallets'), 200)
+    } else {
+      // If opening and wallet is already connected with multiple accounts, go directly to accounts view
+      if (connectedAccount && accounts.length > 1) {
+        setView('accounts')
+      }
     }
   }
 
@@ -86,35 +91,50 @@ export default function ConnectWallet() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button
-        variant="default"
-        size="lg"
-        onClick={() => setOpen(true)}
-        className="gap-2"
-      >
-        {connectedAccount ? (
-          <div className="flex items-center gap-2">
-            <Identicon
-              value={connectedAccount.address}
-              size={24}
-              theme="polkadot"
-            />
-            <span>{connectedAccount.name || truncateAddress(connectedAccount.address)}</span>
-          </div>
-        ) : evm.connected && evm.account ? (
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#fff3e0] flex items-center justify-center">
-              <Wallet className="w-3.5 h-3.5 text-[#e65100]" />
+      <div className="flex items-center gap-2">
+        <Button
+          variant="default"
+          size="lg"
+          onClick={() => setOpen(true)}
+          className="gap-2"
+        >
+          {connectedAccount ? (
+            <div className="flex items-center gap-2">
+              <Identicon
+                value={connectedAccount.address}
+                size={24}
+                theme="polkadot"
+              />
+              <span>{connectedAccount.name || truncateAddress(connectedAccount.address)}</span>
             </div>
-            <span>{truncateAddress(evm.account)}</span>
-          </div>
-        ) : (
-          <>
-            <Wallet className="w-5 h-5" />
-            Connect Wallet
-          </>
+          ) : evm.connected && evm.account ? (
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-[#fff3e0] flex items-center justify-center">
+                <Wallet className="w-3.5 h-3.5 text-[#e65100]" />
+              </div>
+              <span>{truncateAddress(evm.account)}</span>
+            </div>
+          ) : (
+            <>
+              <Wallet className="w-5 h-5" />
+              Connect Wallet
+            </>
+          )}
+        </Button>
+        {connectedAccount && accounts.length > 1 && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              setOpen(true)
+              setView('accounts')
+            }}
+            title="Switch Account"
+          >
+            <User className="w-5 h-5" />
+          </Button>
         )}
-      </Button>
+      </div>
 
       <DialogContent className="sm:max-w-[500px]">
         {view === 'wallets' ? (
@@ -128,6 +148,17 @@ export default function ConnectWallet() {
                   ? 'Select a wallet to view accounts or connect a new one'
                   : 'Choose a wallet to connect to your Polkadot account'}
               </DialogDescription>
+              {connectedAccount && accounts.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setView('accounts')}
+                  className="mt-2 gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  Switch Account ({accounts.length} available)
+                </Button>
+              )}
             </DialogHeader>
 
             <div className="space-y-3 mt-4">

@@ -95,18 +95,18 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <h2 className="text-2xl font-bold text-[#1c1917] font-serif">
+        <h2 className="text-2xl font-bold text-[#1c1917] dark:text-[#fafaf9] font-serif">
           Your Identity Information
         </h2>
-        <p className="text-sm text-[#78716c] mt-1">
+        <p className="text-sm text-[#78716c] dark:text-[#a8a29e] mt-1">
           Fill in your details. Display name and Matrix handle are required.
         </p>
       </div>
 
       {/* Info banner */}
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-        <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-        <div className="text-xs text-blue-900">
+      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-blue-900 dark:text-blue-200">
           <strong>Character limits:</strong> Most fields have a 32 character maximum. Matrix handles can be up to 100 characters.
           You have filled {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}.
         </div>
@@ -116,8 +116,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
       <div className="space-y-4">
         {/* Display Name - Required */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c1917] mb-1.5">
-            Display Name <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-[#1c1917] dark:text-[#fafaf9] mb-1.5">
+            Display Name <span className="text-red-500 dark:text-red-400">*</span>
           </label>
           <input
             type="text"
@@ -125,21 +125,21 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('display', e.target.value)}
             placeholder="John Doe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
-              errors.display ? 'border-red-500' : 'border-[#e7e5e4]'
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#292524] text-[#1c1917] dark:text-[#fafaf9] placeholder:text-[#a8a29e] dark:placeholder:text-[#78716c] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
+              errors.display ? 'border-red-500' : 'border-[#e7e5e4] dark:border-[#44403c]'
             }`}
           />
           {errors.display && (
             <p className="text-xs text-red-600 mt-1">{errors.display}</p>
           )}
-          <p className="text-xs text-[#78716c] mt-1">
+          <p className="text-xs text-[#78716c] dark:text-[#a8a29e] mt-1">
             Your public display name on Intran3t and all other Polkadot-based applications
           </p>
         </div>
 
         {/* Legal Name - Optional */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c1917] mb-1.5">
+          <label className="block text-sm font-semibold text-[#1c1917] dark:text-[#fafaf9] mb-1.5">
             Legal Name
           </label>
           <input
@@ -148,8 +148,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('legal', e.target.value)}
             placeholder="John Michael Doe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
-              errors.legal ? 'border-red-500' : 'border-[#e7e5e4]'
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#292524] text-[#1c1917] dark:text-[#fafaf9] placeholder:text-[#a8a29e] dark:placeholder:text-[#78716c] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
+              errors.legal ? 'border-red-500' : 'border-[#e7e5e4] dark:border-[#44403c]'
             }`}
           />
           {errors.legal && (
@@ -159,7 +159,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
 
         {/* Email - Optional */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c1917] mb-1.5">
+          <label className="block text-sm font-semibold text-[#1c1917] dark:text-[#fafaf9] mb-1.5">
             Email
           </label>
           <input
@@ -168,8 +168,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder="john@example.com"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
-              errors.email ? 'border-red-500' : 'border-[#e7e5e4]'
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#292524] text-[#1c1917] dark:text-[#fafaf9] placeholder:text-[#a8a29e] dark:placeholder:text-[#78716c] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
+              errors.email ? 'border-red-500' : 'border-[#e7e5e4] dark:border-[#44403c]'
             }`}
           />
           {errors.email && (
@@ -179,7 +179,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
 
         {/* Twitter - Optional */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c1917] mb-1.5">
+          <label className="block text-sm font-semibold text-[#1c1917] dark:text-[#fafaf9] mb-1.5">
             Twitter
           </label>
           <input
@@ -188,8 +188,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('twitter', e.target.value)}
             placeholder="@johndoe"
             maxLength={32}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
-              errors.twitter ? 'border-red-500' : 'border-[#e7e5e4]'
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#292524] text-[#1c1917] dark:text-[#fafaf9] placeholder:text-[#a8a29e] dark:placeholder:text-[#78716c] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
+              errors.twitter ? 'border-red-500' : 'border-[#e7e5e4] dark:border-[#44403c]'
             }`}
           />
           {errors.twitter && (
@@ -199,8 +199,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
 
         {/* Matrix - Required */}
         <div>
-          <label className="block text-sm font-semibold text-[#1c1917] mb-1.5">
-            Matrix <span className="text-red-500">*</span>
+          <label className="block text-sm font-semibold text-[#1c1917] dark:text-[#fafaf9] mb-1.5">
+            Matrix <span className="text-red-500 dark:text-red-400">*</span>
           </label>
           <input
             type="text"
@@ -208,8 +208,8 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
             onChange={(e) => handleChange('matrix', e.target.value)}
             placeholder="@john:matrix.org"
             maxLength={100}
-            className={`w-full px-3 py-2 border rounded-lg text-[#1c1917] placeholder:text-[#a8a29e] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
-              errors.matrix ? 'border-red-500' : 'border-[#e7e5e4]'
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-[#292524] text-[#1c1917] dark:text-[#fafaf9] placeholder:text-[#a8a29e] dark:placeholder:text-[#78716c] focus:outline-none focus:ring-2 focus:ring-[#ff2867]/20 focus:border-[#ff2867] transition-all ${
+              errors.matrix ? 'border-red-500' : 'border-[#e7e5e4] dark:border-[#44403c]'
             }`}
           />
           {errors.matrix && (
@@ -219,7 +219,7 @@ export function IdentityFormStep({ onNext, onBack, initialData }: IdentityFormSt
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4 border-t border-[#e7e5e4]">
+      <div className="flex gap-3 pt-4 border-t border-[#e7e5e4] dark:border-[#44403c]">
         <Button
           type="button"
           variant="outline"
