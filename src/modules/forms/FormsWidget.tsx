@@ -348,10 +348,13 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   <textarea
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Optional description"
-                    rows={2}
-                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] resize-none transition-all duration-200"
+                    placeholder="Use **bold**, *italic*, or [link](url) for formatting"
+                    rows={3}
+                    className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] resize-none transition-all duration-200 font-mono"
                   />
+                  <p className="text-xs text-[#78716c] mt-1">
+                    Supports markdown: **bold**, *italic*, [links](url)
+                  </p>
                 </div>
 
                 {/* Fields List */}
@@ -362,7 +365,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </label>
                     <button
                       onClick={() => setShowFieldBuilder(true)}
-                      className="flex items-center gap-1 text-xs text-[#1c1917] hover:text-[#292524] transition-colors duration-200"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors duration-200"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Field
@@ -569,11 +572,11 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                 )}
 
                 {/* Create/Update Buttons */}
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   {editingFormId && (
                     <button
                       onClick={handleCancelEdit}
-                      className="flex-1 px-4 py-2.5 text-sm font-medium border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+                      className="flex-1 px-6 py-3 text-sm font-semibold border-2 border-[#d6d3d1] text-[#1c1917] rounded-xl hover:border-[#a8a29e] hover:bg-[#fafaf9] transition-all duration-200"
                     >
                       Cancel
                     </button>
@@ -581,9 +584,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   <button
                     onClick={handleCreateForm}
                     disabled={!formTitle.trim() || fields.length === 0 || isCreating}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-8 py-4 text-base font-semibold bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                   >
-                    {isCreating ? 'Publishing...' : editingFormId ? 'Update Form' : 'Create Form'}
+                    {isCreating ? 'Publishing to Polkadot...' : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
               </>

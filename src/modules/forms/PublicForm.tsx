@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle, AlertCircle, Lock, Info, Sparkles, ArrowRight } from 'lucide-react'
+import { CheckCircle, AlertCircle, Lock, Info, Sparkles, ArrowRight, ExternalLink } from 'lucide-react'
+import PolkadotLogo from '../../components/PolkadotLogo'
 import type { Form, FormField } from './types'
 import { loadForms } from './config'
 import { saveEncryptedResponse } from './config'
@@ -9,13 +10,11 @@ import { fromBase64url, getFormKey } from '../../lib/form-keys'
 import { uploadToBulletin, fetchRawFromBulletin } from '../../lib/bulletin-storage'
 import { useFormsContract } from '../../hooks/useFormsContract'
 
-/** Read ?key and ?def from inside the hash once, at component init. */
-function readHashParams(): { key: string | null; def: string | null } {
-  const hash = window.location.hash // e.g. "#/f/1?key=...&def=..."
-  const qIdx = hash.indexOf('?')
-  if (qIdx === -1) return { key: null, def: null }
-  const p = new URLSearchParams(hash.substring(qIdx + 1))
-  return { key: p.get('key'), def: p.get('def') }
+/** Read #key from URL fragment once, at component init. */
+function readHashParams(): { key: string | null } {
+  const hash = window.location.hash // e.g. "#/f/1#key=..."
+  const keyMatch = hash.match(/#key=([^&]+)/)
+  return { key: keyMatch ? keyMatch[1] : null }
 }
 
 // Simple markdown formatter
@@ -36,13 +35,13 @@ export function PublicForm() {
 
   // Capture URL params ONCE at first render (immune to StrictMode double-invoke)
   const [initialKey] = useState<string | null>(() => readHashParams().key)
-  const [initialDef] = useState<string | null>(() => readHashParams().def)
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submittedCid, setSubmittedCid] = useState<string | null>(null)
   const formKeyRef = useRef<Uint8Array | null>(null)
 
   // No session wallet needed — Alice relay handles on-chain submission
@@ -54,25 +53,9 @@ export function PublicForm() {
       return
     }
 
-    // 1. Use params captured at first render (immune to StrictMode / URL clearing)
+    // 1. Extract encryption key from URL fragment
     if (initialKey) {
       try { formKeyRef.current = fromBase64url(initialKey) } catch { /* ignore */ }
-    }
-
-    if (initialDef) {
-      try {
-        const json = new TextDecoder().decode(fromBase64url(initialDef))
-        const urlFormDef = JSON.parse(json) as Form
-        if (urlFormDef.status === 'closed') {
-          setError('This form is no longer accepting responses')
-        } else {
-          setForm(urlFormDef)
-        }
-        setLoading(false)
-        return
-      } catch {
-        // fall through to Bulletin / localStorage
-      }
     }
 
     // 2. Try loading form definition from Bulletin (via contract → CID → gateway)
@@ -132,7 +115,7 @@ export function PublicForm() {
       }
       setLoading(false)
     }
-  }, [formId, initialKey, initialDef])
+  }, [formId, initialKey, getFormCid])
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -212,32 +195,34 @@ export function PublicForm() {
         save(allForms)
       }
 
-      // Upload to Bulletin + register CID on contract via Alice relay (best-effort, non-blocking)
+      // Upload to Bulletin + register CID on contract via Alice relay (BLOCKING - wait for success)
       if (encryptedCiphertext && encryptedNonce && formId) {
         const ct = encryptedCiphertext
         const n = encryptedNonce
-        ;(async () => {
-          console.log('[dForms] Starting Bulletin upload for formId:', formId)
-          try {
-            const cid = await uploadToBulletin({
-              formId,
-              ciphertext: toHex(ct),
-              nonce: toHex(n),
-              submittedAt: Date.now()
-            })
-            console.log('[dForms] Bulletin upload done, CID:', cid)
 
-            // Use on-chain ID if available, otherwise skip on-chain submission
-            if (form?.onChainId) {
-              await submitResponseViaRelay(Number(form.onChainId), cid)
-              console.log('✓ Response registered on-chain, CID:', cid)
-            } else {
-              console.log('ℹ️  Form has no on-chain ID, skipping contract submission')
-            }
-          } catch (err) {
-            console.warn('[dForms] On-chain submission failed:', err)
+        console.log('[dForms] Starting Bulletin upload for formId:', formId)
+        try {
+          const cid = await uploadToBulletin({
+            formId,
+            ciphertext: toHex(ct),
+            nonce: toHex(n),
+            submittedAt: Date.now()
+          })
+          console.log('[dForms] Bulletin upload done, CID:', cid)
+          setSubmittedCid(cid)
+
+          // Use on-chain ID if available, otherwise skip on-chain submission
+          if (form?.onChainId) {
+            await submitResponseViaRelay(Number(form.onChainId), cid)
+            console.log('✓ Response registered on-chain, CID:', cid)
+          } else {
+            console.log('ℹ️  Form has no on-chain ID, skipping contract submission')
           }
-        })()
+        } catch (err) {
+          console.warn('[dForms] On-chain submission failed:', err)
+          // Still show success (localStorage saved) but warn about Bulletin failure
+          setSubmittedCid(null)
+        }
       }
 
       setSubmitted(true)
@@ -292,38 +277,68 @@ export function PublicForm() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[#fafaf9]">
-        <div className="max-w-lg w-full">
+        <div className="max-w-2xl w-full">
           {/* Success Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 mb-4 shadow-lg">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white border-2 border-[#e7e5e4] mb-6 shadow-lg">
+              <CheckCircle className="w-14 h-14 text-[#059669]" />
             </div>
-            <h1 className="text-4xl font-bold text-[#1c1917] mb-3 font-serif">
+            <h1 className="text-5xl font-bold text-[#1c1917] mb-4 font-serif leading-tight">
               Response Submitted
             </h1>
-            <p className="text-[#78716c] text-lg">
-              Your response was encrypted and stored securely on Polkadot.
+            <p className="text-[#57534e] text-xl leading-relaxed">
+              Your response was encrypted and stored securely on Polkadot's Bulletin chain.
             </p>
           </div>
 
+          {/* Bulletin Storage Info */}
+          {submittedCid && (
+            <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 mb-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <Lock className="w-6 h-6 text-[#1c1917] mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold text-[#1c1917] mb-2 font-serif">Stored on Bulletin Chain</h2>
+                  <p className="text-sm text-[#57534e] mb-4 leading-relaxed">
+                    Your encrypted response is now permanently stored on Polkadot's decentralized Bulletin chain.
+                  </p>
+                  <div className="bg-[#fafaf9] rounded-lg p-4 border border-[#e7e5e4]">
+                    <div className="text-xs text-[#78716c] mb-2 font-medium">Content Identifier (CID)</div>
+                    <div className="flex items-start gap-3">
+                      <div className="font-mono text-xs text-[#1c1917] break-all flex-1">{submittedCid}</div>
+                      <a
+                        href={`https://ipfs.dotspark.app/ipfs/${submittedCid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-xs font-medium whitespace-nowrap shadow-sm"
+                      >
+                        View on DotSpark
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Privacy summary */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 mb-6">
+          <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 mb-6 shadow-sm">
             <div className="flex items-start gap-3">
-              <Sparkles className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
+              <Sparkles className="w-6 h-6 text-[#1c1917] mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-purple-900 mb-2">Privacy-preserving</h2>
-                <ul className="space-y-2 text-sm text-purple-800">
+                <h2 className="text-lg font-bold text-[#1c1917] mb-3 font-serif">Privacy-preserving</h2>
+                <ul className="space-y-2 text-sm text-[#57534e]">
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600">✓</span>
-                    <span>Your response is <strong>encrypted</strong> — only the form creator can read it</span>
+                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
+                    <span>Your response is <strong className="text-[#1c1917]">end-to-end encrypted</strong> — only the form creator can read it</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600">✓</span>
+                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
                     <span>No personal information was recorded without your consent</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600">✓</span>
-                    <span>Stored on <strong>Polkadot</strong> — decentralized and censorship-resistant</span>
+                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
+                    <span>Stored on <strong className="text-[#1c1917]">Polkadot Bulletin</strong> — decentralized and censorship-resistant</span>
                   </li>
                 </ul>
               </div>
@@ -331,32 +346,32 @@ export function PublicForm() {
           </div>
 
           {/* CTAs */}
-          <div className="bg-white border border-[#e7e5e4] rounded-xl p-6">
-            <p className="text-sm font-medium text-[#1c1917] mb-4 text-center">
-              Want to explore what else runs on Polkadot?
-            </p>
+          <div className="bg-white border border-[#e7e5e4] rounded-2xl p-8 shadow-sm">
+            <h3 className="text-xl font-bold text-[#1c1917] mb-6 text-center font-serif">
+              Explore More on Polkadot
+            </h3>
             <div className="flex flex-col gap-3">
               <a
-                href="/#/dashboard"
-                className="flex items-center justify-between px-5 py-3.5 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors group"
+                href="https://intran3t.vercel.app/#"
+                className="flex items-center justify-between px-6 py-4 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-all duration-200 shadow-md hover:shadow-lg group"
               >
-                <div>
-                  <div className="text-sm font-semibold">Open Intran3t</div>
-                  <div className="text-xs text-white/70">Your decentralized workplace</div>
+                <div className="flex-1 min-w-0 mr-4">
+                  <div className="text-base font-semibold">Explore Intran3t Beta</div>
+                  <div className="text-sm text-white/80 mt-0.5">Create your own decentralised forms, setup your onchain identity and more to come</div>
                 </div>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-5 h-5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </a>
               <a
                 href="https://polkadot.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between px-5 py-3.5 border border-[#e7e5e4] text-[#1c1917] rounded-xl hover:bg-[#fafaf9] transition-colors group"
+                className="flex items-center justify-between px-6 py-4 border-2 border-[#d6d3d1] text-[#1c1917] rounded-xl hover:border-[#a8a29e] hover:bg-[#fafaf9] transition-all duration-200 group"
               >
-                <div>
-                  <div className="text-sm font-semibold">Learn about Polkadot</div>
-                  <div className="text-xs text-[#78716c]">The infrastructure powering this form</div>
+                <div className="flex-1 min-w-0 mr-4">
+                  <div className="text-base font-semibold">Learn about Polkadot</div>
+                  <div className="text-sm text-[#78716c] mt-0.5">The decentralized infrastructure powering this form</div>
                 </div>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-5 h-5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
           </div>
@@ -364,7 +379,7 @@ export function PublicForm() {
           {/* Footer */}
           <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
             <span>Powered by</span>
-            <img src="/logo.png" alt="Polkadot" className="w-4 h-4" />
+            <PolkadotLogo className="w-4 h-4 text-[#1c1917]" />
             <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
           </div>
         </div>
@@ -376,16 +391,16 @@ export function PublicForm() {
     <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[#fafaf9]">
       <div className="max-w-2xl w-full">
         {/* Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white mb-4 shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="Intran3t Logo" className="w-full h-full object-contain p-2" />
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-white to-[#fafaf9] mb-6 shadow-lg border border-[#e7e5e4]">
+            <PolkadotLogo className="w-12 h-12 text-[#1c1917]" />
           </div>
-          <h1 className="text-3xl font-bold text-[#1c1917] font-serif mb-2">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1c1917] font-serif mb-4 leading-tight">
             {form.title}
           </h1>
           {form.description && (
             <div
-              className="text-[#78716c] max-w-2xl mx-auto"
+              className="text-lg text-[#57534e] leading-relaxed max-w-2xl mx-auto"
               dangerouslySetInnerHTML={{ __html: formatMarkdown(form.description) }}
             />
           )}
@@ -502,16 +517,16 @@ export function PublicForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-8 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-8 px-8 py-4 text-base font-semibold bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
           >
-            {isSubmitting ? 'Encrypting & Submitting...' : 'Submit Response'}
+            {isSubmitting ? 'Encrypting & uploading to Polkadot...' : 'Submit Response'}
           </button>
         </form>
 
         {/* Footer */}
         <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
           <span>Powered by</span>
-          <img src="/logo.png" alt="Polkadot" className="w-4 h-4" />
+          <PolkadotLogo className="w-4 h-4 text-[#1c1917]" />
           <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
         </div>
       </div>

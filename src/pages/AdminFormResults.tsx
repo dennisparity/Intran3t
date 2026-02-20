@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lock, Unlock, Download, AlertCircle, BarChart2, Copy, CheckCircle, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Lock, Unlock, Download, AlertCircle, BarChart2, Copy, CheckCircle, RefreshCw, ExternalLink, FileText, Database } from 'lucide-react'
 import { useTypink } from 'typink'
 import { loadForms } from '../modules/forms/config'
 import { loadEncryptedResponses } from '../modules/forms/config'
@@ -14,6 +14,8 @@ interface DecryptedResponse {
   id: string
   submittedAt: number
   answers: Record<string, string | string[]>
+  cid?: string
+  rawJson?: string
 }
 
 export default function AdminFormResults() {
@@ -82,7 +84,9 @@ export default function AdminFormResults() {
           decrypted.push({
             id: `onchain-${i}`,
             submittedAt: manifest.submittedAt || data.submittedAt || Date.now(),
-            answers: data.answers || {}
+            answers: data.answers || {},
+            cid: cid,
+            rawJson: JSON.stringify({ ...data, cid, manifest }, null, 2)
           })
         } catch (err) {
           console.warn(`[dForms] Failed to load on-chain response ${i}:`, err)
@@ -264,59 +268,50 @@ export default function AdminFormResults() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        {/* Aggregate Stats (public — no decryption needed) */}
-        {form.aggregates && Object.keys(form.aggregates).length > 0 && (
-          <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart2 className="w-5 h-5 text-[#78716c]" />
-              <h2 className="text-lg font-semibold text-[#1c1917]">Aggregate Results</h2>
-              <span className="text-xs text-[#a8a29e] ml-1">(no decryption needed)</span>
-            </div>
-            <div className="space-y-6">
-              {form.fields
-                .filter(f => f.type === 'select' || f.type === 'multiselect')
-                .map(field => {
-                  const counts = form.aggregates?.[field.id] || {}
-                  const total = Object.values(counts).reduce((a, b) => a + b, 0)
-                  return (
-                    <div key={field.id}>
-                      <h3 className="text-sm font-medium text-[#1c1917] mb-3">{field.label}</h3>
-                      <div className="space-y-2">
-                        {field.options?.map(option => {
-                          const count = counts[option] || 0
-                          const pct = total > 0 ? Math.round((count / total) * 100) : 0
-                          return (
-                            <div key={option}>
-                              <div className="flex items-center justify-between text-sm mb-1">
-                                <span className="text-[#1c1917]">{option}</span>
-                                <span className="text-[#78716c]">{count} ({pct}%)</span>
-                              </div>
-                              <div className="h-2 bg-[#f5f5f4] rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-[#1c1917] rounded-full transition-all"
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+        {/* Form Metadata */}
+        {form.bulletinCid && (
+          <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 shadow-sm">
+            <div className="flex items-start gap-3">
+              <Database className="w-6 h-6 text-[#1c1917] mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-[#1c1917] mb-2 font-serif">Form Definition</h2>
+                <p className="text-sm text-[#57534e] mb-3">
+                  This form is stored on Polkadot's Bulletin chain as a decentralized, immutable record.
+                </p>
+                <div className="bg-[#fafaf9] rounded-lg p-3 border border-[#e7e5e4]">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-[#78716c] mb-1">Form CID (Bulletin Chain)</div>
+                      <div className="font-mono text-xs text-[#1c1917] truncate">{form.bulletinCid}</div>
                     </div>
-                  )
-                })}
+                    <a
+                      href={`https://ipfs.dotspark.app/ipfs/${form.bulletinCid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1c1917] text-white rounded-lg hover:bg-[#292524] transition-colors text-xs font-medium whitespace-nowrap"
+                    >
+                      View on DotSpark
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                  {form.onChainId && (
+                    <div className="mt-3 pt-3 border-t border-[#e7e5e4]">
+                      <div className="text-xs text-[#78716c]">On-chain Form ID: <span className="font-mono font-semibold text-[#1c1917]">#{form.onChainId}</span></div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
+
         {/* Decrypt panel */}
-        <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock className="w-5 h-5 text-[#78716c]" />
-            <h2 className="text-lg font-semibold text-[#1c1917]">Individual Responses</h2>
-            <span className="text-xs bg-[#fafaf9] text-[#78716c] px-2 py-0.5 rounded-full border border-[#e7e5e4] ml-1">
-              {encryptedResponses.length} encrypted
-            </span>
+        <div className="bg-white border border-[#e7e5e4] rounded-2xl p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <Lock className="w-6 h-6 text-[#1c1917]" />
+            <h2 className="text-2xl font-bold text-[#1c1917] font-serif">Individual Responses</h2>
           </div>
 
           {!isDecrypted && encryptedResponses.length > 0 && (
@@ -357,34 +352,136 @@ export default function AdminFormResults() {
           )}
 
           {isDecrypted && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Unlock className="w-4 h-4" />
-                {decryptedResponses.length} response{decryptedResponses.length !== 1 ? 's' : ''} decrypted
-              </div>
-              {decryptedResponses.map((response, idx) => (
-                <div key={response.id} className="border border-[#e7e5e4] rounded-xl p-4">
-                  <div className="text-xs text-[#a8a29e] mb-3">
-                    Response #{idx + 1} — {new Date(response.submittedAt).toLocaleString()}
+            <div className="space-y-6">
+              {/* Charts for Select Fields - MOVED ABOVE TABLE */}
+              {form.fields.filter(f => f.type === 'select' || f.type === 'multiselect').length > 0 && (
+                <div className="bg-white border border-[#e7e5e4] rounded-xl p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6">
+                    <BarChart2 className="w-6 h-6 text-[#1c1917]" />
+                    <h3 className="text-lg font-bold text-[#1c1917] font-serif">Response Distribution</h3>
                   </div>
-                  <div className="space-y-2">
-                    {form.fields.map(field => {
-                      const answer = response.answers[field.id]
-                      const display = answer
-                        ? Array.isArray(answer) ? answer.join(', ') : answer
-                        : null
-                      return (
-                        <div key={field.id} className="text-sm">
-                          <span className="font-medium text-[#1c1917]">{field.label}: </span>
-                          <span className="text-[#78716c]">
-                            {display || <em className="text-[#a8a29e]">No answer</em>}
-                          </span>
-                        </div>
-                      )
-                    })}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {form.fields
+                      .filter(f => f.type === 'select' || f.type === 'multiselect')
+                      .map(field => {
+                        // Calculate counts from actual decrypted responses
+                        const counts: Record<string, number> = {}
+                        decryptedResponses.forEach(response => {
+                          const answer = response.answers[field.id]
+                          if (answer) {
+                            const values = Array.isArray(answer) ? answer : [answer]
+                            values.forEach(v => {
+                              counts[v] = (counts[v] || 0) + 1
+                            })
+                          }
+                        })
+                        const total = Object.values(counts).reduce((a, b) => a + b, 0)
+                        const maxCount = Math.max(...Object.values(counts), 0)
+                        return (
+                          <div key={field.id} className="border border-[#e7e5e4] rounded-xl p-5 bg-[#fafaf9]">
+                            <h4 className="text-base font-semibold text-[#1c1917] mb-1 font-serif">{field.label}</h4>
+                            <p className="text-sm text-[#78716c] mb-4">{total} response{total !== 1 ? 's' : ''}</p>
+                            <div className="space-y-3">
+                              {field.options?.map(option => {
+                                const count = counts[option] || 0
+                                const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                                const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0
+                                return (
+                                  <div key={option}>
+                                    <div className="flex items-center justify-between text-sm mb-1.5">
+                                      <span className="text-[#1c1917] font-medium">{option}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[#78716c] font-mono text-xs">{count}</span>
+                                        <span className="text-[#a8a29e] text-xs">({pct}%)</span>
+                                      </div>
+                                    </div>
+                                    <div className="h-3 bg-white rounded-full overflow-hidden border border-[#e7e5e4]">
+                                      <div
+                                        className="h-full bg-gradient-to-r from-[#1c1917] to-[#44403c] rounded-full transition-all duration-500"
+                                        style={{ width: `${barWidth}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Responses Table */}
+              <div className="bg-white border border-[#e7e5e4] rounded-xl overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#fafaf9]">
+                  <h3 className="text-lg font-bold text-[#1c1917] font-serif">All Responses</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-[#f5f5f4] border-b border-[#e7e5e4]">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-[#57534e] uppercase tracking-wider">#</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-[#57534e] uppercase tracking-wider">Submitted</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-[#57534e] uppercase tracking-wider">CID</th>
+                        {form.fields.map(field => (
+                          <th key={field.id} className="px-6 py-3 text-left text-xs font-semibold text-[#57534e] uppercase tracking-wider">
+                            {field.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e7e5e4]">
+                      {decryptedResponses.map((response, idx) => (
+                        <tr key={response.id} className="hover:bg-[#fafaf9] transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="w-6 h-6 rounded-full bg-[#1c1917] text-white flex items-center justify-center text-xs font-bold">
+                              {idx + 1}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-[#1c1917]">
+                              {new Date(response.submittedAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-[#78716c]">
+                              {new Date(response.submittedAt).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {response.cid ? (
+                              <a
+                                href={`https://ipfs.dotspark.app/ipfs/${response.cid}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-xs text-[#1c1917] hover:text-[#ff2867] underline decoration-dotted max-w-xs block truncate"
+                                title={response.cid}
+                              >
+                                {response.cid}
+                              </a>
+                            ) : (
+                              <span className="text-xs text-[#a8a29e]">Local only</span>
+                            )}
+                          </td>
+                          {form.fields.map(field => {
+                            const answer = response.answers[field.id]
+                            const display = answer
+                              ? Array.isArray(answer) ? answer.join(', ') : answer
+                              : null
+                            return (
+                              <td key={field.id} className="px-6 py-4">
+                                <div className="text-sm text-[#1c1917] max-w-xs truncate">
+                                  {display || <em className="text-[#a8a29e]">—</em>}
+                                </div>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
           )}
 

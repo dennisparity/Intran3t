@@ -5,6 +5,72 @@
 
 ## Recent Changes
 
+### 2026-02-20 - dForms UI/UX Improvements (Polkadot Branding)
+
+**Status:** ✅ Complete - Production ready
+
+**Summary:** Complete redesign of forms UI to match Polkadot brand guidelines with enhanced data visualization and improved user experience.
+
+#### Form Creation Module (FormsWidget.tsx)
+- Enhanced button visibility with Polkadot brand styling (px-8 py-4, shadow-md hover:shadow-lg)
+- Added markdown formatting support to description field (**bold**, *italic*, [links](url))
+- Improved "Add Field" button with dark background (#1c1917)
+- Better visual hierarchy and spacing
+
+#### Form Links
+- **Shortened form URLs** from `/#/f/{formId}?key={base64}&def={base64}` to `/#/f/{formId}#key={base64}`
+- Removed form definition from URL (now loaded from Bulletin chain)
+- Cleaner, more shareable links
+
+#### Public Form View (PublicForm.tsx)
+- Replaced `/logo.png` with PolkadotLogo component throughout
+- Applied landing page hero styling (larger headings, better spacing)
+- **CRITICAL FIX:** Now waits for Bulletin upload before showing success confirmation
+- Added loading state: "Encrypting & uploading to Polkadot..."
+- Shows response CID with "View on DotSpark" link after submission
+- Updated CTAs:
+  - Primary: "Explore Intran3t Beta" → https://intran3t.vercel.app/#
+  - Secondary: "Learn about Polkadot" → https://polkadot.com
+- Applied Polkadot brand colors (warm grey palette: #fafaf9, #e7e5e4, #1c1917, #57534e, #78716c)
+- Fixed CID text overflow with proper layout (break-all + min-w-0)
+- Success icon uses brand green (#059669)
+
+#### Admin Results View (AdminFormResults.tsx)
+- **Form Metadata card:** Changed from blue to Polkadot grey/black scheme
+  - Shows Bulletin CID with DotSpark link
+  - Displays on-chain Form ID
+- **Response Distribution charts:**
+  - Moved above responses table for better hierarchy
+  - Fixed data accuracy (now calculates from actual decrypted responses)
+  - 2-column grid with gradient progress bars
+  - Shows real-time counts and percentages
+- **Responses Table:**
+  - Professional data table with all responses
+  - Added CID column with clickable DotSpark links
+  - Entry number badges, timestamps, and all form fields
+  - Hover states and proper overflow handling
+- **Removed clutter:**
+  - Removed "X encrypted" badge
+  - Removed "X responses decrypted" status message
+  - Cleaner, more professional interface
+
+#### Brand Consistency
+All changes follow **Polkadot brand guidelines** (docs/brand_guidelines.md):
+- Warm grey palette (#1c1917, #78716c, #a8a29e, #e7e5e4)
+- Font-serif (DM Serif Display) for headings
+- Rounded corners (rounded-xl, rounded-2xl)
+- Shadow system (shadow-sm, shadow-md, shadow-lg)
+- Professional button styling (px-8 py-4, font-semibold)
+- Success green: #059669
+- Border colors: #e7e5e4 (default), #d6d3d1 (strong)
+
+#### Files Changed
+- `src/modules/forms/FormsWidget.tsx` - Form creation UI improvements
+- `src/modules/forms/PublicForm.tsx` - Public form view and success screen
+- `src/pages/AdminFormResults.tsx` - Admin analytics and table view
+- `src/lib/form-links.ts` - Shortened URL format
+- `src/components/PolkadotLogo.tsx` - Used throughout for consistency
+
 ### 2026-02-20 - dForms T3rminal Pattern Implementation (COMPLETE)
 
 **Status:** ✅ Fully working end-to-end (Bulletin + Contract + Frontend)
