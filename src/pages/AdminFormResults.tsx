@@ -83,10 +83,11 @@ export default function AdminFormResults() {
           const data = JSON.parse(plaintext)
           decrypted.push({
             id: `onchain-${i}`,
-            submittedAt: manifest.submittedAt || data.submittedAt || Date.now(),
+            // Support both new (timestamp) and old (submittedAt) manifest formats
+            submittedAt: (manifest as any).timestamp || (manifest as any).submittedAt || data.submittedAt || Date.now(),
             answers: data.answers || {},
             cid: cid,
-            rawJson: JSON.stringify({ ...data, cid, manifest }, null, 2)
+            rawJson: JSON.stringify(manifest, null, 2) // Show clean manifest JSON
           })
         } catch (err) {
           console.warn(`[dForms] Failed to load on-chain response ${i}:`, err)

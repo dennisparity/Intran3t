@@ -202,11 +202,18 @@ export function PublicForm() {
 
         console.log('[dForms] Starting Bulletin upload for formId:', formId)
         try {
+          const timestamp = Date.now()
           const cid = await uploadToBulletin({
+            version: '1.0.0',
+            type: 'dform-response',
+            responseId,
             formId,
+            timestamp,
+            timestampFormatted: new Date(timestamp).toISOString(),
             ciphertext: toHex(ct),
             nonce: toHex(n),
-            submittedAt: Date.now()
+            formTitle: form?.title,
+            onChainFormId: form?.onChainId ? Number(form.onChainId) : undefined
           })
           console.log('[dForms] Bulletin upload done, CID:', cid)
           setSubmittedCid(cid)

@@ -26,10 +26,23 @@ const BULLETIN_RPC = 'wss://bulletin.dotspark.app'
 const BULLETIN_GATEWAY = 'https://ipfs.dotspark.app/ipfs'
 
 export interface BulletinManifest {
-  formId: string
-  ciphertext: string // hex
-  nonce: string      // hex
-  submittedAt: number
+  // Version & type
+  version: string           // Manifest version (e.g., "1.0.0")
+  type: string             // Always "dform-response"
+
+  // Response metadata
+  responseId: string       // Unique response identifier
+  formId: string          // Form ID this response belongs to
+  timestamp: number       // Unix timestamp (milliseconds)
+  timestampFormatted: string // ISO 8601 formatted timestamp
+
+  // Encrypted payload
+  ciphertext: string      // Hex-encoded encrypted response data
+  nonce: string          // Hex-encoded encryption nonce
+
+  // Optional form metadata (for reference)
+  formTitle?: string      // Form title (if available)
+  onChainFormId?: number  // On-chain form ID (if registered)
 }
 
 // ─── Alice relay signer (DEV_PHRASE is public on testnet) ──────────────────

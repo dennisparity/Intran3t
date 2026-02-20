@@ -5,11 +5,11 @@
 
 ## Recent Changes
 
-### 2026-02-20 - dForms Public Form Final Polish
+### 2026-02-20 - dForms Public Form Final Polish + JSON Structure Improvement
 
 **Status:** ✅ Complete - Production ready
 
-**Summary:** Final UX improvements to public form view for better clarity and usability.
+**Summary:** Final UX improvements to public form view and improved Bulletin manifest JSON structure following T3rminal's patterns.
 
 #### Changes to PublicForm.tsx
 - **Info box styling:** Changed from blue theme to Polkadot warm grey palette
@@ -26,8 +26,36 @@
   - Same Polkadot UI: `border-[#e7e5e4]`, `hover:bg-[#f5f5f4]`
   - Better mobile UX and accessibility
 
+#### Bulletin Manifest JSON Structure (T3rminal-inspired)
+- **Improved BulletinManifest interface** following T3rminal's clean JSON patterns
+- **New structure** includes:
+  - `version`: "1.0.0" (for future compatibility)
+  - `type`: "dform-response" (clear type identifier)
+  - `responseId`: Unique response identifier
+  - `timestamp` + `timestampFormatted`: Both Unix timestamp and ISO 8601 string
+  - `formTitle`, `onChainFormId`: Optional metadata for reference
+  - Better field naming and organization
+- **Example JSON stored on Bulletin:**
+  ```json
+  {
+    "version": "1.0.0",
+    "type": "dform-response",
+    "responseId": "response-1708441234567-abc123",
+    "formId": "1",
+    "timestamp": 1708441234567,
+    "timestampFormatted": "2026-02-20T13:20:34.567Z",
+    "ciphertext": "0xabcd...",
+    "nonce": "0x1234...",
+    "formTitle": "Choose your preferred Location",
+    "onChainFormId": 1
+  }
+  ```
+- **Backward compatibility:** AdminFormResults supports both old (`submittedAt`) and new (`timestamp`) manifest formats
+
 #### Files Changed
-- `src/modules/forms/PublicForm.tsx` - Info box styling, select field UI
+- `src/modules/forms/PublicForm.tsx` - Info box styling, select field UI, manifest creation
+- `src/lib/bulletin-storage.ts` - Updated BulletinManifest interface
+- `src/pages/AdminFormResults.tsx` - Backward-compatible manifest parsing
 
 ---
 
