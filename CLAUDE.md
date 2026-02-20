@@ -1,13 +1,114 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-17
+> Last updated: 2026-02-20
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
 
-### 2026-02-17 - dForms PolkaVM Contract + Frontend Integration
+### 2026-02-20 - dForms T3rminal Pattern Implementation (COMPLETE)
 
-**Status:** Contract compiled ✅ | Deploy pending ⏸️ | Frontend integrated ✅
+**Status:** ✅ Fully working end-to-end (Bulletin + Contract + Frontend)
+
+**Architecture:** Complete rewrite following T3rminal pattern:
+- **Bulletin Chain** for content storage (decentralized, auto-renewing)
+- **Smart Contract** for CID indexing (on-chain registry)
+- **Wallet-less voting** via Alice relay (no tokens needed for voters)
+- **End-to-end encryption** with AES-256-GCM
+
+#### Contract Layer (Solidity + Hardhat)
+- **File**: `contracts/polkavm/contracts/FormsV2.sol` - Simple CID index contract (122 lines)
+- **Deployed**: `0xe2F988c1aD2533F473265aCD9C0699bE47643316` (Paseo Asset Hub)
+- **Functions**:
+  - `registerForm(string formCid) → uint256 formId` - Creator registers form
+  - `submitResponse(uint256 formId, string responseCid) → uint256 idx` - Submit response
+  - `getFormCid(uint256 formId) → string` - Read form CID
+  - `getResponseCids(uint256 formId) → string[]` - Read all response CIDs
+  - `getResponseCount(uint256 formId) → uint256` - Get response count
+  - `formCount() → uint256` - Get total forms count
+- **Events**: `FormRegistered(formId, formCid, creator, timestamp)`, `ResponseSubmitted(formId, idx, responseCid, timestamp)`
+- **Built with**: Hardhat + @parity/hardhat-polkadot
+- **Test script**: `contracts/polkavm/scripts/test-contract-flow.mjs` (verified working)
+
+#### Bulletin Integration
+- **Files**: `src/lib/bulletin/` - Upload/fetch helpers (copied from T3rminal repo)
+- **Storage**: `src/lib/bulletin-storage.ts` - PAPI client for `TransactionStorage.store()`
+- **Relay**: Uses Alice wallet (`DEV_PHRASE`) for testnet uploads (no auth required on public testnet)
+- **CID calculation**: Blake2b-256 → multihash → CIDv1 (matches product-infrastructure reference)
+- **Gateway**: `https://ipfs.dotspark.app/ipfs/{cid}`
+- **Dependencies**: `@noble/hashes`, `multiformats`, `polkadot-api`
+
+#### Frontend Hooks & Components
+- **Hook**: `src/hooks/useFormsContract.ts` - ethers.js-based contract hook (260 lines)
+  - `registerForm(formCid)` - Creator registers with MetaMask
+  - `submitResponse(formId, responseCid)` - Wallet-based submission
+  - `submitResponseViaRelay(formId, responseCid)` - **Wallet-less** submission (Alice relay)
+  - `getFormCid(formId)`, `getResponseCids(formId)`, `getResponseCount(formId)` - Read functions
+  - `formCount()`, `formExists(formId)` - Utility functions
+- **Config**: `src/lib/contracts/` - Network config, provider helpers, ABI
+  - `config.ts` - Paseo Asset Hub network config (chain ID: 420420417)
+  - `provider.ts` - **Auto network switching** in MetaMask (adds Paseo if needed)
+  - `FormsV2ABI.json` - Contract ABI (compiled from Hardhat artifacts)
+- **Encryption**: `src/lib/forms-encryption.ts` - AES-256-GCM with Web Crypto API
+- **Keys**: `src/lib/form-keys.ts` - Symmetric key generation and storage
+
+#### Form Creation Flow
+1. Creator builds form definition JSON: `{ title, description, fields, encryptionPubKey }`
+2. Upload to Bulletin via Alice relay → `formCID`
+3. Register on contract: `registerForm(formCID)` via MetaMask → `formId`
+4. Save to localStorage with `bulletinCid` and `onChainId` fields
+5. Share link: `/f/{formId}#key={base64url}`
+
+#### Response Submission Flow (Wallet-less)
+1. Load form definition from Bulletin (read `formCID` from contract)
+2. Voter fills form → encrypt response with form's public key (AES-256-GCM)
+3. Build manifest: `{ formId, ciphertext, nonce, submittedAt }`
+4. Upload manifest to Bulletin via Alice relay → `responseCID`
+5. Alice relay calls contract: `submitResponse(formId, responseCID)`
+6. Show "Response submitted" confirmation (clean UX, no CIDs shown)
+
+#### Admin Results View
+- **File**: `src/pages/AdminFormResults.tsx` - Auto-fetch and decrypt responses
+- **Flow**:
+  1. Read `responseCount` from contract
+  2. Fetch all response CIDs: `getResponseCids(formId)`
+  3. For each CID: fetch manifest from Bulletin gateway
+  4. Decrypt with form key from localStorage
+  5. Display response table
+- **Features**: CSV export, aggregate charts, response filtering
+- **Fallback**: Also loads responses from localStorage (same-device responses)
+
+#### Configuration & Environment
+- **Contract address**: `VITE_FORMS_CONTRACT_ADDRESS=0xe2F988c1aD2533F473265aCD9C0699bE47643316`
+- **Relay key**: `VITE_RELAY_PRIVATE_KEY` - Alice's private key for wallet-less submissions
+- **Network**: Paseo Asset Hub (chain ID: 420420417, RPC: `https://eth-rpc-testnet.polkadot.io`)
+- **Bulletin**: `wss://bulletin.dotspark.app` (public testnet, no authorization)
+
+#### Key Improvements Over Previous Implementation
+- ✅ Removed PAPI dependency for contract calls (now uses ethers.js + MetaMask)
+- ✅ Simpler architecture (no complex manual ABI encoding)
+- ✅ Wallet-less voting with Alice relay (voters need zero tokens)
+- ✅ Automatic MetaMask network switching (adds Paseo Asset Hub if missing)
+- ✅ Contract + Bulletin integration working end-to-end
+- ✅ Admin view auto-fetches and decrypts responses from chain
+- ✅ Form definitions loaded from Bulletin (shareable links work cross-device)
+- ✅ Hardhat-based Solidity workflow (simpler than PolkaVM Rust for prototyping)
+
+#### Testing & Verification
+- **Contract test**: `node contracts/polkavm/scripts/test-contract-flow.mjs` → ✅ All functions working
+- **End-to-end test**: Form creation → response submission → admin view → ✅ Complete flow working
+- **Verified**: Bulletin uploads, contract registration, CID retrieval, decryption
+
+#### Next Steps
+- UX improvements for form view and admin results (loading states, error handling)
+- Better response analytics and charts
+- CSV export enhancements
+- DotNS deployment of updated app
+
+---
+
+### 2026-02-17 - dForms PolkaVM Contract + Frontend Integration (SUPERSEDED)
+
+**Status:** Superseded by T3rminal implementation (2026-02-20) ⚠️
 
 #### Smart Contract (`contracts/polkavm/src/forms.rs`)
 - Full PolkaVM Rust contract compiled to `target/forms.polkavm` (28KB, 4631 instructions)
