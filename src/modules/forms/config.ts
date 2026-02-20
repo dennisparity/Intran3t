@@ -1,7 +1,8 @@
-import type { Form, FormResponse, FormsConfig } from './types'
+import type { Form, FormResponse, FormsConfig, EncryptedResponse } from './types'
 
 export const FORMS_STORAGE_KEY = 'intran3t_forms'
 export const RESPONSES_STORAGE_KEY = 'intran3t_form_responses'
+export const ENCRYPTED_RESPONSES_PREFIX = 'dforms:encrypted:'
 
 export function loadForms(): Form[] {
   try {
@@ -42,6 +43,26 @@ export function saveResponse(response: FormResponse) {
     localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(responses))
   } catch (e) {
     console.error('Failed to save response:', e)
+  }
+}
+
+export function loadEncryptedResponses(formId: string): EncryptedResponse[] {
+  try {
+    const stored = localStorage.getItem(ENCRYPTED_RESPONSES_PREFIX + formId)
+    if (stored) return JSON.parse(stored)
+  } catch (e) {
+    console.error('Failed to load encrypted responses:', e)
+  }
+  return []
+}
+
+export function saveEncryptedResponse(response: EncryptedResponse): void {
+  try {
+    const responses = loadEncryptedResponses(response.formId)
+    responses.push(response)
+    localStorage.setItem(ENCRYPTED_RESPONSES_PREFIX + response.formId, JSON.stringify(responses))
+  } catch (e) {
+    console.error('Failed to save encrypted response:', e)
   }
 }
 

@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+/**
+ * Deploy dForms PolkaVM contract to Polkadot Hub TestNet
+ * Uses EVM contract creation (cast send --create equivalent) via viem
+ * This is the correct path for pallet_revive PolkaVM contracts.
+ */
+
+import { createWalletClient, createPublicClient, http } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(__dirname, '../../../.env') });
+
+const EVM_RPC = 'https://eth-rpc-testnet.polkadot.io';
+const CHAIN_ID = 420420417;
+const POLKAVM_PATH = resolve(__dirname, '../target/forms_v2.polkavm');
+const OUTPUT_PATH = resolve(__dirname, '../deployment_forms.json');
+
+const paseoChain = {
+  id: CHAIN_ID,
+  name: 'Polkadot Hub TestNet',
+  nativeCurrency: { name: 'Paseo', symbol: 'PAS', decimals: 18 },
+  rpcUrls: { default: { http: [EVM_RPC] } },
+} as const;
+
+async function deploy() {
+  console.log('\n🚀 Deploying dForms PolkaVM Contract (EVM interface)');
+  console.log('============================================================\n');
+
+  const mnemonic = process.env.MNEMONIC || process.env.DOTNS_MNEMONIC;
+  if (!mnemonic) {
+    console.error('❌ MNEMONIC not set in .env\n');
+    process.exit(1);
+  }
+
+  if (!existsSync(POLKAVM_PATH)) {
+    console.error('❌ forms_v2.polkavm not found. Run: npm run build:forms\n');
+    process.exit(1);
+  }
+
+  // Derive EVM account from mnemonic via BIP-44 Ethereum path
+  const account = mnemonicToAccount(mnemonic);
+  console.log('Deployer (EVM):', account.address);
+  console.log('RPC:', EVM_RPC, '\n');
+
+  const publicClient = createPublicClient({ chain: paseoChain, transport: http(EVM_RPC) });
+
+  const balance = await publicClient.getBalance({ address: account.address });
+  console.log(`Balance: ${(Number(balance) / 1e18).toFixed(4)} PAS`);
+
+  if (balance === 0n) {
+    console.error('\n❌ EVM account has no PAS tokens.');
+    console.error('   This is a different address from your Substrate account.');
+    console.error('   Fund it at: https://faucet.polkadot.io/');
+    console.error('   → Select: Paseo + Asset Hub');
+    console.error(`   → Address: ${account.address}\n`);
+    process.exit(1);
+  }
+
+  const walletClient = createWalletClient({ account, chain: paseoChain, transport: http(EVM_RPC) });
+
+  const contractCode = readFileSync(POLKAVM_PATH);
+  const bytecode = `0x${contractCode.toString('hex')}` as `0x${string}`;
+  console.log(`Contract bytecode: ${contractCode.length} bytes\n`);
+
+  console.log('Submitting contract creation...');
+  const hash = await walletClient.sendTransaction({
+    to: null as any,  // null = contract creation
+    data: bytecode,
+  });
+  console.log('Transaction hash:', hash);
+
+  console.log('Waiting for receipt...');
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  if (!receipt.contractAddress) {
+    console.error('❌ No contract address in receipt. Status:', receipt.status);
+    process.exit(1);
+  }
+
+  const contractAddress = receipt.contractAddress;
+  console.log('\n✨ Contract deployed!');
+  console.log('Contract address:', contractAddress);
+  console.log('Block:', receipt.blockNumber.toString());
+
+  const record = {
+    contract: 'dForms',
+    network: 'Polkadot Hub TestNet',
+    chainId: CHAIN_ID,
+    rpcEndpoint: EVM_RPC,
+    contractAddress,
+    deployerEvm: account.address,
+    blockNumber: receipt.blockNumber.toString(),
+    txHash: hash,
+    timestamp: new Date().toISOString(),
+  };
+
+  writeFileSync(OUTPUT_PATH, JSON.stringify(record, null, 2));
+  console.log('\n📄 Saved:', OUTPUT_PATH);
+  console.log('\n✅ Done!');
+  console.log(`\n📋 Add to .env:\nVITE_FORMS_CONTRACT_ADDRESS=${contractAddress}\n`);
+}
+
+deploy().then(() => process.exit(0)).catch((err) => {
+  console.error('\n💥 Failed:', err.message);
+  process.exit(1);
+});

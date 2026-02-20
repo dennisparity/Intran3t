@@ -1,35 +1,36 @@
-import { DotNS } from './dotns.js';
-import { CID } from 'multiformats/cid';
+import { config } from "dotenv";
+import { DotNS } from "./dotns.js";
+import { encodeContenthash } from "./deploy.js";
 
-const DOMAIN = process.env.DOMAIN_NAME || 'intran3t-app42';
-const CID_STRING = process.argv[2];
-const MNEMONIC = process.env.DOTNS_MNEMONIC || "bottom drive obey lake curtain smoke basket hold race lonely fit walk";
-const RPC = process.env.PASEO_ASSETHUB_RPC || 'wss://sys.ibp.network/asset-hub-paseo';
+config();
 
-if (!CID_STRING) {
-  console.error('Usage: node scripts/update-contenthash.js <CID>');
-  process.exit(1);
-}
+const DOMAIN_NAME = process.env.DOTNS_DOMAIN || "intran3t-app42";
+const IPFS_CID = process.env.IPFS_CID || "bafybeia2dszyud6krihvagnjh5ypxsycyucoxsf53ckyrk5nvvef62bjaq";
 
-console.log(`\n🔄 Updating Contenthash`);
-console.log(`   Domain: ${DOMAIN}.dot`);
-console.log(`   New CID: ${CID_STRING}`);
-console.log(`   RPC: ${RPC}\n`);
+console.log("\n🔄 Updating DotNS Contenthash");
+console.log("=".repeat(60));
+console.log(`Domain: ${DOMAIN_NAME}.dot`);
+console.log(`New CID: ${IPFS_CID}\n`);
+
+const dotns = new DotNS();
+await dotns.connect();
 
 try {
-  const cid = CID.parse(CID_STRING);
-  const client = new DotNS(RPC, MNEMONIC);
-  await client.connect();
+  console.log(`Setting contenthash...`);
+  const contenthashHex = `0x${encodeContenthash(IPFS_CID)}`;
+  console.log(`Contenthash: ${contenthashHex}\n`);
 
-  console.log('Setting contenthash...');
-  const txHash = await client.setContenthash(DOMAIN, cid);
-  console.log(`✅ Contenthash updated!`);
-  console.log(`   Transaction: ${txHash}`);
-  console.log(`   Live at: https://${DOMAIN}.paseo.li\n`);
+  await dotns.setContenthash(DOMAIN_NAME, contenthashHex);
 
-  await client.disconnect();
-  process.exit(0);
+  console.log("\n✅ Contenthash updated successfully!");
+  console.log("=".repeat(60));
+  console.log(`\n🌐 Your site should now be live at:`);
+  console.log(`   https://${DOMAIN_NAME}.paseo.li`);
+  console.log(`\nVerify IPFS content:`);
+  console.log(`   https://dweb.link/ipfs/${IPFS_CID}\n`);
 } catch (error) {
-  console.error(`❌ Failed to update contenthash:`, error.message);
-  process.exit(1);
+  console.error("\n❌ Update failed:", error.message);
+  throw error;
+} finally {
+  dotns.disconnect();
 }

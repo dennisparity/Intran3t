@@ -1,0 +1,9 @@
+{
+  "contractAddress": "0xe2F988c1aD2533F473265aCD9C0699bE47643316",
+  "deployer": "0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62",
+  "network": "Paseo Asset Hub",
+  "chainId": 420420417,
+  "rpcUrl": "https://eth-rpc-testnet.polkadot.io",
+  "deployedAt": "2026-02-19T20:09:37.887Z",
+  "txHash": "0x47fea9e6308bf80dda144dab59aa5bf849b8ebe9f73c99c948fa6d7fb988e8be"
+}

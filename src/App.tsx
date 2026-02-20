@@ -3,6 +3,7 @@ import Landing from "./pages/Landing";
 import Start from "./pages/Start";
 import ModularDashboard from "./pages/ModularDashboard";
 import Admin from "./pages/Admin";
+import AdminFormResults from "./pages/AdminFormResults";
 import IdentityTest from "./pages/IdentityTest";
 import { PolkadotProvider } from "@/lib/polkadot-provider.dedot";
 import { EVMProvider } from "./providers/EVMProvider";
@@ -21,6 +22,7 @@ export default function App() {
               <Route path="/dashboard" element={<ModularDashboard />} />
               <Route path="/profile/:address" element={<ModularDashboard />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/forms/:formId" element={<AdminFormResults />} />
               <Route path="/identity-test" element={<IdentityTest />} />
             </Routes>
           </div>

@@ -20,6 +20,9 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "deploy:dotns": "node scripts/deploy-nextjs.js",
+    "update:contenthash": "node scripts/update-contenthash.js",
+    "fix:resolver": "node scripts/set-resolver-direct.js",
+    "renew:bulletin": "node scripts/renew-bulletin-storage.js",
     "postinstall": "papi"
   },
   "dependencies": {

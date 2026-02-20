@@ -7,10 +7,17 @@
   "scripts": {
     "build": "cargo build --release",
     "build:accesspass": "cargo build --release --bin accesspass",
+    "build:forms": "./scripts/build-forms.sh",
+    "build:test": "./scripts/build-test.sh",
     "deploy:accesspass": "tsx scripts/deploy-accesspass.ts",
+    "deploy:forms": "tsx scripts/deploy-forms.ts",
     "test": "tsx test/accesspass.test.ts",
     "test:integration": "tsx test/integration.test.ts",
-    "compute-selectors": "node scripts/compute-selectors.js"
+    "compute-selectors": "node scripts/compute-selectors.js",
+    "compile:sol": "hardhat compile",
+    "test:sol": "hardhat test",
+    "deploy:forms-sol": "hardhat ignition deploy ./ignition/modules/Forms.ts --network paseoAssetHub",
+    "clean:sol": "hardhat clean"
   },
   "dependencies": {
     "@polkadot/api": "^14.3.1",
@@ -22,8 +29,12 @@
     "viem": "^2.21.54"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@parity/hardhat-polkadot": "^0.2.7",
+    "@parity/resolc": "^0.2.0",
     "@types/node": "^22.10.5",
-    "tsx": "^4.19.2",
+    "hardhat": "^2.28.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.2"
   }
 }

@@ -1,0 +1,12 @@
+{
+  "contract": "FormsDebug",
+  "purpose": "Basic storage operations test",
+  "network": "Polkadot Hub TestNet",
+  "chainId": 420420417,
+  "rpcEndpoint": "https://eth-rpc-testnet.polkadot.io",
+  "contractAddress": "0x563862655e5d7effdc4b0061d160508fd699eaa2",
+  "deployerEvm": "0x7E59585d3bc72532EE7D1ceaE9BE732E6edCeb62",
+  "blockNumber": "5461726",
+  "txHash": "0xce950c5828dd9184ff28b764fa6dea43d6e5466e640e39a4f9fba9466fb5160f",
+  "timestamp": "2026-02-19T14:29:00.896Z"
+}

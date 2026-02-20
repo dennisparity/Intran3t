@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useTypink } from 'typink'
-import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical } from 'lucide-react'
+import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical, ExternalLink, AlertCircle } from 'lucide-react'
 import type { Form, FormField, FormsConfig, FieldType } from './types'
 import { loadForms, saveForms, defaultFormsConfig, FORMS_STORAGE_KEY, RESPONSES_STORAGE_KEY } from './config'
-import { createFormsStatementStore } from '../../lib/forms-statement-store'
-import { getMnemonic, saveMnemonic } from '../../lib/storage'
-import { generateRandomMnemonic } from '../../lib/wallet'
+import { generateFormKey, saveFormKey } from '../../lib/form-keys'
+import { useFormsContract } from '../../hooks/useFormsContract'
+import { uploadRawToBulletin } from '../../lib/bulletin-storage'
 
 export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsConfig }) {
-  const { connectedAccount } = useTypink()
+  const { connectedAccount, signer } = useTypink()
+  const {
+    isLoading: contractLoading,
+    registerForm: contractRegisterForm,
+    formCount: getFormCount
+  } = useFormsContract()
+
+  // Debug: Log what the hook returns
+  useEffect(() => {
+    console.log('[FormsWidget] Hook state:', { contractLoading, hasAccount: !!connectedAccount })
+  }, [contractLoading, connectedAccount])
   const [activeTab, setActiveTab] = useState<'create' | 'submissions'>('create')
   const [forms, setForms] = useState<Form[]>([])
+  const [isCreating, setIsCreating] = useState(false)
+  const [lastOnChainId, setLastOnChainId] = useState<number>(0)
 
   // Create form state
   const [formTitle, setFormTitle] = useState('')
@@ -31,6 +43,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   // UI state
   const [showLinkCopied, setShowLinkCopied] = useState<string | null>(null)
   const [expandedFormId, setExpandedFormId] = useState<string | null>(null)
+  const [contractWarning, setContractWarning] = useState<string | null>(null)
 
   useEffect(() => {
     setForms(loadForms())
@@ -51,69 +64,100 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   }
 
   const handleCreateForm = async () => {
-    if (!formTitle.trim() || !connectedAccount) return
+    if (!formTitle.trim() || !connectedAccount || isCreating) return
 
+    setIsCreating(true)
+    setContractWarning(null)
     let updatedForms: Form[]
 
     try {
       if (editingFormId) {
-        // Update existing form
+        // Update existing form (local only — on-chain form definitions are immutable)
         updatedForms = forms.map(f =>
           f.id === editingFormId
-            ? {
-                ...f,
-                title: formTitle.trim(),
-                description: formDescription.trim(),
-                fields
-              }
+            ? { ...f, title: formTitle.trim(), description: formDescription.trim(), fields }
             : f
         )
       } else {
-        // Create new form
-        const formId = generateFormId()
-        const newForm: Form = {
-          id: formId,
-          title: formTitle.trim(),
-          description: formDescription.trim(),
-          creator: connectedAccount.address,
-          createdAt: Date.now(),
-          status: 'active',
-          fields,
-          responses: []
-        }
+        // Generate AES-256 encryption key for this form (moved outside scope)
+        const formKey = generateFormKey()
 
-        // NOTE: Statement store publishing disabled due to "Store is full" error on testnet
-        // Forms are stored in localStorage only for now
-        // TODO: Implement System Remarks for permanent on-chain storage (requires gas fees)
-        console.log('✓ Form saved to localStorage:', formId)
-        console.log('  Creator:', connectedAccount.address)
-        console.warn('⚠️ Statement store disabled (testnet capacity reached)')
+        // Predict on-chain form ID (formCount + 1) and register on contract
+        let formId: string
 
-        /*
-        // Disabled: Statement store publishing (testnet full)
-        try {
-          let mnemonic = getMnemonic()
-          if (!mnemonic) {
-            mnemonic = generateRandomMnemonic()
-            saveMnemonic(mnemonic)
+        console.log('[dForms] Contract check:', { contractLoading })
+
+        let onChainMetadata: { onChainId?: string; onChainTimestamp?: number; signerAddress?: string; bulletinCid?: string } = {}
+
+        if (!contractLoading) {
+          try {
+            console.log('[dForms] Uploading form definition to Bulletin (via Alice relay)...')
+            console.log('[dForms] formKey exists:', !!formKey, 'length:', formKey?.length)
+
+            // 1. Build form definition JSON
+            const formDef = {
+              title: formTitle.trim(),
+              description: formDescription.trim(),
+              fields,
+              encryptionPubKey: Array.from(formKey),
+              createdAt: Date.now(),
+            }
+            const formDefBytes = new TextEncoder().encode(JSON.stringify(formDef))
+
+            // 2. Upload to Bulletin (via Alice relay - acceptable for testnet, form def is public data)
+            const formCID = await uploadRawToBulletin(formDefBytes)
+            console.log('[dForms] Bulletin upload done, CID:', formCID)
+
+            // 3. Register CID on contract
+            const currentCount = await getFormCount()
+            const predictedOnChainId = Math.max(Number(currentCount) + 1, lastOnChainId + 1)
+            const timestamp = Date.now()
+
+            await contractRegisterForm(formCID)
+            console.log('✅ Form registered on-chain, id:', predictedOnChainId, 'CID:', formCID)
+            setLastOnChainId(predictedOnChainId)
+
+            // Use unique local ID to avoid React key collisions
+            formId = generateFormId()
+
+            onChainMetadata = {
+              onChainId: predictedOnChainId.toString(),
+              onChainTimestamp: timestamp,
+              signerAddress: connectedAccount.address,
+              bulletinCid: formCID,
+            }
+          } catch (contractErr) {
+            const msg = contractErr instanceof Error ? contractErr.message : String(contractErr)
+            console.error('❌ Bulletin/contract call failed:', contractErr)
+            console.error('Stack trace:', contractErr instanceof Error ? contractErr.stack : 'N/A')
+            setContractWarning(msg)
+            formId = generateFormId()
           }
-
-          const store = createFormsStatementStore()
-          await store.connect(mnemonic, formId)
-          await store.publishForm({...}, connectedAccount.address)
-          store.disconnect()
-        } catch (err) {
-          console.error('Statement store error:', err)
+        } else {
+          console.log('[dForms] Creating form locally - contractLoading:', contractLoading)
+          formId = generateFormId()
         }
-        */
 
-        updatedForms = [newForm, ...forms]
+        saveFormKey(formId, formKey)
+        updatedForms = [
+          {
+            id: formId,
+            title: formTitle.trim(),
+            description: formDescription.trim(),
+            creator: connectedAccount.address,
+            createdAt: Date.now(),
+            status: 'active',
+            fields,
+            responses: [],
+            aggregates: {},
+            ...onChainMetadata
+          },
+          ...forms
+        ]
       }
 
       setForms(updatedForms)
       saveForms(updatedForms)
-
-      // Reset form
       setFormTitle('')
       setFormDescription('')
       setFields([])
@@ -121,6 +165,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       setActiveTab('submissions')
     } catch (err) {
       console.error('Failed to create form:', err)
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -172,7 +218,22 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   }
 
   const handleCopyLink = async (formId: string) => {
-    const link = `${window.location.origin}/f/${formId}`
+    const form = forms.find(f => f.id === formId)
+    if (!form) return
+
+    const { getFormKey } = await import('../../lib/form-keys')
+    const formKey = getFormKey(formId)
+
+    let link: string
+    if (formKey) {
+      // Generate self-contained shareable link with form def + key in fragment
+      const { createFormLink } = await import('../../lib/form-links')
+      link = createFormLink(form, formKey).url
+    } else {
+      // Fallback: simple link (voter must be on same device as creator)
+      link = `${window.location.origin}/f/${formId}`
+    }
+
     try {
       await navigator.clipboard.writeText(link)
       setShowLinkCopied(formId)
@@ -251,7 +312,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               : 'text-[#78716c] hover:text-[#1c1917]'
           }`}
         >
-          View Submissions ({myForms.length})
+          View Forms ({myForms.length})
         </button>
       </div>
 
@@ -486,6 +547,27 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
+
+                {/* Error Alert */}
+                {contractWarning && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-900">Failed to register on-chain</p>
+                        <p className="text-xs text-red-700 mt-1">{contractWarning}</p>
+                        <p className="text-xs text-red-600 mt-2">Form was saved locally only. You can still use it on this device.</p>
+                      </div>
+                      <button
+                        onClick={() => setContractWarning(null)}
+                        className="text-red-400 hover:text-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Create/Update Buttons */}
                 <div className="flex gap-2">
                   {editingFormId && (
@@ -498,10 +580,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   )}
                   <button
                     onClick={handleCreateForm}
-                    disabled={!formTitle.trim() || fields.length === 0}
+                    disabled={!formTitle.trim() || fields.length === 0 || isCreating}
                     className="flex-1 px-4 py-2.5 text-sm font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingFormId ? 'Update Form' : 'Create Form'}
+                    {isCreating ? 'Publishing...' : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
               </>
@@ -527,6 +609,11 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     <div className="flex-1">
                       <h3 className="font-semibold text-[#1c1917] text-sm">
                         {form.title}
+                        {form.onChainId && (
+                          <span className="ml-2 text-xs font-mono text-[#a8a29e]">
+                            #{form.onChainId}
+                          </span>
+                        )}
                       </h3>
                       {form.description && (
                         <p className="text-xs text-[#78716c] mt-1">
@@ -544,7 +631,17 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                         <span className="text-xs text-[#78716c]">
                           {form.responses.length} response{form.responses.length !== 1 ? 's' : ''}
                         </span>
+                        {form.bulletinCid && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700" title={`Form definition CID: ${form.bulletinCid}`}>
+                            ⛓️ On-chain
+                          </span>
+                        )}
                       </div>
+                      {form.signerAddress && (
+                        <div className="text-xs text-[#a8a29e] mt-1 font-mono">
+                          Signer: {form.signerAddress.slice(0, 6)}...{form.signerAddress.slice(-4)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -565,12 +662,13 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                         </>
                       )}
                     </button>
-                    <button
-                      onClick={() => setExpandedFormId(expandedFormId === form.id ? null : form.id)}
-                      className="flex-1 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+                    <a
+                      href={`#/admin/forms/${form.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
                     >
-                      {expandedFormId === form.id ? 'Hide' : 'View'} Responses
-                    </button>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Results
+                    </a>
                     <button
                       onClick={() => handleEditForm(form.id)}
                       className="p-1.5 text-[#78716c] hover:text-[#1c1917] transition-colors duration-200"

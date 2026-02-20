@@ -1,9 +1,56 @@
 # Intran3t - Operational Context
 
-> Last updated: 2026-02-13
+> Last updated: 2026-02-17
 > Architecture overview: See [README.md](./README.md)
 
 ## Recent Changes
+
+### 2026-02-17 - dForms PolkaVM Contract + Frontend Integration
+
+**Status:** Contract compiled ✅ | Deploy pending ⏸️ | Frontend integrated ✅
+
+#### Smart Contract (`contracts/polkavm/src/forms.rs`)
+- Full PolkaVM Rust contract compiled to `target/forms.polkavm` (28KB, 4631 instructions)
+- **CRITICAL FIX:** Target JSON `riscv64emac-unknown-none-polkavm.json` must include `+e` in features — `#[polkavm_export]` macro only generates code when `cfg(target_feature = "e")` is true. Added `+e` + PIE flags (`--emit-relocs`, `--unique`, `--apply-dynamic-relocs`, `-Bsymbolic`).
+- Correct keccak256 function selectors for all 8 methods (were wrong before fix)
+- Functions: `createForm`, `submitResponse`, `recordAggregate`, `getAggregateCount`, `hasSubmitted`, `closeForm`, `formCount`, `getResponseCount`
+
+#### Deploy Script (`contracts/polkavm/scripts/deploy-forms.ts`)
+- ES module compatible (uses `fileURLToPath(import.meta.url)`)
+- Reads `DOTNS_MNEMONIC` or `MNEMONIC` from `.env`
+- Saves result to `deployment_forms.json`
+- Run: `cd "/Users/dennisschiessl/Claude Code/Intran3t/contracts/polkavm" && npm run build:forms && npm run deploy:forms`
+
+#### To Deploy (manual — WebSocket blocked in Claude Code)
+```bash
+cd "/Users/dennisschiessl/Claude Code/Intran3t/contracts/polkavm"
+npm run build:forms   # cargo build + polkatool link
+npm run deploy:forms  # deploys, saves deployment_forms.json
+# Then add to .env:
+# VITE_FORMS_CONTRACT_ADDRESS=0x...  (from deployment_forms.json)
+```
+
+#### Frontend Hook (`src/hooks/useFormsContract.ts`)
+- viem-based EVM hook (no MetaMask required for reads, MetaMask for writes)
+- `isConfigured` flag — false when contract address is zero address
+- Key exports: `getFormCount`, `getResponseCount`, `checkHasSubmitted`, `getAggregateCount`, `createForm`, `submitResponse`, `recordAggregate`, `closeForm`
+
+#### FormsWidget.tsx + PublicForm.tsx
+- `FormsWidget.tsx`: On create, calls `getFormCount()` to predict on-chain ID, then `createForm()` on contract. Falls back to local ID on error.
+- `PublicForm.tsx`: After localStorage save, best-effort (non-blocking) contract `submitResponse` + `recordAggregate` calls.
+- Both use `useFormsContract()` hook; `isConfigured` guards contract calls.
+
+#### Env Var Required After Deploy
+```bash
+VITE_FORMS_CONTRACT_ADDRESS=0x...   # from deployment_forms.json
+```
+
+#### Pending (Day 3+)
+- **Day 3:** Update link format to `/f/{contractId}#key={base64}`, load form from contract (not localStorage)
+- **Day 3:** End-to-end test: create form → copy link → submit → verify contract state
+- **Day 4:** `AdminFormResults.tsx` — decrypt button, aggregate charts, response table, CSV export
+- **Day 4:** `Admin.tsx` — rewrite to forms list with response counts + links to `/admin/forms/:formId`
+- **Future:** Bulletin Chain upload for encrypted responses (replace mock CID with real IPFS CID)
 
 ### 2026-02-13 - PolkaVM Smart Contract Migration (MAJOR)
 - **Migration**: Complete migration from Solidity to PolkaVM Rust contracts

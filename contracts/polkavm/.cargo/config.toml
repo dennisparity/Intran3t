@@ -1,5 +1,5 @@
 [build]
-target = "riscv64emac-unknown-none-polkavm"
+target = "riscv64emac-unknown-none-polkavm.json"
 
 [unstable]
 build-std = ["core", "alloc"]

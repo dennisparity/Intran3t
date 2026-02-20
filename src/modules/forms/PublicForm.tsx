@@ -1,63 +1,51 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle, AlertCircle, Lock, Info, Eye, EyeOff, Download, Copy, ExternalLink, Sparkles } from 'lucide-react'
-import type { Form, FormResponse } from './types'
+import { CheckCircle, AlertCircle, Lock, Info, Sparkles, ArrowRight } from 'lucide-react'
+import type { Form, FormField } from './types'
 import { loadForms } from './config'
-import { generateRandomMnemonic, deriveWallet } from '../../lib/wallet'
-import { getMnemonic, saveMnemonic, saveWalletAddress } from '../../lib/storage'
-import { createFormsStatementStore } from '../../lib/forms-statement-store'
+import { saveEncryptedResponse } from './config'
+import { encryptDocument, toHex } from '../../lib/forms-encryption'
+import { fromBase64url, getFormKey } from '../../lib/form-keys'
+import { uploadToBulletin, fetchRawFromBulletin } from '../../lib/bulletin-storage'
+import { useFormsContract } from '../../hooks/useFormsContract'
+
+/** Read ?key and ?def from inside the hash once, at component init. */
+function readHashParams(): { key: string | null; def: string | null } {
+  const hash = window.location.hash // e.g. "#/f/1?key=...&def=..."
+  const qIdx = hash.indexOf('?')
+  if (qIdx === -1) return { key: null, def: null }
+  const p = new URLSearchParams(hash.substring(qIdx + 1))
+  return { key: p.get('key'), def: p.get('def') }
+}
 
 // Simple markdown formatter
 function formatMarkdown(text: string) {
   if (!text) return ''
-
   return text
-    // Bold: **text** or __text__
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/__(.+?)__/g, '<strong>$1</strong>')
-    // Italic: *text* or _text_
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
-    // Links: [text](url)
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] hover:text-[#ff2867]-hover underline decoration-[#ff2867]/30 hover:decoration-[#e6245d] transition-colors">$1</a>')
-    // Line breaks
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] underline">$1</a>')
     .replace(/\n/g, '<br />')
 }
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>()
+  const { getFormCid, submitResponseViaRelay } = useFormsContract()
+
+  // Capture URL params ONCE at first render (immune to StrictMode double-invoke)
+  const [initialKey] = useState<string | null>(() => readHashParams().key)
+  const [initialDef] = useState<string | null>(() => readHashParams().def)
   const [form, setForm] = useState<Form | null>(null)
   const [loading, setLoading] = useState(true)
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const [walletCreated, setWalletCreated] = useState(false)
-  const [walletAddress, setWalletAddress] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showMnemonic, setShowMnemonic] = useState(false)
-  const [mnemonicCopied, setMnemonicCopied] = useState(false)
+  const formKeyRef = useRef<Uint8Array | null>(null)
 
-  // Auto-generate wallet on mount if not exists
-  useEffect(() => {
-    let existingMnemonic = getMnemonic()
-
-    if (!existingMnemonic) {
-      // Generate new wallet automatically
-      const mnemonic = generateRandomMnemonic()
-      const wallet = deriveWallet(mnemonic)
-
-      // Save to browser cookies
-      saveMnemonic(mnemonic)
-      saveWalletAddress(wallet.address)
-
-      setWalletAddress(wallet.address)
-      setWalletCreated(true)
-    } else {
-      // Use existing wallet
-      const wallet = deriveWallet(existingMnemonic)
-      setWalletAddress(wallet.address)
-    }
-  }, [])
+  // No session wallet needed — Alice relay handles on-chain submission
 
   useEffect(() => {
     if (!formId) {
@@ -66,24 +54,89 @@ export function PublicForm() {
       return
     }
 
-    // Load form from localStorage only (statement store disabled due to testnet capacity)
-    const localForms = loadForms()
-    const foundForm = localForms.find(f => f.id === formId)
-
-    if (!foundForm) {
-      setError('Form not found. Forms can only be accessed on the device where they were created.')
-    } else if (foundForm.status === 'closed') {
-      setError('This form is no longer accepting responses')
-    } else {
-      setForm(foundForm)
+    // 1. Use params captured at first render (immune to StrictMode / URL clearing)
+    if (initialKey) {
+      try { formKeyRef.current = fromBase64url(initialKey) } catch { /* ignore */ }
     }
 
-    setLoading(false)
-  }, [formId])
+    if (initialDef) {
+      try {
+        const json = new TextDecoder().decode(fromBase64url(initialDef))
+        const urlFormDef = JSON.parse(json) as Form
+        if (urlFormDef.status === 'closed') {
+          setError('This form is no longer accepting responses')
+        } else {
+          setForm(urlFormDef)
+        }
+        setLoading(false)
+        return
+      } catch {
+        // fall through to Bulletin / localStorage
+      }
+    }
+
+    // 2. Try loading form definition from Bulletin (via contract → CID → gateway)
+    const numericId = Number(formId)
+    if (!isNaN(numericId) && numericId > 0) {
+      ;(async () => {
+        try {
+          console.log('[PublicForm] Loading form from Bulletin, formId:', formId)
+          const cid = await getFormCid(Number(formId))
+          if (cid) {
+            console.log('[PublicForm] Got CID from contract:', cid)
+            const bytes = await fetchRawFromBulletin(cid)
+            const formDef = JSON.parse(new TextDecoder().decode(bytes))
+            const bulletinForm: Form = {
+              id: formId,
+              title: formDef.title || 'Untitled',
+              description: formDef.description || '',
+              creator: '',
+              createdAt: formDef.createdAt || Date.now(),
+              status: 'active',
+              fields: (formDef.fields || []) as FormField[],
+              responses: [],
+              bulletinCid: cid,
+            }
+            // Extract encryption key from form definition if available and not already set
+            if (!formKeyRef.current && formDef.encryptionPubKey) {
+              formKeyRef.current = new Uint8Array(formDef.encryptionPubKey)
+            }
+            setForm(bulletinForm)
+            setLoading(false)
+            return
+          }
+        } catch (err) {
+          console.warn('[PublicForm] Bulletin load failed, falling back to localStorage:', err)
+        }
+
+        // 3. Fall back to localStorage (creator's device only)
+        loadFromLocalStorage()
+      })()
+    } else {
+      // Non-numeric form ID — localStorage only
+      loadFromLocalStorage()
+    }
+
+    function loadFromLocalStorage() {
+      const localForms = loadForms()
+      const foundForm = localForms.find(f => f.id === formId)
+
+      if (!foundForm) {
+        setError('Form not found. Share the complete shareable link to access this form from other devices.')
+      } else if (foundForm.status === 'closed') {
+        setError('This form is no longer accepting responses')
+      } else {
+        setForm(foundForm)
+        const key = getFormKey(formId!)
+        if (key) formKeyRef.current = key
+      }
+      setLoading(false)
+    }
+  }, [formId, initialKey, initialDef])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!form || !formId) return
 
     // Validate required fields
@@ -104,21 +157,88 @@ export function PublicForm() {
     setIsSubmitting(true)
 
     try {
-      // NOTE: Statement store disabled - saving to localStorage only
-      // TODO: Implement System Remarks for on-chain storage
-      const response: FormResponse = {
-        id: `response-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        formId,
-        submittedAt: Date.now(),
-        answers
+      const responseId = `response-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      const plaintext = JSON.stringify({ answers, submittedAt: Date.now() })
+
+      let encryptedCiphertext: Uint8Array | null = null
+      let encryptedNonce: Uint8Array | null = null
+
+      if (formKeyRef.current) {
+        // Encrypt response with form key (AES-256-GCM)
+        const { ciphertext, nonce } = await encryptDocument(plaintext, formKeyRef.current)
+        encryptedCiphertext = ciphertext
+        encryptedNonce = nonce
+
+        saveEncryptedResponse({
+          id: responseId,
+          formId,
+          submittedAt: Date.now(),
+          ciphertext: toHex(ciphertext),
+          nonce: toHex(nonce)
+        })
+
+        console.log('✓ Response encrypted and stored (AES-256-GCM)')
+      } else {
+        // No key available — store plaintext with warning (fallback)
+        const { saveResponse } = await import('./config')
+        saveResponse({
+          id: responseId,
+          formId,
+          submittedAt: Date.now(),
+          answers
+        })
+        console.warn('⚠️ No encryption key available — stored plaintext')
       }
 
-      // Save to localStorage
-      const { saveResponse } = await import('./config')
-      saveResponse(response)
+      // Update aggregate counts for select/multiselect fields (localStorage)
+      const { loadForms: load, saveForms: save } = await import('./config')
+      const allForms = load()
+      const formIndex = allForms.findIndex(f => f.id === formId)
+      if (formIndex >= 0) {
+        const updatedForm = { ...allForms[formIndex] }
+        if (!updatedForm.aggregates) updatedForm.aggregates = {}
+        for (const field of form.fields) {
+          if (field.type === 'select' || field.type === 'multiselect') {
+            const answer = answers[field.id]
+            if (!answer) continue
+            if (!updatedForm.aggregates[field.id]) updatedForm.aggregates[field.id] = {}
+            const values = Array.isArray(answer) ? answer : [answer]
+            for (const v of values) {
+              updatedForm.aggregates[field.id][v] = (updatedForm.aggregates[field.id][v] || 0) + 1
+            }
+          }
+        }
+        allForms[formIndex] = updatedForm
+        save(allForms)
+      }
 
-      console.log('✓ Response saved (localStorage only)')
-      console.warn('⚠️ Statement store disabled (testnet capacity)')
+      // Upload to Bulletin + register CID on contract via Alice relay (best-effort, non-blocking)
+      if (encryptedCiphertext && encryptedNonce && formId) {
+        const ct = encryptedCiphertext
+        const n = encryptedNonce
+        ;(async () => {
+          console.log('[dForms] Starting Bulletin upload for formId:', formId)
+          try {
+            const cid = await uploadToBulletin({
+              formId,
+              ciphertext: toHex(ct),
+              nonce: toHex(n),
+              submittedAt: Date.now()
+            })
+            console.log('[dForms] Bulletin upload done, CID:', cid)
+
+            // Use on-chain ID if available, otherwise skip on-chain submission
+            if (form?.onChainId) {
+              await submitResponseViaRelay(Number(form.onChainId), cid)
+              console.log('✓ Response registered on-chain, CID:', cid)
+            } else {
+              console.log('ℹ️  Form has no on-chain ID, skipping contract submission')
+            }
+          } catch (err) {
+            console.warn('[dForms] On-chain submission failed:', err)
+          }
+        })()
+      }
 
       setSubmitted(true)
     } catch (err) {
@@ -162,282 +282,88 @@ export function PublicForm() {
             {error || 'Form not found'}
           </h1>
           <p className="text-[#78716c] text-sm">
-            The form you're looking for may have been removed or is no longer accepting responses.
+            Make sure you're using the complete shareable link (including the #key=... part).
           </p>
         </div>
       </div>
     )
   }
 
-  const handleCopyMnemonic = async () => {
-    const mnemonic = getMnemonic()
-    if (!mnemonic) return
-
-    try {
-      await navigator.clipboard.writeText(mnemonic)
-      setMnemonicCopied(true)
-      setTimeout(() => setMnemonicCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy mnemonic:', err)
-    }
-  }
-
-  const handleDownloadMnemonic = () => {
-    const mnemonic = getMnemonic()
-    if (!mnemonic) return
-
-    const element = document.createElement('a')
-    const file = new Blob([`Polkadot Wallet Recovery Phrase\n\n${mnemonic}\n\nAddress: ${walletAddress}\n\nIMPORTANT: Keep this phrase safe and never share it with anyone.`], { type: 'text/plain' })
-    element.href = URL.createObjectURL(file)
-    element.download = `polkadot-wallet-${walletAddress.slice(0, 8)}.txt`
-    document.body.appendChild(element)
-    element.click()
-    document.body.removeChild(element)
-  }
-
   if (submitted) {
-    const mnemonic = getMnemonic()
-
     return (
       <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-[#fafaf9]">
-        <div className="max-w-2xl w-full">
+        <div className="max-w-lg w-full">
           {/* Success Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 mb-4 shadow-lg">
               <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-4xl font-bold text-[#1c1917] mb-3 font-serif">
-              You Just Used Web3! 🎉
+              Response Submitted
             </h1>
             <p className="text-[#78716c] text-lg">
-              Your response was submitted to Polkadot's decentralized network
+              Your response was encrypted and stored securely on Polkadot.
             </p>
           </div>
 
-          {/* What Happened Section */}
+          {/* Privacy summary */}
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 mb-6">
-            <div className="flex items-start gap-3 mb-4">
+            <div className="flex items-start gap-3">
               <Sparkles className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-purple-900 mb-2">What Just Happened?</h2>
+                <h2 className="text-lg font-bold text-purple-900 mb-2">Privacy-preserving</h2>
                 <ul className="space-y-2 text-sm text-purple-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">1.</span>
-                    <span>We created a <strong>Polkadot wallet</strong> for you (no signup needed!)</span>
+                    <span className="text-purple-600">✓</span>
+                    <span>Your response is <strong>encrypted</strong> — only the form creator can read it</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">2.</span>
-                    <span>Your form response was encrypted and stored <strong>on-chain</strong></span>
+                    <span className="text-purple-600">✓</span>
+                    <span>No personal information was recorded without your consent</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">3.</span>
-                    <span>No company or server controls your data—it's <strong>truly decentralized</strong></span>
+                    <span className="text-purple-600">✓</span>
+                    <span>Stored on <strong>Polkadot</strong> — decentralized and censorship-resistant</span>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Claim Your Wallet Section */}
-          {walletAddress && mnemonic && (
-            <div className="bg-white border-2 border-[#ff2867] rounded-xl p-6 mb-6">
-              <div className="flex items-start gap-3 mb-4">
-                <Lock className="w-6 h-6 text-[#ff2867] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold text-[#1c1917] mb-1">🎁 Claim Your Wallet</h2>
-                  <p className="text-sm text-[#78716c] mb-4">
-                    You now own a real Polkadot wallet! Save your recovery phrase to use it beyond this browser.
-                  </p>
-
-                  {/* Wallet Address */}
-                  <div className="bg-[#fafaf9] rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-[#78716c] mb-1">Your Wallet Address</p>
-                    <p className="text-xs text-[#1c1917] font-mono break-all">{walletAddress}</p>
-                  </div>
-
-                  {/* Recovery Phrase */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-yellow-900">🔑 Recovery Phrase (12 words)</p>
-                      <button
-                        onClick={() => setShowMnemonic(!showMnemonic)}
-                        className="flex items-center gap-1 text-xs text-yellow-700 hover:text-yellow-900 transition-colors"
-                      >
-                        {showMnemonic ? (
-                          <>
-                            <EyeOff className="w-3.5 h-3.5" />
-                            Hide
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-3.5 h-3.5" />
-                            Reveal
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {showMnemonic ? (
-                      <div className="bg-white rounded border border-yellow-300 p-3 mb-2">
-                        <p className="text-sm text-[#1c1917] font-mono break-all leading-relaxed">
-                          {mnemonic}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-yellow-700 italic">
-                        Click "Reveal" to see your recovery phrase
-                      </p>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleCopyMnemonic}
-                        disabled={!showMnemonic}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-white border border-yellow-300 text-yellow-900 rounded-lg hover:bg-yellow-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {mnemonicCopied ? (
-                          <>
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            Copy
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={handleDownloadMnemonic}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-white border border-yellow-300 text-yellow-900 rounded-lg hover:bg-yellow-50 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Import Instructions */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-xs font-medium text-blue-900 mb-2">📱 Import to Wallet App</p>
-                    <p className="text-xs text-blue-700 mb-2">
-                      Use your recovery phrase to import this wallet into:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <a
-                        href="https://talisman.xyz"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                      >
-                        Talisman
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                      <a
-                        href="https://subwallet.app"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                      >
-                        SubWallet
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                      <a
-                        href="https://polkadot.js.org/extension/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-white border border-blue-300 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                      >
-                        Polkadot.js
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Privacy Info */}
-          <div className="bg-white border border-[#e7e5e4] rounded-xl p-6 mb-6">
-            <h2 className="text-sm font-semibold text-[#1c1917] mb-3">🔐 Privacy & Security</h2>
-            <ul className="space-y-2 text-sm text-[#78716c]">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span><strong>Encrypted:</strong> Only the form creator can decrypt your responses</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span><strong>Decentralized:</strong> Stored on Polkadot (no centralized servers)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                <span><strong>Auto-delete:</strong> Data automatically deleted after 2 weeks</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Next Steps - Multiple CTAs */}
-          <div className="bg-gradient-to-br from-slate-50 to-stone-50 border border-[#e7e5e4] rounded-xl p-6 mb-6">
-            <h2 className="text-lg font-bold text-[#1c1917] mb-4 text-center">🚀 Explore the Polkadot Ecosystem</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Create Forms */}
+          {/* CTAs */}
+          <div className="bg-white border border-[#e7e5e4] rounded-xl p-6">
+            <p className="text-sm font-medium text-[#1c1917] mb-4 text-center">
+              Want to explore what else runs on Polkadot?
+            </p>
+            <div className="flex flex-col gap-3">
               <a
-                href="/"
-                className="flex items-start gap-3 p-4 bg-white border border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:shadow-sm transition-all"
+                href="/#/dashboard"
+                className="flex items-center justify-between px-5 py-3.5 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors group"
               >
-                <FileText className="w-5 h-5 text-[#ff2867] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1c1917] mb-1">Create Your Own Forms</p>
-                  <p className="text-xs text-[#78716c]">Build privacy-preserving forms for free</p>
+                <div>
+                  <div className="text-sm font-semibold">Open Intran3t</div>
+                  <div className="text-xs text-white/70">Your decentralized workplace</div>
                 </div>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </a>
-
-              {/* Polkadot Identity */}
-              <a
-                href="https://dotid.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-3 p-4 bg-white border border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:shadow-sm transition-all"
-              >
-                <Lock className="w-5 h-5 text-[#ff2867] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1c1917] mb-1">Set Up Identity</p>
-                  <p className="text-xs text-[#78716c]">Register your on-chain identity</p>
-                </div>
-              </a>
-
-              {/* Explore Polkadot */}
               <a
                 href="https://polkadot.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-3 p-4 bg-white border border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:shadow-sm transition-all"
+                className="flex items-center justify-between px-5 py-3.5 border border-[#e7e5e4] text-[#1c1917] rounded-xl hover:bg-[#fafaf9] transition-colors group"
               >
-                <ExternalLink className="w-5 h-5 text-[#ff2867] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1c1917] mb-1">Explore Polkadot</p>
-                  <p className="text-xs text-[#78716c]">Discover the Polkadot ecosystem</p>
+                <div>
+                  <div className="text-sm font-semibold">Learn about Polkadot</div>
+                  <div className="text-xs text-[#78716c]">The infrastructure powering this form</div>
                 </div>
-              </a>
-
-              {/* Learn More */}
-              <a
-                href="https://polkadot.com/features/staking"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-3 p-4 bg-white border border-[#e7e5e4] rounded-lg hover:border-[#ff2867] hover:shadow-sm transition-all"
-              >
-                <Sparkles className="w-5 h-5 text-[#ff2867] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1c1917] mb-1">Learn About Web3</p>
-                  <p className="text-xs text-[#78716c]">Understand blockchain & Polkadot</p>
-                </div>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </a>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-center gap-2 text-sm text-[#78716c]">
-            <span className="font-sans">Powered by</span>
+          <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
+            <span>Powered by</span>
             <img src="/logo.png" alt="Polkadot" className="w-4 h-4" />
             <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
           </div>
@@ -465,17 +391,34 @@ export function PublicForm() {
           )}
         </div>
 
-        {/* Wallet Creation Notice */}
-        {walletCreated && (
+        {/* Encryption notice */}
+        {formKeyRef.current && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Lock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900 mb-1">
-                  Your wallet will be created automatically and stored securely in your browser.
+                <p className="text-sm font-medium text-blue-900">
+                  End-to-end encrypted
                 </p>
                 <p className="text-xs text-blue-700">
-                  No installation or extension needed. Your wallet enables decentralized, encrypted form submissions.
+                  Your response will be encrypted in your browser before submission. Only the form creator can decrypt it.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No key warning */}
+        {!formKeyRef.current && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900">
+                  No encryption key found
+                </p>
+                <p className="text-xs text-yellow-700">
+                  Use the complete shareable link (with #key=... fragment) for encrypted submission.
                 </p>
               </div>
             </div>
@@ -523,9 +466,7 @@ export function PublicForm() {
                   >
                     <option value="">Select an option</option>
                     {field.options?.map(option => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
+                      <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 )}
@@ -553,7 +494,7 @@ export function PublicForm() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 animate-shake">
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               {error}
             </div>
           )}
@@ -563,29 +504,13 @@ export function PublicForm() {
             disabled={isSubmitting}
             className="w-full mt-8 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Response'}
+            {isSubmitting ? 'Encrypting & Submitting...' : 'Submit Response'}
           </button>
         </form>
 
-        {/* CTA Section */}
-        <div className="mt-8 mb-6 text-center">
-          <p className="text-sm text-[#78716c] mb-4 max-w-lg mx-auto">
-            Create your own privacy-preserving, permissionless forms with Polkadot for free
-          </p>
-          <a
-            href="https://polkadot.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200"
-          >
-            <img src="/logo.png" alt="Polkadot" className="w-5 h-5" />
-            Set up your onchain identity
-          </a>
-        </div>
-
         {/* Footer */}
-        <div className="flex items-center justify-center gap-2 text-sm text-[#78716c]">
-          <span className="font-sans">Powered by</span>
+        <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
+          <span>Powered by</span>
           <img src="/logo.png" alt="Polkadot" className="w-4 h-4" />
           <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
         </div>
