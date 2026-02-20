@@ -406,17 +406,17 @@ export function PublicForm() {
           )}
         </div>
 
-        {/* Encryption notice */}
+        {/* Bulletin Chain notice */}
         {formKeyRef.current && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <div className="bg-[#f5f5f4] border border-[#d6d3d1] rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Lock className="w-5 h-5 text-[#1c1917] mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900">
-                  End-to-end encrypted
+                <p className="text-sm font-semibold text-[#1c1917]">
+                  dForms (beta)
                 </p>
-                <p className="text-xs text-blue-700">
-                  Your response will be encrypted in your browser before submission. Only the form creator can decrypt it.
+                <p className="text-xs text-[#57534e] mt-1">
+                  You are using a decentralized form with smart contracts. Your responses will be stored on Polkadot's Bulletin chain.
                 </p>
               </div>
             </div>
@@ -473,17 +473,25 @@ export function PublicForm() {
                 )}
 
                 {field.type === 'select' && (
-                  <select
-                    value={answers[field.id] as string || ''}
-                    onChange={(e) => handleChange(field.id, e.target.value)}
-                    required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
-                  >
-                    <option value="">Select an option</option>
-                    {field.options?.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
+                  <div className="space-y-2">
+                    {field.options?.map(option => {
+                      const selectedValue = answers[field.id] as string || ''
+                      return (
+                        <label key={option} className="flex items-center gap-3 p-3 border border-[#e7e5e4] rounded-lg hover:bg-[#f5f5f4] hover:border-[#d6d3d1] cursor-pointer transition-all duration-200">
+                          <input
+                            type="radio"
+                            name={field.id}
+                            value={option}
+                            checked={selectedValue === option}
+                            onChange={(e) => handleChange(field.id, e.target.value)}
+                            required={field.required}
+                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all"
+                          />
+                          <span className="text-sm text-[#1c1917]">{option}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 )}
 
                 {field.type === 'multiselect' && (

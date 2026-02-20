@@ -5,6 +5,32 @@
 
 ## Recent Changes
 
+### 2026-02-20 - dForms Public Form Final Polish
+
+**Status:** ✅ Complete - Production ready
+
+**Summary:** Final UX improvements to public form view for better clarity and usability.
+
+#### Changes to PublicForm.tsx
+- **Info box styling:** Changed from blue theme to Polkadot warm grey palette
+  - Background: `bg-[#f5f5f4]` border: `border-[#d6d3d1]`
+  - Lock icon: `text-[#1c1917]`
+- **Info box text:** Updated to "dForms (beta)" with clearer description
+  - Title: "dForms (beta)"
+  - Description: "You are using a decentralized form with smart contracts. Your responses will be stored on Polkadot's Bulletin chain."
+  - Removed confusing "encrypted" messaging from info box
+- **Select field UI:** Replaced dropdown with visible radio buttons
+  - Changed from `<select>` element to radio button group
+  - All options now visible without clicking
+  - Matches multiselect styling (border cards with hover states)
+  - Same Polkadot UI: `border-[#e7e5e4]`, `hover:bg-[#f5f5f4]`
+  - Better mobile UX and accessibility
+
+#### Files Changed
+- `src/modules/forms/PublicForm.tsx` - Info box styling, select field UI
+
+---
+
 ### 2026-02-20 - dForms UI/UX Improvements (Polkadot Branding)
 
 **Status:** ✅ Complete - Production ready
