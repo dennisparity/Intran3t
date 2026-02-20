@@ -224,14 +224,18 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     const { getFormKey } = await import('../../lib/form-keys')
     const formKey = getFormKey(formId)
 
+    // Use on-chain ID if available (shareable across devices), otherwise use local UUID
+    const shareableId = form.onChainId ? String(form.onChainId) : formId
+
     let link: string
     if (formKey) {
-      // Generate self-contained shareable link with form def + key in fragment
-      const { createFormLink } = await import('../../lib/form-links')
-      link = createFormLink(form, formKey).url
+      // Generate shareable link with on-chain ID + encryption key
+      const { toBase64url } = await import('../../lib/form-keys')
+      const keyEncoded = toBase64url(formKey)
+      link = `${window.location.origin}/#/f/${shareableId}#key=${keyEncoded}`
     } else {
       // Fallback: simple link (voter must be on same device as creator)
-      link = `${window.location.origin}/f/${formId}`
+      link = `${window.location.origin}/#/f/${shareableId}`
     }
 
     try {
@@ -666,7 +670,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                       )}
                     </button>
                     <a
-                      href={`#/admin/forms/${form.id}`}
+                      href={`#/admin/forms/${form.onChainId || form.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />

@@ -38,9 +38,19 @@ export default function AdminFormResults() {
   useEffect(() => {
     if (!formId) return
     const all = loadForms()
-    const found = all.find(f => f.id === formId)
+
+    // Support both on-chain ID (numeric) and local UUID
+    const isNumericId = !isNaN(Number(formId)) && Number(formId) > 0
+    const found = isNumericId
+      ? all.find(f => f.onChainId === formId) // Match by on-chain ID
+      : all.find(f => f.id === formId)        // Match by local UUID
+
     setForm(found || null)
-    setEncryptedResponses(loadEncryptedResponses(formId))
+
+    // Load localStorage responses using the local UUID
+    if (found) {
+      setEncryptedResponses(loadEncryptedResponses(found.id))
+    }
   }, [formId])
 
   const fetchOnChainResponses = useCallback(async () => {
@@ -52,7 +62,8 @@ export default function AdminFormResults() {
       return
     }
 
-    const formKey = getFormKey(formId)
+    // Use form.id (local UUID) to get the encryption key, not formId (URL param)
+    const formKey = getFormKey(form.id)
     if (!formKey) {
       setOnChainError('Encryption key not on this device. Use the device where the form was created.')
       return
@@ -127,7 +138,8 @@ export default function AdminFormResults() {
     setDecryptError('')
 
     try {
-      const formKey = getFormKey(formId)
+      // Use form.id (local UUID) to get the encryption key, not formId (URL param)
+      const formKey = form ? getFormKey(form.id) : null
       if (!formKey) {
         setDecryptError('Encryption key not found. You must be on the device where the form was created.')
         return
@@ -188,12 +200,19 @@ export default function AdminFormResults() {
   }
 
   const handleCopyFormLink = async () => {
-    if (!form || !formId) return
+    if (!form) return
     const { getFormKey: gfk } = await import('../lib/form-keys')
-    const { createFormLink } = await import('../lib/form-links')
-    const key = gfk(formId)
+    const { toBase64url } = await import('../lib/form-keys')
+
+    // Get encryption key using form.id (local UUID), not formId (URL param)
+    const key = gfk(form.id)
     if (!key) return
-    const link = createFormLink(form, key).url
+
+    // Use on-chain ID if available, otherwise use local ID
+    const shareableId = form.onChainId || form.id
+    const keyEncoded = toBase64url(key)
+    const link = `${window.location.origin}/#/f/${shareableId}#key=${keyEncoded}`
+
     await navigator.clipboard.writeText(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -254,7 +273,7 @@ export default function AdminFormResults() {
               className="flex items-center gap-2 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
             >
               {copied ? <CheckCircle className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied!' : 'Copy Share Link'}
+              {copied ? 'Copied!' : 'Copy Form Link'}
             </button>
             {isDecrypted && decryptedResponses.length > 0 && (
               <button

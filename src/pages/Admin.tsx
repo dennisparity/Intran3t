@@ -152,7 +152,7 @@ export default function Admin() {
                       </div>
                     </div>
                     <a
-                      href={`#/admin/forms/${form.id}`}
+                      href={`#/admin/forms/${form.onChainId || form.id}`}
                       className="flex items-center gap-2 px-4 py-2 text-sm border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] hover:text-[#1c1917] transition-colors ml-4"
                     >
                       <ExternalLink className="w-4 h-4" />

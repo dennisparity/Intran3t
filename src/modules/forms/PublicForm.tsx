@@ -12,8 +12,9 @@ import { useFormsContract } from '../../hooks/useFormsContract'
 
 /** Read #key from URL fragment once, at component init. */
 function readHashParams(): { key: string | null } {
-  const hash = window.location.hash // e.g. "#/f/1#key=..."
-  const keyMatch = hash.match(/#key=([^&]+)/)
+  const hash = window.location.hash // e.g. "#/f/1#key=..." or "#/f/1%23key=..." (URL-encoded)
+  // Handle both normal (#key=) and URL-encoded (%23key=) formats
+  const keyMatch = hash.match(/#key=([^&]+)/) || hash.match(/%23key=([^&]+)/)
   return { key: keyMatch ? keyMatch[1] : null }
 }
 
@@ -25,13 +26,19 @@ function formatMarkdown(text: string) {
     .replace(/__(.+?)__/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Support both [text](url) AND (text)[url] formats
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] underline">$1</a>')
+    .replace(/\((.+?)\)\[(.+?)\]/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] underline">$1</a>')
     .replace(/\n/g, '<br />')
 }
 
 export function PublicForm() {
-  const { formId } = useParams<{ formId: string }>()
+  const { formId: rawFormId } = useParams<{ formId: string }>()
   const { getFormCid, submitResponseViaRelay } = useFormsContract()
+
+  // Clean formId: Element/Matrix encodes # as %23, making formId = "7%23key=..."
+  // Extract just the numeric ID before %23 or #
+  const formId = rawFormId?.split(/[%23#]/)[0] || rawFormId
 
   // Capture URL params ONCE at first render (immune to StrictMode double-invoke)
   const [initialKey] = useState<string | null>(() => readHashParams().key)
@@ -79,6 +86,7 @@ export function PublicForm() {
               fields: (formDef.fields || []) as FormField[],
               responses: [],
               bulletinCid: cid,
+              onChainId: formId, // Set on-chain ID since formId is numeric (from contract)
             }
             // Extract encryption key from form definition if available and not already set
             if (!formKeyRef.current && formDef.encryptionPubKey) {
@@ -220,14 +228,24 @@ export function PublicForm() {
 
           // Use on-chain ID if available, otherwise skip on-chain submission
           if (form?.onChainId) {
-            await submitResponseViaRelay(Number(form.onChainId), cid)
-            console.log('✓ Response registered on-chain, CID:', cid)
+            try {
+              const responseIdx = await submitResponseViaRelay(Number(form.onChainId), cid)
+              console.log('✅ Response registered on-chain successfully')
+              console.log('   - Form ID:', form.onChainId)
+              console.log('   - CID:', cid)
+              console.log('   - Response Index:', responseIdx)
+            } catch (contractErr) {
+              console.error('❌ Contract submission failed:', contractErr)
+              console.log('✅ Response saved to Bulletin (CID:', cid, ')')
+              console.log('⚠️  Not indexed on-chain - admin must manually fetch from Bulletin')
+              // Still keep the CID since it's on Bulletin
+            }
           } else {
             console.log('ℹ️  Form has no on-chain ID, skipping contract submission')
           }
         } catch (err) {
-          console.warn('[dForms] On-chain submission failed:', err)
-          // Still show success (localStorage saved) but warn about Bulletin failure
+          console.error('[dForms] Bulletin upload failed:', err)
+          // Failed to upload to Bulletin - can't submit
           setSubmittedCid(null)
         }
       }

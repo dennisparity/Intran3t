@@ -256,12 +256,14 @@ export function useFormsContract(): UseFormsContractReturn {
       try {
         // For now, use the same wallet as the deployer
         // In production, this would be a dedicated relay service
-        const relayPrivateKey = import.meta.env.VITE_RELAY_PRIVATE_KEY || import.meta.env.PRIVATE_KEY;
+        const relayPrivateKey = (import.meta.env.VITE_RELAY_PRIVATE_KEY || import.meta.env.PRIVATE_KEY)?.trim();
 
         if (!relayPrivateKey) {
-          console.warn("[FormsContract] No relay wallet configured, submission will be non-blocking");
+          const error = new Error("Relay wallet not configured. Response uploaded to Bulletin but not registered on-chain.");
+          console.error("[FormsContract] No relay wallet configured");
+          setError(error.message);
           setIsLoading(false);
-          return 0; // Return dummy index, actual submission will fail silently
+          throw error;
         }
 
         const provider = getProvider();

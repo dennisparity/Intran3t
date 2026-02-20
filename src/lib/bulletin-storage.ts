@@ -69,30 +69,49 @@ async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promi
   const cid = computeCID(data)
   const cidStr = cid.toString()
 
+  console.log('[Bulletin] Starting upload:', {
+    cid: cidStr,
+    dataSize: data.length,
+    signerPubKey: Array.from(signer.publicKey).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + '...'
+  })
+
   const client = createClient(getWsProvider(BULLETIN_RPC))
   try {
     const api = client.getTypedApi(bulletin)
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Bulletin store timed out after 60s')), 60_000)
+      let eventCount = 0
 
       const storeTx = api.tx.TransactionStorage.store({
         data: Binary.fromBytes(data)
       })
 
       storeTx.signSubmitAndWatch(signer).subscribe({
-        next: (event: { type: string; ok?: boolean }) => {
-          console.log('[Bulletin] tx event:', event.type)
+        next: (event: { type: string; ok?: boolean; value?: unknown }) => {
+          eventCount++
+          console.log(`[Bulletin] tx event #${eventCount}:`, event.type, event.value ? JSON.stringify(event.value) : '')
+
           if (event.type === 'finalized') {
             clearTimeout(timeout)
             if (event.ok) {
+              console.log('[Bulletin] ✅ Transaction finalized successfully')
               resolve()
             } else {
+              console.error('[Bulletin] ❌ Transaction finalized but failed')
               reject(new Error('Bulletin store transaction failed'))
             }
+          } else if (event.type === 'invalid') {
+            clearTimeout(timeout)
+            console.error('[Bulletin] ❌ Transaction marked as invalid:', JSON.stringify(event))
+            reject(new Error(`Bulletin transaction invalid: ${JSON.stringify(event)}`))
           }
         },
-        error: (err: unknown) => { clearTimeout(timeout); reject(err) }
+        error: (err: unknown) => {
+          clearTimeout(timeout)
+          console.error('[Bulletin] ❌ Subscription error:', err)
+          reject(err)
+        }
       })
     })
   } finally {

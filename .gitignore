@@ -7,6 +7,12 @@ dist/
 dist-ssr/
 *.local
 
+# Contract build artifacts
+contracts/polkavm/target/
+contracts/solidity/cache/
+contracts/solidity/artifacts/
+contracts/polkavm/artifacts/
+
 # Environment variables
 .env
 .env.local
@@ -46,4 +52,7 @@ Thumbs.db
 
 # Backup files
 *.bak
+*.backup
 *.car
+.env.bak*
+.env.backup
