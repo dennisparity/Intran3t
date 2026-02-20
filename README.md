@@ -149,9 +149,6 @@ Intran3t/
 │   │   └── Admin.tsx              # Admin panel with credential issuance
 │   └── App.tsx                    # Root component with EVMProvider
 ├── public/                        # Static assets
-├── RBAC_SETUP_GUIDE.md           # RBAC smart contract setup guide
-├── RBAC_IMPLEMENTATION_SUMMARY.md # Implementation details
-├── QUICK_START_DEPLOYMENT.md     # Quick deployment guide
 └── [config files]
 ```
 
@@ -288,7 +285,6 @@ vercel --prod   # Production
 
 **Documentation:**
 - [DOTNS_DEPLOYMENT.md](./DOTNS_DEPLOYMENT.md) - Complete DotNS guide (manual + GitHub Actions reference)
-- [DOTNS_ASSET_LOADING_FIX.md](./DOTNS_ASSET_LOADING_FIX.md) - Feb 12 asset loading fix (historical)
 - [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) - Traditional deployment options
 
 ---
@@ -356,7 +352,7 @@ vercel --prod   # Production
 | Viewer | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | PeopleCulture | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
-**Setup Guide:** See [RBAC_SETUP_GUIDE.md](./RBAC_SETUP_GUIDE.md) for deployment instructions.
+**Note:** RBAC features were removed on Feb 13, 2026 as part of migration to simplified PolkaVM contracts.
 
 ### 4. Governance Module
 **On-Chain Governance Participation**
