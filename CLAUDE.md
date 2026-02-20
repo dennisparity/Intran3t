@@ -5,6 +5,38 @@
 
 ## Recent Changes
 
+### 2026-02-20 - DotNS Production Deployment + Contenthash Encoding Fix
+
+**Status:** ✅ Complete - Live on IPFS + DotNS
+
+**Summary:** Deployed latest version to DotNS with fixed contenthash encoding (ENSIP-7 compliance).
+
+#### Deployment Details
+- **Domain:** `intran3t-app42.dot`
+- **DotNS URL:** https://intran3t-app42.paseo.li/
+- **IPFS URL:** https://bafybeigcsn6mjbuf6gmrf5saze54tqullwnv7v7epugklfd7sw6r7zs4xm.ipfs.dweb.link/
+- **CID:** `bafybeigcsn6mjbuf6gmrf5saze54tqullwnv7v7epugklfd7sw6r7zs4xm`
+- **Contenthash:** `0xe30101701220c2937cc48685f19912f640c93bc9c28b5d9b5fd7e47d0ca5947f95bd1fe65cbb`
+- **Transaction:** `0x47c40d05e0d7039769ef8ec045612cfe1d353d04dd08b9b85225dd17af5f895d`
+
+#### Contenthash Encoding Fix
+- **Issue:** product-infrastructure dotns-cli had ENSIP-7 encoding bug (missing IPFS version byte)
+- **Wrong:** `0xe3` + CID bytes = `0xe301701220...` (rejected by gateway)
+- **Correct:** `0xe3` + `0x01` + CID bytes = `0xe30101701220...` (ENSIP-7 compliant)
+- **Fix applied:** Modified `product-infrastructure/examples/pop-dotns/src/commands/content-hash.ts`
+- **Upstream:** Official `@paritytech/dotns-sdk` v0.2.0+ has this fix (commit `22f2706`)
+
+#### Deployment Method
+- Build: `npm run build` → `dist/`
+- IPFS: `ipfs add -r --pin=true dist/` → CID
+- DotNS: `bun run dev content set intran3t-app42 <CID> --mnemonic "<mnemonic>"`
+- Gateway serves at `<domain>.paseo.li` from IPFS
+
+#### Files Modified
+- `/Users/dennisschiessl/product-infrastructure/examples/pop-dotns/src/commands/content-hash.ts` - Added IPFS version byte
+
+---
+
 ### 2026-02-20 - dForms Public Form Final Polish + JSON Structure Improvement
 
 **Status:** ✅ Complete - Production ready
