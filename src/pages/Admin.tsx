@@ -27,11 +27,12 @@ export default function Admin() {
   // Fetch on-chain response counts for each form
   useEffect(() => {
     if (myForms.length === 0) return
-    const numericForms = myForms.filter(f => !isNaN(Number(f.id)))
+    const numericForms = myForms.filter(f => !isNaN(Number(f.onChainId || f.id)))
     if (numericForms.length === 0) return
     Promise.allSettled(
       numericForms.map(async f => {
-        const count = await getResponseCount(Number(f.id))
+        const onChainId = f.onChainId || f.id
+        const count = await getResponseCount(Number(onChainId))
         return { id: f.id, count: Number(count) }
       })
     ).then(results => {
@@ -41,7 +42,7 @@ export default function Admin() {
       }
       setOnChainCounts(counts)
     })
-  }, [myForms])
+  }, [myForms, getResponseCount])
 
   if (!connectedAccount) {
     return (

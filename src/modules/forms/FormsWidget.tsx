@@ -12,7 +12,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   const {
     isLoading: contractLoading,
     registerForm: contractRegisterForm,
-    formCount: getFormCount
+    formCount: getFormCount,
+    getResponseCount
   } = useFormsContract()
 
   // Debug: Log what the hook returns
@@ -23,6 +24,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   const [forms, setForms] = useState<Form[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [lastOnChainId, setLastOnChainId] = useState<number>(0)
+  const [onChainCounts, setOnChainCounts] = useState<Record<string, number>>({})
 
   // Create form state
   const [formTitle, setFormTitle] = useState('')
@@ -58,6 +60,27 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
+
+  // Fetch on-chain response counts for forms
+  useEffect(() => {
+    const myForms = forms.filter(f => f.creator === connectedAccount?.address)
+    if (myForms.length === 0) return
+    const numericForms = myForms.filter(f => !isNaN(Number(f.onChainId || f.id)))
+    if (numericForms.length === 0) return
+    Promise.allSettled(
+      numericForms.map(async f => {
+        const id = f.onChainId || f.id
+        const count = await getResponseCount(Number(id))
+        return { id: f.id, count: Number(count) }
+      })
+    ).then(results => {
+      const counts: Record<string, number> = {}
+      for (const r of results) {
+        if (r.status === 'fulfilled') counts[r.value.id] = r.value.count
+      }
+      setOnChainCounts(counts)
+    })
+  }, [forms, connectedAccount?.address, getResponseCount])
 
   const generateFormId = () => {
     return `form-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -634,7 +657,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                           {form.status}
                         </span>
                         <span className="text-xs text-[#78716c]">
-                          {form.responses.length} response{form.responses.length !== 1 ? 's' : ''}
+                          {onChainCounts[form.id] !== undefined
+                            ? `${onChainCounts[form.id]} response${onChainCounts[form.id] !== 1 ? 's' : ''}`
+                            : `${form.responses.length} response${form.responses.length !== 1 ? 's' : ''}`
+                          }
                         </span>
                         {form.bulletinCid && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700" title={`Form definition CID: ${form.bulletinCid}`}>
