@@ -282,9 +282,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   const myForms = forms.filter(f => f.creator === connectedAccount?.address)
 
   return (
-    <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)] h-full flex flex-col">
+    <div className="bg-white border border-[#e7e5e4] rounded-2xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-xl font-bold text-[#1c1917] font-serif">
             {config.title || 'Forms'}
@@ -297,7 +297,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex gap-1 mb-4 bg-[#fafaf9] p-1 rounded-lg">
+      <div className="flex gap-1 mb-3 bg-[#fafaf9] p-1 rounded-lg">
         <button
           onClick={() => setActiveTab('create')}
           className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-all ${
@@ -323,7 +323,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'create' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {!connectedAccount ? (
               <div className="text-center py-8 text-[#78716c] text-sm">
                 Connect your wallet to create forms
@@ -332,7 +332,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               <>
                 {/* Form Title */}
                 <div>
-                  <label className="block text-xs font-medium text-[#1c1917] mb-1.5">
+                  <label className="block text-xs font-medium text-[#1c1917] mb-1">
                     Form Title *
                   </label>
                   <input
@@ -346,19 +346,16 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
                 {/* Form Description */}
                 <div>
-                  <label className="block text-xs font-medium text-[#1c1917] mb-1.5">
+                  <label className="block text-xs font-medium text-[#1c1917] mb-1">
                     Description
                   </label>
                   <textarea
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Use **bold**, *italic*, or [link](url) for formatting"
-                    rows={3}
+                    rows={2}
                     className="w-full px-3 py-2 text-sm border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(28,25,23,0.08)] resize-none transition-all duration-200 font-mono"
                   />
-                  <p className="text-xs text-[#78716c] mt-1">
-                    Supports markdown: **bold**, *italic*, [links](url)
-                  </p>
                 </div>
 
                 {/* Fields List */}
@@ -377,7 +374,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
 
                   {fields.length === 0 ? (
-                    <div className="text-center py-6 text-[#a8a29e] text-xs border border-dashed border-[#e7e5e4] rounded-lg">
+                    <div className="text-center py-4 text-[#a8a29e] text-xs border border-dashed border-[#e7e5e4] rounded-lg">
                       No fields yet. Add a field to get started.
                     </div>
                   ) : (
@@ -588,8 +585,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   <button
                     onClick={handleCreateForm}
                     disabled={!formTitle.trim() || fields.length === 0 || isCreating}
-                    className="flex-1 px-8 py-4 text-base font-semibold bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="flex-1 flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold bg-gradient-to-r from-[#1c1917] to-[#292524] text-white rounded-xl hover:from-[#292524] hover:to-[#1c1917] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
+                    <FileText className="w-5 h-5" />
                     {isCreating ? 'Publishing to Polkadot...' : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
@@ -652,10 +650,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => handleCopyLink(form.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
                     >
                       {showLinkCopied === form.id ? (
                         <>
@@ -665,13 +663,13 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          Copy Link
+                          Link
                         </>
                       )}
                     </button>
                     <a
                       href={`#/admin/forms/${form.onChainId || form.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Results
@@ -685,9 +683,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                     <button
                       onClick={() => handleToggleStatus(form.id)}
-                      className="px-3 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-grey-50 hover:border-grey-300 transition-all duration-200"
+                      className="px-2 py-1.5 text-xs border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-grey-50 hover:border-grey-300 transition-all duration-200"
                     >
-                      {form.status === 'active' ? 'Close' : 'Activate'}
+                      {form.status === 'active' ? 'Close' : 'Open'}
                     </button>
                     <button
                       onClick={() => handleDeleteForm(form.id)}

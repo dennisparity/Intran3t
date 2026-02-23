@@ -13,10 +13,12 @@ import { Binary } from 'polkadot-api'
 import { keccak256 } from 'viem'
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto'
 import { Copy, Check, ArrowDownUp } from 'lucide-react'
+import { substrateToEvm, substrateToEvmKeccakWithHash } from '../lib/address-conversion'
 
 export function AddressConverter() {
   const [inputAddress, setInputAddress] = useState('')
   const [outputAddress, setOutputAddress] = useState('')
+  const [outputAddressTruncated, setOutputAddressTruncated] = useState('') // For SS58→H160 truncated method
   const [fromFormat, setFromFormat] = useState('ss58-generic')
   const [toFormat, setToFormat] = useState('h160')
   const [error, setError] = useState('')
@@ -152,12 +154,20 @@ export function AddressConverter() {
       let result = null
       if (fromFormat === 'h160') {
         result = await h160ToSS58(addr, toFormat)
+        setOutputAddressTruncated('') // Clear truncated output for non-H160 targets
       } else if (toFormat === 'h160') {
-        result = ss58ToH160Address(addr)
+        // For SS58 → H160, show BOTH derivation methods
+        const keccakResult = ss58ToH160Address(addr) // Keccak256 method (Acc3ss module)
+        const truncatedResult = substrateToEvm(addr)  // Truncated method (Forms module)
+
+        result = keccakResult
+        setOutputAddressTruncated(truncatedResult)
       } else if (toFormat === 'ss58-polkadot') {
         result = toPolkadotSS58Address(addr)
+        setOutputAddressTruncated('')
       } else {
         result = toGenericSS58Address(addr)
+        setOutputAddressTruncated('')
       }
 
       if (result) {
@@ -168,6 +178,7 @@ export function AddressConverter() {
     } catch (err: any) {
       setError(err.message || 'Conversion failed')
       setOutputAddress('')
+      setOutputAddressTruncated('')
     } finally {
       setIsConverting(false)
     }
@@ -325,7 +336,14 @@ export function AddressConverter() {
               </button>
             ))}
           </div>
-          <div className='relative'>
+
+          {/* Primary output (Keccak256 for SS58→H160, or single result for other conversions) */}
+          <div className='relative mb-3'>
+            {toFormat === 'h160' && outputAddressTruncated && (
+              <label className='block text-xs text-[#78716c] mb-1'>
+                H160 (Keccak256) — Used by Acc3ss module
+              </label>
+            )}
             <input
               type='text'
               value={isConverting ? '' : outputAddress}
@@ -350,6 +368,31 @@ export function AddressConverter() {
               </button>
             )}
           </div>
+
+          {/* Secondary output (Truncated method for SS58→H160) */}
+          {toFormat === 'h160' && outputAddressTruncated && !isConverting && (
+            <div className='relative'>
+              <label className='block text-xs text-[#78716c] mb-1'>
+                H160 (Truncated) — Used by Forms module
+              </label>
+              <input
+                type='text'
+                value={outputAddressTruncated}
+                readOnly
+                className='w-full px-3 py-2 text-sm font-mono border border-[#e7e5e4] rounded-lg bg-[#fafaf9] text-[#1c1917] pr-10'
+              />
+              <button
+                onClick={() => handleCopy(outputAddressTruncated, 'output-truncated')}
+                className='absolute top-1/2 right-2 -translate-y-1/2 p-1 text-[#78716c] hover:text-[#1c1917] transition-colors'
+              >
+                {copiedField === 'output-truncated' ? (
+                  <Check className='w-4 h-4 text-[#22c55e]' />
+                ) : (
+                  <Copy className='w-4 h-4' />
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

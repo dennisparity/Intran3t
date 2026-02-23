@@ -45,7 +45,7 @@ interface UseAccessPassContractReturn {
     expiresAt: number,
     accessLevel: string,
     identityDisplay: string
-  ) => Promise<number>; // returns tokenId
+  ) => Promise<{ tokenId: number; txHash: string }>; // returns tokenId and txHash
 
   revokeAccessPass: (tokenId: number) => Promise<void>;
   grantMinterRole: (account: string) => Promise<void>;
@@ -244,7 +244,7 @@ export function useAccessPassContract(provider: Provider | null, signer: Signer 
     expiresAt: number,
     accessLevel: string,
     identityDisplay: string
-  ): Promise<number> => {
+  ): Promise<{ tokenId: number; txHash: string }> => {
     if (!contract || !signer) {
       throw new Error('Contract or signer not initialized');
     }
@@ -276,7 +276,10 @@ export function useAccessPassContract(provider: Provider | null, signer: Signer 
         const parsed = contract.interface.parseLog(event);
         const tokenId = Number(parsed!.args.tokenId);
         setError(null);
-        return tokenId;
+        return {
+          tokenId,
+          txHash: receipt.hash
+        };
       }
 
       throw new Error('AccessPassMinted event not found in transaction');

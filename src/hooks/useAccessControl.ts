@@ -15,10 +15,11 @@ export interface AccessControl {
 /**
  * Hook to check user access control based on on-chain identity verification
  *
- * Access Rules:
- * - Without verified identity: Only Profile module accessible
- * - With verified identity: Access to all modules (subject to future RBAC rules)
+ * Access Rules (TEMPORARILY DISABLED FOR TESTING):
+ * - All modules accessible to everyone (for beta testing)
+ * - Identity verification still tracked but not enforced
  *
+ * TODO: Re-enable access control after testing phase
  * TODO: Integrate with RBAC smart contract for role-based permissions
  * TODO: Add @parity.io matrix handle verification
  */
@@ -31,16 +32,16 @@ export function useAccessControl(userAddress: string | undefined): AccessControl
     hasVerifiedIdentity,
     isLoading,
 
-    // Module access - requires verified identity
-    canAccessGovernance: hasVerifiedIdentity,
-    canAccessForms: hasVerifiedIdentity,
-    canAccessAcc3ss: hasVerifiedIdentity,
-    canAccessQuickNav: hasVerifiedIdentity,
-    canAccessHelpCenter: hasVerifiedIdentity,
+    // TESTING MODE: All modules accessible to everyone
+    // To re-enable restrictions, change these back to: hasVerifiedIdentity
+    canAccessGovernance: true,
+    canAccessForms: true,
+    canAccessAcc3ss: true,
+    canAccessQuickNav: true,
+    canAccessHelpCenter: true,
 
-    // Future RBAC permissions (currently based on verified identity only)
-    // TODO: Replace with smart contract role checks
-    canCreatePoll: hasVerifiedIdentity, // Will be role-based
-    canViewFormResults: hasVerifiedIdentity, // Will be creator + specific roles
+    // Future RBAC permissions
+    canCreatePoll: true, // Will be role-based
+    canViewFormResults: true, // Will be creator + specific roles
   }
 }

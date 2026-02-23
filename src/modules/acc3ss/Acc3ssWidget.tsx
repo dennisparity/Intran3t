@@ -78,20 +78,53 @@ function AccessPassModal({
   pass: AccessPass
   onClose: () => void
 }) {
+  const [qrCode, setQrCode] = useState<string | undefined>(pass.qrCode)
   const expiryDate = pass.expiresAt ? new Date(pass.expiresAt).toLocaleString() : 'Never'
 
+  // Generate QR code if not already present
+  useEffect(() => {
+    if (!qrCode && pass.onChain && pass.nftId) {
+      const generateQR = async () => {
+        const qrData = JSON.stringify({
+          version: 'v1',
+          type: 'smart-contract',
+          contract: ACCESSPASS_CONTRACT_ADDRESS,
+          tokenId: pass.nftId,
+          holder: pass.holder,
+          holderIdentity: pass.identityDisplay,
+          location: pass.locationId,
+          locationName: pass.location,
+          expiresAt: Math.floor((pass.expiresAt || 0) / 1000),
+          issuedAt: Math.floor((pass.createdAt || 0) / 1000),
+          verified: true,
+          network: 'polkadot-hub-testnet',
+          chainId: 420420417
+        })
+        const generated = await generateQRCode(qrData)
+        setQrCode(generated)
+      }
+      generateQR()
+    }
+  }, [qrCode, pass])
+
   const handleDownload = () => {
-    if (!pass.qrCode) return
+    if (!qrCode) return
 
     const link = document.createElement('a')
     link.download = `access-pass-${pass.location}-${pass.nftId}.png`
-    link.href = pass.qrCode
+    link.href = qrCode
     link.click()
   }
 
   const handleViewOnChain = () => {
-    if (pass.nftId && ACCESSPASS_CONTRACT_ADDRESS) {
-      // Open contract on explorer
+    if (pass.txHash) {
+      // Open transaction on explorer
+      window.open(
+        `https://polkadot.testnet.routescan.io/tx/${pass.txHash}`,
+        '_blank'
+      )
+    } else if (pass.nftId && ACCESSPASS_CONTRACT_ADDRESS) {
+      // Fallback: Open contract on explorer
       window.open(
         `https://polkadot.testnet.routescan.io/address/${ACCESSPASS_CONTRACT_ADDRESS}`,
         '_blank'
@@ -110,7 +143,7 @@ function AccessPassModal({
             <KeyRound className="w-8 h-8" />
           </div>
           <p className="text-sm opacity-90">
-            {pass.onChain ? 'ERC-721 smart contract credential' : 'Valid entry credential'}
+            {pass.onChain ? 'Polkadot Hub NFT credential' : 'Valid entry credential'}
           </p>
         </div>
 
@@ -127,10 +160,10 @@ function AccessPassModal({
           )}
 
           {/* QR Code */}
-          {pass.qrCode && (
+          {qrCode && (
             <div className="flex justify-center">
               <div className="p-4 bg-white border-2 border-[#e7e5e4] rounded-xl">
-                <img src={pass.qrCode} alt="Access QR Code" className="w-64 h-64" />
+                <img src={qrCode} alt="Access QR Code" className="w-64 h-64" />
               </div>
             </div>
           )}
@@ -167,12 +200,12 @@ function AccessPassModal({
             >
               Close
             </button>
-            {pass.onChain && pass.nftId && (
+            {pass.onChain && (pass.txHash || pass.nftId) && (
               <button
                 onClick={handleViewOnChain}
                 className="flex-1 px-4 py-2 border border-[#e7e5e4] text-[#1c1917] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-2"
               >
-                View Contract
+                {pass.txHash ? 'Check Transaction' : 'View Contract'}
               </button>
             )}
             <button
@@ -206,6 +239,9 @@ function VirtualDoor({
     return () => cancelAnimationFrame(frame)
   }, [])
 
+  // Auto-close PoC message after opening animation completes
+  const [showPoCMessage] = useState(true)
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="relative w-full max-w-md h-80 rounded-2xl overflow-hidden shadow-2xl">
@@ -217,16 +253,21 @@ function VirtualDoor({
           </div>
 
           {/* Heading + location — fades in slightly later */}
-          <div className={`transition-opacity duration-500 ${doorOpen ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: doorOpen ? '700ms' : '0ms' }}>
+          <div className={`transition-opacity duration-500 ${doorOpen ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: doorOpen ? '1200ms' : '0ms' }}>
             <h2 className="text-2xl font-bold text-white font-serif mb-1">Access Granted</h2>
             <p className="text-sm text-[#a8a29e] flex items-center justify-center gap-1">
               <MapPin className="w-4 h-4" />
               {pass.location}
             </p>
+            {showPoCMessage && (
+              <p className="text-xs text-[#78716c] mt-3 italic">
+                Proof of Concept — Real door unlock system coming soon
+              </p>
+            )}
           </div>
 
           {/* Badges + buttons — fades in last */}
-          <div className={`transition-opacity duration-500 ${doorOpen ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: doorOpen ? '1000ms' : '0ms' }}>
+          <div className={`transition-opacity duration-500 ${doorOpen ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: doorOpen ? '1600ms' : '0ms' }}>
             <div className="flex gap-2 mt-4 mb-5 justify-center">
               {pass.onChain && (
                 <span className="text-xs bg-green-900/60 text-green-300 px-2.5 py-1 rounded-full">
@@ -261,7 +302,7 @@ function VirtualDoor({
         <div
           className="absolute inset-y-0 left-0 w-1/2 bg-[#78716c] z-20 transition-transform ease-in-out"
           style={{
-            transitionDuration: '1.4s',
+            transitionDuration: '2.8s',
             transform: doorOpen ? 'translateX(-100%)' : 'translateX(0%)'
           }}
         >
@@ -273,7 +314,7 @@ function VirtualDoor({
         <div
           className="absolute inset-y-0 right-0 w-1/2 bg-[#78716c] z-20 transition-transform ease-in-out"
           style={{
-            transitionDuration: '1.4s',
+            transitionDuration: '2.8s',
             transform: doorOpen ? 'translateX(100%)' : 'translateX(0%)'
           }}
         >
@@ -339,21 +380,85 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     || getEvmAddress(connectedAccount?.address || '') // Linked
     || derivedEvmAddress // Derived fallback
 
-  // DEBUG: Log address resolution
-  useEffect(() => {
-    console.log('🔍 Acc3ss Address Debug:', {
-      substrateSignerAddress: substrateSigner.evmAddress,
-      evmAccount,
-      linkedAddress: getEvmAddress(connectedAccount?.address || ''),
-      derivedEvmAddress,
-      effectiveEvmAddress,
-      substrateAddress: connectedAccount?.address
-    })
-  }, [substrateSigner.evmAddress, evmAccount, connectedAccount?.address, derivedEvmAddress, effectiveEvmAddress])
+  // Debug logs removed - was causing console spam
 
+  // Load passes from localStorage on mount
   useEffect(() => {
     setPasses(loadAccessPasses())
   }, [])
+
+  // Load passes from contract for current user
+  useEffect(() => {
+    if (!effectiveEvmAddress || !accessPassContract.contract) return
+
+    const loadOnChainPasses = async () => {
+      try {
+        const tokenIds = await accessPassContract.getPassesByHolder(effectiveEvmAddress)
+        console.log(`📋 Found ${tokenIds.length} on-chain passes for ${effectiveEvmAddress}`)
+
+        // Load existing passes from localStorage
+        const existingPasses = loadAccessPasses()
+        const existingTokenIds = new Set(existingPasses.map(p => p.nftId).filter(Boolean))
+
+        // Fetch metadata for each new token
+        const newPasses: AccessPass[] = []
+        for (const tokenId of tokenIds) {
+          // Skip if we already have this pass in localStorage
+          if (existingTokenIds.has(tokenId)) continue
+
+          try {
+            const metadata = await accessPassContract.getPassMetadata(tokenId)
+            if (!metadata) continue
+
+            const qrData = JSON.stringify({
+              version: 'v1',
+              type: 'smart-contract',
+              contract: ACCESSPASS_CONTRACT_ADDRESS,
+              tokenId: tokenId,
+              holder: effectiveEvmAddress,
+              holderIdentity: metadata.identityDisplay,
+              location: metadata.locationId,
+              locationName: metadata.location,
+              expiresAt: Number(metadata.expiresAt),
+              issuedAt: Number(metadata.issuedAt),
+              verified: true,
+              network: 'polkadot-hub-testnet',
+              chainId: 420420417
+            })
+            const qrCode = await generateQRCode(qrData)
+
+            newPasses.push({
+              id: `pass-${tokenId}`,
+              location: metadata.location,
+              locationId: metadata.locationId,
+              holder: effectiveEvmAddress,
+              createdAt: Number(metadata.issuedAt) * 1000,
+              expiresAt: Number(metadata.expiresAt) * 1000,
+              signature: '',
+              nftId: tokenId,
+              onChain: true,
+              accessLevel: metadata.accessLevel,
+              identityDisplay: metadata.identityDisplay,
+              qrCode
+            })
+          } catch (err) {
+            console.error(`Failed to load metadata for token ${tokenId}:`, err)
+          }
+        }
+
+        if (newPasses.length > 0) {
+          const updatedPasses = [...newPasses, ...existingPasses]
+          setPasses(updatedPasses)
+          saveAccessPasses(updatedPasses)
+          console.log(`✅ Loaded ${newPasses.length} new passes from contract`)
+        }
+      } catch (err) {
+        console.error('Failed to load on-chain passes:', err)
+      }
+    }
+
+    loadOnChainPasses()
+  }, [effectiveEvmAddress, accessPassContract.contract])
 
   // Fetch identity for display name from Substrate address
   useEffect(() => {
@@ -386,6 +491,41 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     setIsGenerating(true)
 
     try {
+      // First, check if user already has a valid pass for this location
+      console.log(`🔍 Checking for existing pass for ${selectedLocation.name}...`)
+      const locationPasses = await accessPassContract.getPassesByLocation(selectedLocation.id)
+      console.log(`📋 Found ${locationPasses.length} total passes for location ${selectedLocation.name}`)
+
+      for (const tokenId of locationPasses) {
+        const metadata = await accessPassContract.getPassMetadata(tokenId)
+        if (metadata && metadata.holder.toLowerCase() === effectiveEvmAddress.toLowerCase()) {
+          // Check if pass is still valid on-chain (not expired, not revoked)
+          const isValid = await accessPassContract.isPassValid(tokenId)
+          if (isValid) {
+            console.log(`✅ Found valid pass on-chain: #${tokenId}`)
+            setActivePassTokenId(tokenId)
+            setIsGenerating(false)
+
+            // Find the pass in local state and show it
+            const existingPass = passes.find(p => p.nftId === tokenId)
+            if (existingPass) {
+              setShowPassModal(existingPass)
+            }
+
+            alert(`You already have an active pass (#${tokenId}) for ${selectedLocation.name}. Please wait for it to expire before minting a new one.`)
+            return
+          }
+        }
+      }
+
+      console.log('✅ No valid pass found, proceeding with mint...')
+      setActivePassTokenId(null)
+    } catch (err) {
+      console.error('Failed to check for existing pass:', err)
+      // Continue with minting even if check fails
+    }
+
+    try {
       // Calculate expiration (24 hours from now by default)
       const now = Date.now()
       const expiresAt = config.passValidityHours
@@ -396,14 +536,15 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       console.log('Minting access pass for:', effectiveEvmAddress)
 
       let tokenId: number
+      let txHash: string | undefined
 
-      // Check wallet connection
-      if (!connectedAccount?.address) {
-        throw new Error('Please connect your Substrate wallet (Talisman or SubWallet)')
+      // Check wallet connection (either Substrate OR MetaMask)
+      if (!connectedAccount?.address && !signer) {
+        throw new Error('Please connect a wallet (Talisman, SubWallet, or MetaMask)')
       }
 
       // For Substrate wallet: Use Substrate EVM Signer via pallet_revive
-      if (!signer) {
+      if (connectedAccount?.address && !signer) {
         console.log('🔗 Using Substrate wallet for EVM transaction')
         console.log('Substrate account:', connectedAccount.address)
         console.log('Mapped EVM address:', effectiveEvmAddress)
@@ -430,7 +571,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         console.log('📝 Encoded call data:', callData)
 
         // Send transaction via pallet_revive
-        const txHash = await substrateSigner.sendTransaction({
+        txHash = await substrateSigner.sendTransaction({
           to: ACCESSPASS_CONTRACT_ADDRESS,
           data: callData,
           value: 0n,
@@ -446,7 +587,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       } else {
         // For MetaMask: Use regular ethers.js
         console.log('🦊 Using MetaMask signer')
-        tokenId = await accessPassContract.mintAccessPass(
+        const result = await accessPassContract.mintAccessPass(
           effectiveEvmAddress,
           selectedLocation.name,
           selectedLocation.id,
@@ -454,9 +595,11 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           'standard',
           identityDisplay || 'User'
         )
+        tokenId = result.tokenId
+        txHash = result.txHash
       }
 
-      console.log(`✅ Minted token ID: ${tokenId}`)
+      console.log(`✅ Minted token ID: ${tokenId}${txHash ? `, tx: ${txHash}` : ''}`)
 
       // Create access pass data
       const passData: AccessPass = {
@@ -469,6 +612,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         signature: '', // Not needed for smart contract
         nftId: tokenId,
         collectionId: undefined,
+        txHash, // Store transaction hash for "Check Transaction" link
         onChain: true,
         accessLevel: 'standard',
         identityDisplay: identityDisplay || 'User'
@@ -509,14 +653,12 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     }
   }
 
-  // Get active pass for selected location
-  const activePass = selectedLocation
-    ? passes.find(
-        p =>
-          (p.locationId === selectedLocation.id || p.location === selectedLocation.name) &&
-          p.holder === effectiveEvmAddress &&
-          (!p.expiresAt || p.expiresAt > Date.now())
-      )
+  // State for tracking if user has a valid pass (checked on-demand, not automatically)
+  const [activePassTokenId, setActivePassTokenId] = useState<number | null>(null)
+
+  // Get active pass from local state (for display)
+  const activePass = activePassTokenId !== null
+    ? passes.find(p => p.nftId === activePassTokenId)
     : null
 
   return (
@@ -608,19 +750,25 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     !selectedLocation ||
                     isGenerating ||
                     !accessPassContract.contract ||
-                    accountMapping.isLoading
+                    accountMapping.isLoading ||
+                    activePassTokenId !== null
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Minting NFT...
+                      Checking & Minting...
                     </>
                   ) : accountMapping.isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Checking account...
+                    </>
+                  ) : activePassTokenId !== null ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Active Pass Exists
                     </>
                   ) : (
                     <>
@@ -645,19 +793,25 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     !selectedLocation ||
                     isGenerating ||
                     !accessPassContract.contract ||
-                    accountMapping.isLoading
+                    accountMapping.isLoading ||
+                    activePassTokenId !== null
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Minting NFT...
+                      Checking & Minting...
                     </>
                   ) : accountMapping.isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Checking account...
+                    </>
+                  ) : activePassTokenId !== null ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Active Pass Exists
                     </>
                   ) : (
                     <>

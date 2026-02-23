@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle, AlertCircle, Lock, Info, Sparkles, ArrowRight, ExternalLink } from 'lucide-react'
+import { CheckCircle, AlertCircle, Lock, Info, ArrowRight, ExternalLink, Box } from 'lucide-react'
 import PolkadotLogo from '../../components/PolkadotLogo'
 import type { Form, FormField } from './types'
 import { loadForms } from './config'
@@ -346,30 +346,6 @@ export function PublicForm() {
             </div>
           )}
 
-          {/* Privacy summary */}
-          <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 mb-6 shadow-sm">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-6 h-6 text-[#1c1917] mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-[#1c1917] mb-3 font-serif">Privacy-preserving</h2>
-                <ul className="space-y-2 text-sm text-[#57534e]">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
-                    <span>Your response is <strong className="text-[#1c1917]">end-to-end encrypted</strong> — only the form creator can read it</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
-                    <span>No personal information was recorded without your consent</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-[#059669] mt-0.5 flex-shrink-0" />
-                    <span>Stored on <strong className="text-[#1c1917]">Polkadot Bulletin</strong> — decentralized and censorship-resistant</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
           {/* CTAs */}
           <div className="bg-white border border-[#e7e5e4] rounded-2xl p-8 shadow-sm">
             <h3 className="text-xl font-bold text-[#1c1917] mb-6 text-center font-serif">
@@ -547,12 +523,27 @@ export function PublicForm() {
             </div>
           )}
 
+          {isSubmitting && (
+            <div className="mt-6 p-6 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '0ms' }} />
+                <div className="w-8 h-0.5 bg-[#e7e5e4] animate-pulse" style={{ animationDelay: '200ms' }} />
+                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '400ms' }} />
+                <div className="w-8 h-0.5 bg-[#e7e5e4] animate-pulse" style={{ animationDelay: '600ms' }} />
+                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '800ms' }} />
+              </div>
+              <p className="text-sm text-[#78716c] text-center">
+                Uploading to Bulletin, this may take a few seconds...
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isSubmitting}
             className="w-full mt-8 px-8 py-4 text-base font-semibold bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
           >
-            {isSubmitting ? 'Encrypting & uploading to Polkadot...' : 'Submit Response'}
+            {isSubmitting ? 'Submitting...' : 'Submit Response'}
           </button>
         </form>
 

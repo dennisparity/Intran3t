@@ -68,7 +68,13 @@ export function loadAccessPasses(): AccessPass[] {
 // Helper to save passes to localStorage
 export function saveAccessPasses(passes: AccessPass[]) {
   try {
-    localStorage.setItem(ACCESS_PASSES_STORAGE_KEY, JSON.stringify(passes))
+    // Don't save QR codes - they're too large for localStorage
+    // QR codes will be regenerated on-demand when viewing passes
+    const passesWithoutQR = passes.map(pass => ({
+      ...pass,
+      qrCode: undefined // Remove QR code before saving
+    }))
+    localStorage.setItem(ACCESS_PASSES_STORAGE_KEY, JSON.stringify(passesWithoutQR))
   } catch (e) {
     console.error('Failed to save access passes:', e)
   }

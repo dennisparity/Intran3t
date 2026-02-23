@@ -13,10 +13,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTypink } from 'typink'
-import { keccak256 } from 'viem'
+import { keccak256, hexToBytes } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
 import { createClient } from 'polkadot-api'
 import { getWsProvider } from 'polkadot-api/ws-provider/web'
+import { Binary } from 'polkadot-api'
 import { paseo } from '../../.papi/descriptors'
 
 interface SubstrateEVMSignerReturn {
@@ -68,10 +69,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     typinkStateRef.current = typinkState
   }, [typinkState])
 
-  console.log('🎯 useSubstrateEVMSigner hook called')
-  console.log('  connectedAccount:', connectedAccount)
-  console.log('  connectedAccount keys:', connectedAccount ? Object.keys(connectedAccount) : 'none')
-  console.log('  Full typink state keys:', Object.keys(typinkState))
+  // Debug logs removed - was causing console spam
 
   // Initialize Asset Hub client
   useEffect(() => {
@@ -143,10 +141,11 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     value?: bigint
     gasLimit?: bigint
   }): Promise<string> => {
-    // Get fresh connectedAccount from ref to avoid stale closure
+    // Get fresh state from ref to avoid stale closure
     const currentAccount = typinkStateRef.current.connectedAccount
 
-    // Get fresh signer from Typink state
+    // CRITICAL: Use signer from Typink state (NOT connectedAccount.wallet.signer)
+    // Pattern: const { signer } = useTypink() then tx.signSubmitAndWatch(signer)
     const currentSigner = typinkStateRef.current.signer
 
     console.log('🔍 sendTransaction called with state:', {
@@ -154,6 +153,8 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       hasConnectedAccount: !!currentAccount,
       accountAddress: currentAccount?.address,
       hasSigner: !!currentSigner,
+      signerType: typeof currentSigner,
+      signerKeys: currentSigner ? Object.keys(currentSigner) : 'null',
       evmAddress,
       accountKeys: currentAccount ? Object.keys(currentAccount) : []
     })
@@ -188,29 +189,64 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
       // Submit via pallet_revive.call
       // This extrinsic allows mapped accounts to execute EVM transactions
+      // CRITICAL: Convert hex strings to Binary objects for PAPI encoding
+      const destBytes = hexToBytes(txData.to as `0x${string}`)
+      const dataBytes = hexToBytes(txData.data as `0x${string}`)
+
       const tx = assetHubApiRef.current.tx.Revive.call({
-        dest: txData.to as `0x${string}`,
+        dest: Binary.fromBytes(destBytes),
         value: txData.value || 0n,
-        gas_limit: txData.gasLimit ? { weight_limit: txData.gasLimit } : null,
+        // Let the chain estimate gas - setting to null
+        gas_limit: null,
         storage_deposit_limit: null,
-        data: txData.data as `0x${string}`
+        data: Binary.fromBytes(dataBytes)
       })
 
       // Sign and submit with Substrate wallet using Typink's signer
       console.log('⏳ Signing and submitting transaction...')
-      const result = await tx.signSubmitAndWatch(currentSigner)
 
-      console.log('✅ Transaction submitted, waiting for finalization...')
+      // Use subscribe pattern to capture transaction hash from events
+      return new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Transaction timed out after 2 minutes'))
+        }, 120_000)
 
-      // Wait for finalization
-      await result.ok
+        let txHash: string | null = null
 
-      console.log('✅ Transaction finalized')
+        tx.signSubmitAndWatch(currentSigner).subscribe({
+          next: (event: any) => {
+            console.log(`📋 Transaction event: ${event.type}`)
 
-      // Extract transaction hash from the result
-      const txHash = result.txHash || 'unknown'
+            // Try to extract hash from various event types
+            if (event.type === 'broadcasted' || event.type === 'txBestBlocksState') {
+              // Hash might be available in early events
+              if (event.txHash) txHash = event.txHash
+              if (event.hash) txHash = event.hash
+            }
 
-      return txHash
+            if (event.type === 'finalized') {
+              clearTimeout(timeout)
+              if (event.ok) {
+                console.log('✅ Transaction finalized successfully!')
+                // Use hash if we captured it, otherwise 'finalized-no-hash'
+                resolve(txHash || 'finalized-no-hash')
+              } else {
+                console.error('❌ Transaction finalized but failed')
+                reject(new Error('Transaction finalized but marked as failed'))
+              }
+            } else if (event.type === 'invalid') {
+              clearTimeout(timeout)
+              console.error('❌ Transaction marked as invalid')
+              reject(new Error('Transaction marked as invalid'))
+            }
+          },
+          error: (err: any) => {
+            clearTimeout(timeout)
+            console.error('❌ Transaction subscription error:', err)
+            reject(err)
+          }
+        })
+      })
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Transaction failed'
       console.error('❌ Transaction failed:', err)

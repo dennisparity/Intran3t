@@ -200,14 +200,14 @@ export default function ModularDashboard() {
             {/* Main Content Area */}
             <div className="col-span-12 lg:col-span-9">
               <div className="grid grid-cols-12 gap-6 auto-rows-[250px]">
-                {/* Parity DAO - Requires verified identity */}
+                {/* Forms - Requires verified identity */}
                 <div className="col-span-12 xl:col-span-8 row-span-2">
-                  {accessControl.canAccessGovernance ? (
-                    <GovernanceWidget config={defaultGovernanceConfig} />
+                  {accessControl.canAccessForms ? (
+                    <FormsWidget config={defaultFormsConfig} />
                   ) : (
                     <LockedModule
-                      moduleName="Governance"
-                      description="Participate in organization polls and decisions with a verified identity."
+                      moduleName="Forms"
+                      description="Create and submit forms to collect team feedback with a verified identity."
                     />
                   )}
                 </div>
@@ -224,14 +224,14 @@ export default function ModularDashboard() {
                   )}
                 </div>
 
-                {/* Forms - Requires verified identity */}
+                {/* Parity DAO - Requires verified identity */}
                 <div className="col-span-12 xl:col-span-8 row-span-2">
-                  {accessControl.canAccessForms ? (
-                    <FormsWidget config={defaultFormsConfig} />
+                  {accessControl.canAccessGovernance ? (
+                    <GovernanceWidget config={defaultGovernanceConfig} />
                   ) : (
                     <LockedModule
-                      moduleName="Forms"
-                      description="Create and submit forms to collect team feedback with a verified identity."
+                      moduleName="Governance"
+                      description="Participate in organization polls and decisions with a verified identity."
                     />
                   )}
                 </div>
