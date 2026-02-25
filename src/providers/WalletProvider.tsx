@@ -27,7 +27,7 @@ interface WalletContextValue {
   signer: PolkadotSigner | null
 
   // Actions
-  connect: () => Promise<void>
+  connect: (walletId?: string) => Promise<void>
   disconnect: () => void
   selectAccount: (address: string) => void
 }
@@ -65,12 +65,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Connect wallet
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (walletId?: string) => {
     if (isConnecting) return
 
     setIsConnecting(true)
     try {
-      const ext = await getWalletExtension()
+      const ext = await getWalletExtension(walletId)
       if (ext) {
         setExtension(ext)
         setAccounts(ext.accounts)

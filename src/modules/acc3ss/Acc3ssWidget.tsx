@@ -334,6 +334,12 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const substrateSigner = useSubstrateEVMSigner()
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [mintingStatus, setMintingStatus] = useState<'idle' | 'checking' | 'broadcasting' | 'complete'>('idle')
+
+  // Debug: Log status changes
+  useEffect(() => {
+    console.log('🎯 Minting status changed:', mintingStatus)
+  }, [mintingStatus])
   const [passes, setPasses] = useState<AccessPass[]>([])
   const [showPassModal, setShowPassModal] = useState<AccessPass | null>(null)
   const [identityDisplay, setIdentityDisplay] = useState<string>('')
@@ -500,6 +506,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     }
 
     setIsGenerating(true)
+    setMintingStatus('checking')
 
     try {
       // First, check if user already has a valid pass for this location
@@ -565,6 +572,10 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           throw new Error('Please map your Substrate account first (use the Map Account button)')
         }
 
+        // Get current total before minting (so we can predict the new token ID)
+        const totalBeforeMint = await accessPassContract.getTotalMinted()
+        console.log(`📊 Total minted before: ${totalBeforeMint}`)
+
         // Encode the contract call data
         const callData = encodeFunctionData({
           abi: ACCESSPASS_ABI,
@@ -582,6 +593,10 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         console.log('📝 Encoded call data:', callData)
 
         // Send transaction via pallet_revive
+        // Status: broadcasting (covers signing, sending, and waiting for finalization)
+        setMintingStatus('broadcasting')
+
+        // This will wait for finalization before returning
         txHash = await substrateSigner.sendTransaction({
           to: ACCESSPASS_CONTRACT_ADDRESS,
           data: callData,
@@ -589,15 +604,17 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           gasLimit: 500000n
         })
 
-        console.log(`✅ Transaction submitted: ${txHash}`)
+        console.log(`✅ Transaction finalized: ${txHash}`)
 
-        // Query the contract to get the latest token ID
-        // (Since we can't easily parse events from pallet_revive)
-        await new Promise(resolve => setTimeout(resolve, 3000)) // Wait for block
-        tokenId = await accessPassContract.getTotalMinted()
+        // The new token ID is totalBeforeMint + 1
+        // (Contract counter increments atomically during mint)
+        tokenId = totalBeforeMint + 1
+        console.log(`✅ Minted token ID: ${tokenId}`)
       } else {
         // For MetaMask: Use regular ethers.js
         console.log('🦊 Using MetaMask signer')
+        setMintingStatus('broadcasting')
+
         const result = await accessPassContract.mintAccessPass(
           effectiveEvmAddress,
           selectedLocation.name,
@@ -606,6 +623,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           'standard',
           identityDisplay || 'User'
         )
+
         tokenId = result.tokenId
         txHash = result.txHash
       }
@@ -657,6 +675,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       setActivePassTokenId(tokenId)
 
       // Show virtual door, then pass modal underneath
+      setMintingStatus('complete')
       setShowPassModal(passData)
       setShowVirtualDoor(true)
     } catch (e: any) {
@@ -664,6 +683,8 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       alert(`Failed to mint access pass: ${e.message || 'Unknown error'}`)
     } finally {
       setIsGenerating(false)
+      // Reset status after a short delay
+      setTimeout(() => setMintingStatus('idle'), 1000)
     }
   }
 
@@ -785,7 +806,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Checking & Minting...
+                      {mintingStatus === 'checking' && 'Checking for existing pass...'}
+                      {mintingStatus === 'broadcasting' && 'Processing transaction...'}
+                      {mintingStatus === 'complete' && 'Minting complete!'}
                     </>
                   ) : accountMapping.isLoading ? (
                     <>
@@ -828,7 +851,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Checking & Minting...
+                      {mintingStatus === 'checking' && 'Checking for existing pass...'}
+                      {mintingStatus === 'broadcasting' && 'Processing transaction...'}
+                      {mintingStatus === 'complete' && 'Minting complete!'}
                     </>
                   ) : accountMapping.isLoading ? (
                     <>

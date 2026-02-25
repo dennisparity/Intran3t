@@ -36,6 +36,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   const [activeTab, setActiveTab] = useState<'create' | 'submissions'>('create')
   const [forms, setForms] = useState<Form[]>([])
   const [isCreating, setIsCreating] = useState(false)
+  const [creationStatus, setCreationStatus] = useState<string>('')
   const [lastOnChainId, setLastOnChainId] = useState<number>(0)
   const [onChainCounts, setOnChainCounts] = useState<Record<string, number>>({})
 
@@ -103,6 +104,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     if (!formTitle.trim() || !selectedAccount || isCreating) return
 
     setIsCreating(true)
+    setCreationStatus('Preparing form...')
     setContractWarning(null)
     let updatedForms: Form[]
 
@@ -129,6 +131,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
           try {
             console.log('[dForms] Uploading form definition to Bulletin (via Alice relay)...')
             console.log('[dForms] formKey exists:', !!formKey, 'length:', formKey?.length)
+            setCreationStatus('Uploading form to Bulletin...')
 
             // 1. Build form definition JSON
             const formDef = {
@@ -144,20 +147,34 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             const formCID = await uploadRawToBulletin(formDefBytes)
             console.log('[dForms] Bulletin upload done, CID:', formCID)
 
-            // 3. Register CID on contract
+            // 3. Check account mapping and auto-map if needed
             if (!selectedAccount) {
               throw new Error('Please connect a wallet first')
             }
 
-            if (substrateEVM.isMapped !== true) {
-              throw new Error('Account mapping required. Please map your account first.')
+            // Check if account is mapped, if not, map it automatically
+            if (accountMapping.isMapped === false) {
+              console.log('🗺️ Account not mapped, mapping automatically...')
+              setCreationStatus('Mapping your account...')
+
+              try {
+                await accountMapping.mapAccount()
+                console.log('✅ Account mapped successfully')
+                setCreationStatus('Uploading to Polkadot...')
+              } catch (mapErr) {
+                throw new Error(`Failed to map account: ${mapErr instanceof Error ? mapErr.message : 'Unknown error'}`)
+              }
+            } else {
+              setCreationStatus('Uploading to Polkadot...')
             }
 
+            // 4. Register CID on contract
             const currentCount = await getFormCount()
             const predictedOnChainId = Math.max(Number(currentCount) + 1, lastOnChainId + 1)
             const timestamp = Date.now()
 
             // Use the logged-in wallet for contract call
+            setCreationStatus('Registering on-chain...')
             console.log('[dForms] Registering form on-chain with connected wallet...')
             const rawAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string || '').trim()
             // Ensure 0x prefix (Vercel may strip it)
@@ -197,6 +214,14 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             const msg = contractErr instanceof Error ? contractErr.message : String(contractErr)
             console.error('❌ Bulletin/contract call failed:', contractErr)
             console.error('Stack trace:', contractErr instanceof Error ? contractErr.stack : 'N/A')
+
+            // Check if it's a BadProof or mapping error - these are critical
+            if (msg.includes('BadProof') || msg.includes('mapping') || msg.includes('Failed to map account')) {
+              // Don't save form locally, throw error to user
+              throw new Error(`Form creation failed: ${msg}. Please try again or contact support.`)
+            }
+
+            // For other errors, show warning but allow local-only form
             setContractWarning(msg)
             formId = generateFormId()
           }
@@ -232,8 +257,11 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       setActiveTab('submissions')
     } catch (err) {
       console.error('Failed to create form:', err)
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error occurred'
+      alert(`Failed to create form: ${errorMsg}`)
     } finally {
       setIsCreating(false)
+      setCreationStatus('')
     }
   }
 
@@ -675,13 +703,12 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     disabled={
                       !formTitle.trim() ||
                       fields.length === 0 ||
-                      isCreating ||
-                      (selectedAccount && accountMapping.isMapped === false)
+                      isCreating
                     }
                     className="flex-1 flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold bg-gradient-to-r from-[#1c1917] to-[#292524] text-white rounded-xl hover:from-[#292524] hover:to-[#1c1917] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
                     <FileText className="w-5 h-5" />
-                    {isCreating ? 'Publishing to Polkadot...' : editingFormId ? 'Update Form' : 'Create Form'}
+                    {isCreating ? (creationStatus || 'Publishing to Polkadot...') : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
               </>

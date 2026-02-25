@@ -12,7 +12,7 @@ import Identicon from '@polkadot/react-identicon'
 import { useEVM } from '../providers/EVMProvider'
 import { useWallet } from '../providers/WalletProvider'
 
-type View = 'wallets' | 'accounts'
+type View = 'wallets' | 'polkadot-wallets' | 'accounts'
 
 interface WalletInfo {
   id: string
@@ -20,6 +20,10 @@ interface WalletInfo {
   logo?: string
   installed: boolean
   installUrl: string
+}
+
+interface PolkadotWallet extends WalletInfo {
+  accounts?: any[]
 }
 
 // Known wallets with their metadata
@@ -103,12 +107,17 @@ export default function ConnectWallet() {
     detectWallets()
   }, [inHost])
 
-  const handleConnectWallet = async () => {
-    try {
-      console.log('🔌 Attempting to connect wallet...')
+  const handleConnectPolkadot = () => {
+    // Show wallet selection view
+    setView('polkadot-wallets')
+  }
 
-      // Product SDK handles wallet selection automatically
-      await connect()
+  const handleConnectWallet = async (walletId?: string) => {
+    try {
+      console.log('🔌 Attempting to connect wallet...', walletId)
+
+      // Connect to specific wallet if provided, otherwise let SDK choose
+      await connect(walletId)
       console.log('✅ Wallet connected successfully')
 
       // Note: accounts state will be updated by WalletProvider
@@ -351,7 +360,7 @@ export default function ConnectWallet() {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={handleConnectWallet}
+                      onClick={handleConnectPolkadot}
                       className="gap-1"
                     >
                       Connect
@@ -406,6 +415,78 @@ export default function ConnectWallet() {
                 </Button>
               </div>
             )}
+          </>
+        ) : view === 'polkadot-wallets' ? (
+          <>
+            <DialogHeader>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setView('wallets')}
+                className="w-fit mb-2"
+              >
+                ← Back
+              </Button>
+              <DialogTitle>Select Polkadot Wallet</DialogTitle>
+              <DialogDescription>
+                Choose which wallet extension to connect
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 mt-4">
+              {availableWallets.filter(w => w.installed).length === 0 ? (
+                <div className="text-center py-8">
+                  <Wallet className="w-12 h-12 mx-auto mb-3 opacity-50 text-[#78716c]" />
+                  <p className="text-[#78716c]">No Polkadot wallets detected</p>
+                  <p className="text-sm text-[#78716c] mt-2 mb-4">
+                    Install a wallet extension to continue
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {availableWallets.map(wallet => (
+                      <Button
+                        key={wallet.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(wallet.installUrl, '_blank')}
+                        className="gap-1"
+                      >
+                        <Download className="w-4 h-4" />
+                        {wallet.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                availableWallets
+                  .filter(w => w.installed)
+                  .map(wallet => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => handleConnectWallet(wallet.id)}
+                      className="w-full group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1] transition-all duration-300 text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#f5f5f4] flex items-center justify-center">
+                          {wallet.logo ? (
+                            <img src={wallet.logo} alt={wallet.name} className="w-6 h-6" />
+                          ) : (
+                            <Wallet className="w-6 h-6 text-[#e6007a]" />
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-[#1c1917]">
+                            {wallet.name}
+                          </span>
+                          <p className="text-xs text-[#78716c] mt-0.5">
+                            Browser extension detected
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-[#78716c] group-hover:text-[#1c1917] transition-colors" />
+                    </button>
+                  ))
+              )}
+            </div>
           </>
         ) : (
           <>

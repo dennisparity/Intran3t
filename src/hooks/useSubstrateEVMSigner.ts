@@ -71,24 +71,44 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       return
     }
 
-    try {
-      // Derive EVM address from Substrate address
-      const derived = deriveEvmAddress(selectedAccount.address)
-      setEvmAddress(derived)
+    const checkMapping = async () => {
+      try {
+        // Derive EVM address from Substrate address
+        const derived = deriveEvmAddress(selectedAccount.address)
+        setEvmAddress(derived)
 
-      // Assume mapped (will fail at transaction time if not)
-      setIsMapped(true)
+        // Actually check if account is mapped
+        if (!apiClient) {
+          setIsMapped(null)
+          return
+        }
 
-      console.log('🔗 Substrate EVM Signer:', {
-        substrateAddress: selectedAccount.address,
-        derivedEvmAddress: derived,
-        note: 'Mapping check skipped - assuming account is mapped'
-      })
-    } catch (err) {
-      console.error('Failed to derive EVM address:', err)
-      setIsMapped(false)
-      setError('Failed to derive EVM address')
+        const result = await apiClient.query.Revive.OriginalAccount.getValue(derived)
+        const mapped = result !== null
+
+        setIsMapped(mapped)
+        console.log('🔗 Substrate EVM Signer:', {
+          substrateAddress: selectedAccount.address,
+          derivedEvmAddress: derived,
+          isMapped: mapped
+        })
+      } catch (err) {
+        // Handle incompatible runtime (chain metadata mismatch) - same as useAccountMapping
+        if (err instanceof Error && err.message.includes('Incompatible runtime entry')) {
+          console.warn('⚠️ Account mapping check unavailable (chain metadata mismatch)')
+          console.warn('⚠️ Will rely on accountMapping.isMapped from useAccountMapping hook instead')
+          // Set to null (unknown) rather than false (unmapped)
+          // This prevents blocking functionality when we can't verify
+          setIsMapped(null)
+        } else {
+          console.error('Failed to check EVM address mapping:', err)
+          setIsMapped(null)
+          setError('Failed to check address mapping')
+        }
+      }
     }
+
+    checkMapping()
   }, [selectedAccount?.address])
 
   /**
@@ -177,31 +197,58 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       console.log('📋 Signer:', signer)
       console.log('📋 Signer keys:', signer ? Object.keys(signer) : 'empty')
 
-      // Use subscribe pattern to capture transaction hash from events
+      // Use subscribe pattern to capture EVM transaction hash from events
       return new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('Transaction timed out after 2 minutes'))
         }, 120_000)
 
-        let txHash: string | null = null
+        let substrateHash: string | null = null
+        let evmTxHash: string | null = null
 
         tx.signSubmitAndWatch(signer).subscribe({
           next: (event: any) => {
             console.log(`📋 Transaction event: ${event.type}`)
 
-            // Try to extract hash from various event types
-            if (event.type === 'broadcasted' || event.type === 'txBestBlocksState') {
-              // Hash might be available in early events
-              if (event.txHash) txHash = event.txHash
-              if (event.hash) txHash = event.hash
+            // Capture Substrate extrinsic hash from broadcasted event
+            if (event.type === 'broadcasted' && event.txHash) {
+              substrateHash = event.txHash
+              console.log(`📋 Substrate extrinsic hash: ${substrateHash}`)
             }
 
             if (event.type === 'finalized') {
               clearTimeout(timeout)
               if (event.ok) {
                 console.log('✅ Transaction finalized successfully!')
-                // Use hash if we captured it, otherwise 'finalized-no-hash'
-                resolve(txHash || 'finalized-no-hash')
+                console.log('📋 Full finalized event:', JSON.stringify(event, null, 2))
+
+                // Extract EVM transaction hash from Revive.EthTransacted event
+                try {
+                  const events = event.events || []
+                  console.log(`📋 Found ${events.length} events in finalized block`)
+
+                  for (const evt of events) {
+                    console.log('📋 Event:', evt)
+                    if (evt.type === 'Revive' && evt.value && evt.value.type === 'EthTransacted') {
+                      // EthTransacted event contains the EVM tx hash
+                      evmTxHash = evt.value.value?.tx_hash || evt.value.value
+                      if (evmTxHash) {
+                        console.log(`✅ Extracted EVM tx hash: ${evmTxHash}`)
+                        break
+                      }
+                    }
+                  }
+
+                  if (!evmTxHash) {
+                    console.warn('⚠️ No EVM tx hash found in events, using Substrate hash as fallback')
+                  }
+
+                  // Return EVM hash if found, otherwise Substrate hash as fallback
+                  resolve(evmTxHash || substrateHash || 'finalized-no-hash')
+                } catch (err) {
+                  console.warn('⚠️ Could not extract EVM tx hash from events:', err)
+                  resolve(substrateHash || 'finalized-no-hash')
+                }
               } else {
                 console.error('❌ Transaction finalized but failed')
                 reject(new Error('Transaction finalized but marked as failed'))

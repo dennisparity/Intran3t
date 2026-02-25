@@ -55,9 +55,14 @@ async function getSpektrExtension(): Promise<WalletExtension | null> {
 /**
  * Gets a fallback wallet extension (Talisman, SubWallet, etc.)
  */
-async function getFallbackExtension(): Promise<WalletExtension | null> {
+async function getFallbackExtension(preferredWallet?: string): Promise<WalletExtension | null> {
   // Try common wallet extensions in order of preference
-  const extensionNames = ['talisman', 'subwallet-js', 'polkadot-js']
+  const defaultOrder = ['talisman', 'subwallet-js', 'polkadot-js']
+
+  // If user selected a specific wallet, try that first
+  const extensionNames = preferredWallet
+    ? [preferredWallet, ...defaultOrder.filter(name => name !== preferredWallet)]
+    : defaultOrder
 
   for (const name of extensionNames) {
     try {
@@ -84,8 +89,9 @@ async function getFallbackExtension(): Promise<WalletExtension | null> {
 /**
  * Gets the best available wallet extension
  * Prefers Product SDK (Spektr) when in host, falls back to regular wallets
+ * @param preferredWallet - Optional wallet ID to try first (e.g., 'talisman', 'subwallet-js')
  */
-export async function getWalletExtension(): Promise<WalletExtension | null> {
+export async function getWalletExtension(preferredWallet?: string): Promise<WalletExtension | null> {
   // Try Product SDK first (works in host and can work standalone)
   const spektr = await getSpektrExtension()
   if (spektr) {
@@ -94,7 +100,7 @@ export async function getWalletExtension(): Promise<WalletExtension | null> {
   }
 
   // Fallback to regular wallet extensions
-  const fallback = await getFallbackExtension()
+  const fallback = await getFallbackExtension(preferredWallet)
   if (fallback) {
     console.log(`✅ Connected via ${fallback.name}`)
     return fallback

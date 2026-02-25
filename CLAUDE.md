@@ -235,8 +235,10 @@ DOTNS_CONTENT_RESOLVER: 0x7756DF72CBc7f062e7403cD59e45fBc78bed1cD7
 
 ### Current Deployment
 - Domain: `intran3t-app42.dot`
-- CID: `bafybeibm6rfptryqpmfvffd65qsw5xkuj2l3wwjodtj5ksjkff3hxf7rcy`
+- CID: `bafybeidnbm2osacrgrtebllzlqig3ynwvaetmfntqpfjeiirjpfdfyvlqy` (deployed 2026-02-25)
 - URL: https://intran3t-app42.paseo.li
+- Direct IPFS: https://bafybeidnbm2osacrgrtebllzlqig3ynwvaetmfntqpfjeiirjpfdfyvlqy.ipfs.dweb.link/
+- Transaction: `0xc75d9e3ebaa166c72ad199dd5f90028b859e270340a158e6762d276490647a6a`
 
 ---
 
@@ -298,6 +300,28 @@ DOTNS_CONTENT_RESOLVER: 0x7756DF72CBc7f062e7403cD59e45fBc78bed1cD7
 ---
 
 ## Recent Changes (Last 7 Days)
+
+### 2026-02-25
+- **Wallet Selection UX**: Multi-wallet support - users can now choose specific Polkadot wallet (Talisman, SubWallet, etc.) before account selection
+  - Files: `ConnectWallet.tsx`, `WalletProvider.tsx`, `wallet-provider.ts`
+  - Three-view system: wallets → polkadot-wallets → accounts
+  - Non-breaking changes to Product SDK integration (optional `preferredWallet` parameter)
+- **Form Creation Auto-Mapping**: Automatically map accounts before contract calls, eliminating BadProof errors
+  - File: `FormsWidget.tsx`
+  - Added status messages during mapping/upload/registration
+  - Better error handling - forms only saved when contract succeeds
+- **Acc3ss Module Improvements**: Better UX feedback and transaction hash extraction
+  - Files: `Acc3ssWidget.tsx`, `useSubstrateEVMSigner.ts`
+  - Added `mintingStatus` state with detailed progress messages
+  - Removed arbitrary 3-second wait, use deterministic token ID calculation
+  - Enhanced event parsing to extract EVM transaction hash from Revive.EthTransacted
+  - Added proper account mapping status checks (graceful handling of runtime metadata mismatches)
+- Product SDK migration complete: ProfileWidget balance now uses Product SDK/PAPI
+- Fixed Acc3ss button text to show location-specific pass status
+- Fixed Admin page blank screen (connectedAccount → selectedAccount)
+- DotNS deployment updated with latest bug fixes
+- Created comprehensive HOST_API.md reference (protocol + Product SDK guide)
+- Updated global CLAUDE.md with minimal Host API pointer
 
 ### 2026-02-23
 - Fixed response count sync across all views (Admin, Dashboard, Forms widget)
