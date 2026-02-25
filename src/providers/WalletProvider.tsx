@@ -75,17 +75,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setExtension(ext)
         setAccounts(ext.accounts)
 
-        // Auto-select first account if available
-        if (ext.accounts.length > 0 && !selectedAccount) {
-          const firstAccount = ext.accounts[0]
-          setSelectedAccount(firstAccount)
+        // Only auto-select if there's exactly ONE account
+        if (ext.accounts.length === 1 && !selectedAccount) {
+          const onlyAccount = ext.accounts[0]
+          setSelectedAccount(onlyAccount)
 
-          // Extract signer from first account
-          if ('polkadotSigner' in firstAccount) {
-            const accountSigner = (firstAccount as any).polkadotSigner
+          // Extract signer
+          if ('polkadotSigner' in onlyAccount) {
+            const accountSigner = (onlyAccount as any).polkadotSigner
             setSigner(accountSigner)
-            console.log('✅ Auto-selected account and signer:', firstAccount.address)
+            console.log('✅ Auto-selected single account:', onlyAccount.address)
           }
+        } else if (ext.accounts.length > 1) {
+          console.log('🔍 Multiple accounts detected, waiting for user selection')
         }
 
         // Subscribe to account changes
@@ -110,9 +112,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
         // Save connection state to localStorage
         localStorage.setItem(WALLET_STORAGE_KEY, 'true')
-        if (ext.accounts.length > 0) {
-          localStorage.setItem(ACCOUNT_STORAGE_KEY, ext.accounts[0].address)
-        }
+        // Note: Account address will be saved when user selects an account
       } else {
         console.warn('❌ No wallet available')
       }

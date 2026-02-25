@@ -128,15 +128,20 @@ export default function ConnectWallet() {
     }
   }
 
-  // Show accounts view when connected with multiple accounts
+  // Show account selection when connected with multiple accounts
   useEffect(() => {
-    if (isConnected && accounts.length > 1 && view === 'wallets') {
+    if (isConnected && accounts.length > 1 && !selectedAccount) {
+      // Multiple accounts but none selected - show selection UI
+      setOpen(true)
+      setView('accounts')
+    } else if (isConnected && accounts.length > 1 && view === 'wallets') {
+      // Modal already open with multiple accounts - show accounts view
       setView('accounts')
     } else if (isConnected && accounts.length === 1 && open) {
-      // Auto-close modal if only one account
+      // Single account - auto-close modal
       setOpen(false)
     }
-  }, [isConnected, accounts.length, view, open])
+  }, [isConnected, accounts.length, selectedAccount, view, open])
 
   const handleSelectAccount = (account: any) => {
     selectAccount(account.address)

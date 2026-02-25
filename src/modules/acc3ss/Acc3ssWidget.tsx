@@ -382,10 +382,21 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
   // Debug logs removed - was causing console spam
 
-  // Load passes from localStorage on mount
+  // Load passes from localStorage, filtered by current account
   useEffect(() => {
-    setPasses(loadAccessPasses())
-  }, [])
+    const allPasses = loadAccessPasses()
+
+    // Filter passes by current account's EVM address
+    if (effectiveEvmAddress) {
+      const accountPasses = allPasses.filter(p =>
+        p.holder.toLowerCase() === effectiveEvmAddress.toLowerCase()
+      )
+      setPasses(accountPasses)
+      console.log(`📋 Loaded ${accountPasses.length} passes for account ${effectiveEvmAddress}`)
+    } else {
+      setPasses([])
+    }
+  }, [effectiveEvmAddress])
 
   // Load passes from contract for current user
   useEffect(() => {
