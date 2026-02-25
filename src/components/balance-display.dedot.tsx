@@ -46,7 +46,7 @@ export function BalanceDisplayInner(props: BalanceDisplayProps) {
     thousandsSeparator,
     decimalSeparator,
   } = props;
-  const { supportedNetworks } = useTypink();
+  const { supportedNetworks } = useWallet();
   const nativeBalance = useBalance(accountAddress, {
     networkId: networkId,
   });

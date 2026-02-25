@@ -30,6 +30,7 @@
     "@ipld/car": "^5.4.2",
     "@ipld/dag-pb": "^4.1.5",
     "@noble/hashes": "^2.0.1",
+    "@novasamatech/product-sdk": "0.6.2-0",
     "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot-api/polkadot-sdk-compat": "^2.4.1",
     "@polkadot-api/sdk-statement": "^0.3.0",

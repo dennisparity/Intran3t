@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText, Plus, ExternalLink } from 'lucide-react'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { loadForms } from '../modules/forms/config'
 import { loadEncryptedResponses } from '../modules/forms/config'
 import type { Form } from '../modules/forms/types'
 import { useFormsContract } from '../hooks/useFormsContract'
 
 export default function Admin() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const { getResponseCount } = useFormsContract()
   const navigate = useNavigate()
   const [myForms, setMyForms] = useState<Form[]>([])
@@ -17,12 +17,12 @@ export default function Admin() {
   useEffect(() => {
     const all = loadForms()
     const filtered = connectedAccount
-      ? all.filter(f => f.creator === connectedAccount.address)
+      ? all.filter(f => f.creator === selectedAccount.address)
       : []
     // Deduplicate by id (keep first occurrence)
     const seen = new Set<string>()
     setMyForms(filtered.filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return true }))
-  }, [connectedAccount?.address])
+  }, [selectedAccount?.address])
 
   // Fetch on-chain response counts for each form
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function Admin() {
     })
   }, [myForms, getResponseCount])
 
-  if (!connectedAccount) {
+  if (!selectedAccount) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">
         <div className="max-w-md w-full text-center">

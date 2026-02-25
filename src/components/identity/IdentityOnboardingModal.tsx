@@ -12,7 +12,7 @@ import { RegistrarSelectionStep } from './RegistrarSelectionStep'
 import type { IdentityFormData, RegistrarInfo } from '../../modules/profile/identity-transaction-helpers'
 import { buildIdentityInfo, submitSetIdentity, submitRequestJudgement, calculateDeposits } from '../../modules/profile/identity-transaction-helpers'
 import { getPeopleChainApi } from '../../modules/profile/identity-helpers'
-import { useTypink } from 'typink'
+import { useWallet } from '../../providers/WalletProvider'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 
@@ -29,7 +29,7 @@ export function IdentityOnboardingModal({
   onOpenChange,
   onDismiss
 }: IdentityOnboardingModalProps) {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [step, setStep] = useState<ModalStep>('welcome')
   const [formData, setFormData] = useState<IdentityFormData | null>(null)
   const [selectedRegistrar, setSelectedRegistrar] = useState<RegistrarInfo | null>(null)
@@ -61,7 +61,7 @@ export function IdentityOnboardingModal({
   }
 
   const handleRegistrarNext = async (registrar: RegistrarInfo) => {
-    if (!connectedAccount || !formData) {
+    if (!selectedAccount || !formData) {
       setError('Missing wallet connection or form data')
       setStep('error')
       return
@@ -84,7 +84,7 @@ export function IdentityOnboardingModal({
 
       // Step 2: Check account balance
       console.log('💰 Checking account balance...')
-      const accountInfo = await peopleApi.query.system.account(connectedAccount.address)
+      const accountInfo = await peopleApi.query.system.account(selectedAccount.address)
       const freeBalance = accountInfo.data.free.toBigInt()
 
       console.log(`Free balance: ${freeBalance} (${Number(freeBalance) / 1e10} DOT)`)
@@ -112,7 +112,7 @@ export function IdentityOnboardingModal({
 
       // Step 4: Submit setIdentity transaction
       console.log('📝 Submitting setIdentity transaction...')
-      const identityResult = await submitSetIdentity(connectedAccount, identityInfo, peopleApi)
+      const identityResult = await submitSetIdentity(selectedAccount, identityInfo, peopleApi)
 
       if (!identityResult.success) {
         throw new Error(identityResult.error || 'Failed to set identity')
@@ -123,7 +123,7 @@ export function IdentityOnboardingModal({
       // Step 5: Submit requestJudgement transaction
       console.log('📝 Submitting requestJudgement transaction...')
       const judgementResult = await submitRequestJudgement(
-        connectedAccount,
+        selectedAccount,
         registrar.index,
         registrar.fee,
         peopleApi

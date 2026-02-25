@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Unlock, Download, AlertCircle, BarChart2, Copy, CheckCircle, RefreshCw, ExternalLink, FileText, Database } from 'lucide-react'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { loadForms } from '../modules/forms/config'
 import { loadEncryptedResponses } from '../modules/forms/config'
 import type { Form, EncryptedResponse } from '../modules/forms/types'
@@ -21,7 +21,7 @@ interface DecryptedResponse {
 export default function AdminFormResults() {
   const { formId } = useParams<{ formId: string }>()
   const navigate = useNavigate()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const { getResponseCount, getResponseCids } = useFormsContract()
 
   const [form, setForm] = useState<Form | null>(null)
@@ -218,7 +218,7 @@ export default function AdminFormResults() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  if (!connectedAccount) {
+  if (!selectedAccount) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
         <div className="text-center">

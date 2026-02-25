@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTypink } from 'typink';
+import { useWallet } from '../providers/WalletProvider';
 import { queryOnChainIdentity, type IdentityInfo } from '../modules/profile/identity-helpers';
 
 export interface DiscoveredUser {
@@ -45,15 +45,15 @@ function saveDiscoveredUsers(users: DiscoveredUser[]) {
  * Hook to track and manage discovered users
  */
 export function useDiscoveredUsers() {
-  const { connectedAccount } = useTypink();
+  const { selectedAccount } = useWallet();
   const [discoveredUsers, setDiscoveredUsers] = useState<DiscoveredUser[]>(loadDiscoveredUsers());
   const [loading, setLoading] = useState(false);
 
   // Auto-discover connected user
   useEffect(() => {
-    if (!connectedAccount?.address) return;
+    if (!selectedAccount?.address) return;
 
-    const substrateAddress = connectedAccount.address;
+    const substrateAddress = selectedAccount.address;
     const now = new Date().toISOString();
 
     // Check if user already discovered
@@ -110,7 +110,7 @@ export function useDiscoveredUsers() {
     }).finally(() => {
       setLoading(false);
     });
-  }, [connectedAccount?.address]);
+  }, [selectedAccount?.address]);
 
   /**
    * Manually add user by Substrate address

@@ -6,13 +6,12 @@ import Identicon from "@polkadot/react-identicon";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Edit2, ExternalLink, Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTypink } from "typink";
+import { useWallet } from "@/providers/WalletProvider";
 import { Button } from "./ui/Button";
 
 interface Account {
   address: string;
   name?: string;
-  source?: string;
   balance?: string;
 }
 
@@ -39,7 +38,7 @@ export function AccountManager() {
   const [nickname, setNickname] = useState("");
   const [nicknames, setNicknames] = useState<Record<string, string>>({});
 
-  const { accounts, connectedAccount, setConnectedAccount } = useTypink();
+  const { accounts, selectedAccount, selectAccount } = useWallet();
   const { api } = usePolkadot();
 
   // Load saved nicknames from localStorage
@@ -155,9 +154,8 @@ export function AccountManager() {
                       account={{
                         address: account.address,
                         name: nicknames[account.address] || account.name,
-                        source: account.source,
                       }}
-                      isActive={account.address === connectedAccount?.address}
+                      isActive={account.address === selectedAccount?.address}
                       onCopy={handleCopy}
                       copiedAddress={copiedAddress}
                       onEdit={handleEditNickname}
@@ -166,7 +164,7 @@ export function AccountManager() {
                       setNickname={setNickname}
                       saveNickname={saveNickname}
                       getExplorerUrl={getExplorerUrl}
-                      onSelect={() => setConnectedAccount(account)}
+                      onSelect={() => selectAccount(account.address)}
                     />
                   ))
                 )}

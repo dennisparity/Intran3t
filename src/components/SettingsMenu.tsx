@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { Settings, ShieldCheck, LogOut, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { useEVM } from '../providers/EVMProvider'
 
 export function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  const { disconnect } = useTypink()
+  const { disconnect } = useWallet()
   const evm = useEVM()
 
   const handleDisconnect = () => {

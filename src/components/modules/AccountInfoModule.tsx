@@ -7,7 +7,7 @@ interface AccountInfoModuleProps {
 }
 
 export function AccountInfoModule({ address }: AccountInfoModuleProps) {
-  const { supportedNetworks } = useTypink();
+  const { supportedNetworks } = useWallet();
 
   // Find polkadot people chain with safety checks
   const peopleChain = supportedNetworks?.find(

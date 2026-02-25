@@ -14,7 +14,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-import { useTypink } from "typink";
+import { useWallet } from "../providers/WalletProvider";
+import { useWallet } from '../providers/WalletProvider'
 import ConnectWallet from "../components/ConnectWallet";
 import AddressDisplay from "../components/polkadot/AddressDisplay";
 import {
@@ -26,12 +27,12 @@ import {
 } from "../components/ui/Card";
 
 export default function WalletPage() {
-  const { connectedAccount, wallets, supportedNetworks } = useTypink();
+  const { selectedAccount, wallets, supportedNetworks } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   const copyAddress = () => {
-    if (connectedAccount) {
-      navigator.clipboard.writeText(connectedAccount.address);
+    if (selectedAccount) {
+      navigator.clipboard.writeText(selectedAccount.address);
       setCopiedAddress(true);
       setTimeout(() => setCopiedAddress(false), 2000);
     }
@@ -161,7 +162,7 @@ export default function WalletPage() {
 
       {/* Connected Account Section */}
       <AnimatePresence>
-        {connectedAccount && (
+        {selectedAccount selectedAccount && selectedAccount &&  (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -193,14 +194,14 @@ export default function WalletPage() {
                         Account Name
                       </div>
                       <div className="text-white font-semibold text-xl">
-                        {connectedAccount.name || "Unnamed Account"}
+                        {selectedAccount.name || "Unnamed Account"}
                       </div>
                     </div>
                     <div className="h-px bg-white/10" />
                     <div>
                       <div className="text-gray-400 text-sm mb-2">Address</div>
                       <AddressDisplay
-                        address={connectedAccount.address}
+                        address={selectedAccount.address}
                         showCopy
                         showExplorer
                         className="text-sm"
@@ -212,7 +213,7 @@ export default function WalletPage() {
                         Wallet Source
                       </div>
                       <div className="text-white font-medium capitalize">
-                        {connectedAccount.source}
+                        {selectedAccount.source}
                       </div>
                     </div>
                   </CardContent>
@@ -321,7 +322,7 @@ export default function WalletPage() {
       </div>
 
       {/* Getting Started Guide */}
-      {!connectedAccount && (
+      {!selectedAccount && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

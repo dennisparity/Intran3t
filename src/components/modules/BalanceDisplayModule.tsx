@@ -19,7 +19,7 @@ function formatBalance(value: bigint | undefined, decimals: number = 10): string
 }
 
 export function BalanceDisplayModule({ address }: BalanceDisplayModuleProps) {
-  const { connectedNetworks } = useTypink();
+  const { connectedNetworks } = useWallet();
 
   // Get the first connected network with safety checks
   const network = connectedNetworks?.[0];

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useTypink, useBalance } from 'typink'
+import { useBalance } from 'typink'
+import { useWallet } from '../../providers/WalletProvider'
 import { ThumbsUp, ThumbsDown, Clock, Plus, X, Users, CheckCircle, Minus, Link, HelpCircle } from 'lucide-react'
 import type { Poll, Vote, GovernanceConfig, VoteChoice } from './types'
 import { SAMPLE_POLLS, POLLS_STORAGE_KEY } from './config'
@@ -524,16 +525,15 @@ function PollCard({
 }
 
 export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
-  const { connectedAccount, connectedNetworks } = useTypink()
+  const { selectedAccount } = useWallet()
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active')
   const [polls, setPolls] = useState<Poll[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [votingPoll, setVotingPoll] = useState<Poll | null>(null)
 
   // Get balance
-  const network = connectedNetworks?.[0]
-  const balance = useBalance(connectedAccount?.address || '', {
-    networkId: network?.id,
+  const balance = useBalance(selectedAccount?.address || '', {
+    enabled: !!selectedAccount?.address
   })
 
   // Load polls on mount
@@ -564,9 +564,9 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
     }
 
     // Store on-chain if requested
-    if (pollData.storedOnChain && connectedAccount) {
+    if (pollData.storedOnChain && selectedAccount) {
       try {
-        const hash = await storePollOnChain(newPoll, connectedAccount)
+        const hash = await storePollOnChain(newPoll, selectedAccount)
         newPoll.remarkHash = hash
         console.log('Poll stored on-chain with hash:', hash)
       } catch (e) {
@@ -582,13 +582,13 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
   }
 
   const handleVote = async (pollId: string, choice: VoteChoice) => {
-    if (!connectedAccount) return
+    if (!selectedAccount) return
 
     const poll = polls.find(p => p.id === pollId)
     if (!poll) return
 
     const vote: Vote = {
-      voter: connectedAccount.address,
+      voter: selectedAccount.address,
       choice,
       timestamp: Date.now()
     }
@@ -596,7 +596,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
     // Store vote on-chain if poll is stored on-chain
     if (poll.storedOnChain) {
       try {
-        const hash = await storeVoteOnChain(vote, pollId, connectedAccount)
+        const hash = await storeVoteOnChain(vote, pollId, selectedAccount)
         vote.extrinsicHash = hash
         console.log('Vote stored on-chain with hash:', hash)
       } catch (e) {
@@ -608,7 +608,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
     const updatedPolls = polls.map(p => {
       if (p.id === pollId) {
         // Check if user already voted
-        if (p.votes.some(v => v.voter === connectedAccount.address)) {
+        if (p.votes.some(v => v.voter === selectedAccount.address)) {
           return p
         }
         return {
@@ -642,7 +642,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
               </p>
             )}
           </div>
-          {config.allowPollCreation && connectedAccount && (
+          {config.allowPollCreation && selectedAccount && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-1 px-3 py-1.5 bg-[#1c1917] text-white text-xs font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200"
@@ -688,7 +688,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
               <PollCard
                 key={poll.id}
                 poll={poll}
-                userAddress={connectedAccount?.address}
+                userAddress={selectedAccount?.address}
                 onOpenVote={setVotingPoll}
               />
             ))
@@ -699,7 +699,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
                 <p className="text-sm text-[#78716c]">
                   {activeTab === 'active' ? 'No active polls' : 'No closed polls'}
                 </p>
-                {config.allowPollCreation && connectedAccount && activeTab === 'active' && (
+                {config.allowPollCreation && selectedAccount && activeTab === 'active' && (
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="mt-3 text-xs text-[#1c1917] hover:text-[#292524] transition-colors"
@@ -713,18 +713,18 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
         </div>
       </div>
 
-      {showCreateModal && connectedAccount && (
+      {showCreateModal && selectedAccount && (
         <CreatePollModal
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreatePoll}
-          creatorAddress={connectedAccount.address}
+          creatorAddress={selectedAccount.address}
         />
       )}
 
-      {votingPoll && connectedAccount && (
+      {votingPoll && selectedAccount && (
         <VoteModal
           poll={votingPoll}
-          userAddress={connectedAccount.address}
+          userAddress={selectedAccount.address}
           balance={balance?.free}
           onClose={() => setVotingPoll(null)}
           onVote={(choice) => {

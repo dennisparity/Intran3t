@@ -1,18 +1,18 @@
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ConnectWallet from '../components/ConnectWallet'
 
 export default function Start() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const navigate = useNavigate()
 
   // Redirect to dashboard if already connected
   useEffect(() => {
-    if (connectedAccount) {
+    if (selectedAccount) {
       navigate('/dashboard')
     }
-  }, [connectedAccount, navigate])
+  }, [selectedAccount, navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-[#fafaf9]">

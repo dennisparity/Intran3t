@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { usePolkadot } from '../providers/PolkadotProvider'
 import { motion } from 'framer-motion'
 import { Wallet, Copy, Check, ExternalLink, User, Send } from 'lucide-react'
@@ -22,7 +22,7 @@ interface AccountData {
 }
 
 export default function Accounts() {
-  const { accounts, connectedAccount, setConnectedAccount } = useTypink()
+  const { accounts, selectedAccount, selectAccount } = useWallet()
   const { api } = usePolkadot()
   const [accountsData, setAccountsData] = useState<AccountData[]>([])
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
@@ -85,12 +85,12 @@ export default function Accounts() {
   }
 
   const handleTransfer = async () => {
-    if (!api || !connectedAccount) return
+    if (!api || !selectedAccount) return
     
     try {
       setTransferStatus('Preparing transaction...')
       
-      const injector = await web3FromAddress(connectedAccount.address)
+      const injector = await web3FromAddress(selectedAccount.address)
       
       // Parse amount (assuming it's in the base unit, e.g., DOT)
       const amount = parseFloat(transferAmount) * Math.pow(10, 10) // 10 decimals for DOT
@@ -100,7 +100,7 @@ export default function Accounts() {
       const transfer = api.tx.balances.transferKeepAlive(transferTo, amount)
       
       await transfer.signAndSend(
-        connectedAccount.address,
+        selectedAccount.address,
         { signer: injector.signer },
         ({ status, events }) => {
           if (status.isInBlock) {
@@ -156,7 +156,7 @@ export default function Accounts() {
                 : 'Connect your wallet to see your accounts'}
             </p>
           </div>
-          {connectedAccount && (
+          {selectedAccount selectedAccount && selectedAccount &&  (
             <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
               <DialogTrigger asChild>
                 <Button variant="gradient" size="lg" className="gap-2">
@@ -168,7 +168,7 @@ export default function Accounts() {
                 <DialogHeader>
                   <DialogTitle className="text-gradient">Send Transfer</DialogTitle>
                   <DialogDescription>
-                    Send tokens from {connectedAccount.name || 'your account'}
+                    Send tokens from {selectedAccount.name || 'your account'}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 mt-4">
@@ -242,7 +242,7 @@ export default function Accounts() {
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
           {accountsData.map((account) => {
-            const isActive = connectedAccount?.address === account.address
+            const isActive = selectedAccount?.address === account.address
 
             return (
               <motion.div key={account.address} variants={item}>
@@ -314,7 +314,7 @@ export default function Accounts() {
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => setConnectedAccount(account)}
+                          onClick={() => selectAccount(account.address)}
                         >
                           Set as Active
                         </Button>

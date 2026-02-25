@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useTypink } from 'typink'
+import { useWallet } from '../../providers/WalletProvider'
 import { MapPin, Check, CheckCircle2, Download, KeyRound, Lock, Loader2 } from 'lucide-react'
 import type { Acc3ssConfig, Location, AccessPass } from './types'
 import { loadAccessPasses, saveAccessPasses } from './config'
@@ -328,7 +328,7 @@ function VirtualDoor({
 
 export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const { provider, signer, account: evmAccount } = useEVM()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const accessPassContract = useAccessPassContract(provider, signer)
   const { getEvmAddress, linkAddresses, areLinked } = useSubstrateEvmLink()
   const substrateSigner = useSubstrateEVMSigner()
@@ -341,43 +341,43 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const [showVirtualDoor, setShowVirtualDoor] = useState(false)
 
   // Account mapping check
-  const accountMapping = useAccountMapping(connectedAccount?.address)
+  const accountMapping = useAccountMapping(selectedAccount?.address)
   const [showMapModal, setShowMapModal] = useState(false)
 
   const locations = config.locations || []
 
   // Derive EVM address from Substrate address
   useEffect(() => {
-    if (connectedAccount?.address) {
+    if (selectedAccount?.address) {
       try {
-        setDerivedEvmAddress(substrateToEvm(connectedAccount.address))
+        setDerivedEvmAddress(substrateToEvm(selectedAccount.address))
       } catch (error) {
         setDerivedEvmAddress(null)
       }
     } else {
       setDerivedEvmAddress(null)
     }
-  }, [connectedAccount?.address])
+  }, [selectedAccount?.address])
 
   // Link Substrate and EVM addresses when both are connected (silently)
   useEffect(() => {
-    if (connectedAccount?.address && evmAccount && !areLinked(connectedAccount.address, evmAccount)) {
-      linkAddresses(connectedAccount.address, evmAccount, 'Talisman/SubWallet')
+    if (selectedAccount?.address && evmAccount && !areLinked(selectedAccount.address, evmAccount)) {
+      linkAddresses(selectedAccount.address, evmAccount, 'Talisman/SubWallet')
     }
-  }, [connectedAccount?.address, evmAccount, areLinked, linkAddresses])
+  }, [selectedAccount?.address, evmAccount, areLinked, linkAddresses])
 
   // Smart address priority system:
   // 1. If Substrate wallet is mapped → use mapped address (single wallet UX)
   // 2. If MetaMask connected → use MetaMask (dual wallet mode)
   // 3. Fallback to linked or derived address
-  const hasSubstrateWallet = !!connectedAccount?.address
+  const hasSubstrateWallet = !!selectedAccount?.address
   const hasMetaMask = !!evmAccount
   const isSubstrateMapped = accountMapping.isMapped === true
 
   const effectiveEvmAddress =
     substrateSigner.evmAddress // Substrate signer's derived address (primary)
     || evmAccount // MetaMask
-    || getEvmAddress(connectedAccount?.address || '') // Linked
+    || getEvmAddress(selectedAccount?.address || '') // Linked
     || derivedEvmAddress // Derived fallback
 
   // Debug logs removed - was causing console spam
@@ -462,9 +462,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
   // Fetch identity for display name from Substrate address
   useEffect(() => {
-    if (!connectedAccount?.address) return
+    if (!selectedAccount?.address) return
 
-    queryOnChainIdentity(connectedAccount.address).then(result => {
+    queryOnChainIdentity(selectedAccount.address).then(result => {
       if (result.success && result.identity?.display) {
         setIdentityDisplay(result.identity.display)
       } else {
@@ -473,7 +473,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     }).catch(() => {
       setIdentityDisplay('Polkadot User')
     })
-  }, [connectedAccount?.address])
+  }, [selectedAccount?.address])
 
   // No RBAC checks - anyone can mint to themselves
 
@@ -539,14 +539,14 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       let txHash: string | undefined
 
       // Check wallet connection (either Substrate OR MetaMask)
-      if (!connectedAccount?.address && !signer) {
+      if (!selectedAccount?.address && !signer) {
         throw new Error('Please connect a wallet (Talisman, SubWallet, or MetaMask)')
       }
 
       // For Substrate wallet: Use Substrate EVM Signer via pallet_revive
-      if (connectedAccount?.address && !signer) {
+      if (selectedAccount?.address && !signer) {
         console.log('🔗 Using Substrate wallet for EVM transaction')
-        console.log('Substrate account:', connectedAccount.address)
+        console.log('Substrate account:', selectedAccount.address)
         console.log('Mapped EVM address:', effectiveEvmAddress)
         console.log('Is mapped?', substrateSigner.isMapped)
 
@@ -642,6 +642,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
       setPasses(updatedPasses)
       saveAccessPasses(updatedPasses)
 
+      // Set active pass so UI updates to show the minted pass
+      setActivePassTokenId(tokenId)
+
       // Show virtual door, then pass modal underneath
       setShowPassModal(passData)
       setShowVirtualDoor(true)
@@ -660,6 +663,16 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const activePass = activePassTokenId !== null
     ? passes.find(p => p.nftId === activePassTokenId)
     : null
+
+  // Restore active pass on mount/reload
+  useEffect(() => {
+    if (passes.length > 0 && activePassTokenId === null) {
+      // Set the most recent pass as active
+      const mostRecent = passes.sort((a, b) => b.createdAt - a.createdAt)[0]
+      setActivePassTokenId(mostRecent.nftId)
+      console.log('🎫 Restored active pass:', mostRecent.nftId, 'for location:', mostRecent.location)
+    }
+  }, [passes, activePassTokenId])
 
   return (
     <>
@@ -693,17 +706,17 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         {effectiveEvmAddress ? (
           <div className="space-y-3">
             {activePass && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-600" />
+              <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-lg p-3 flex items-center gap-2">
+                <Check className="w-4 h-4 text-[#1c1917]" />
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-green-700">Active Pass</p>
-                  <p className="text-xs text-green-600">
+                  <p className="text-xs font-medium text-[#1c1917]">Active Pass</p>
+                  <p className="text-xs text-[#57534e]">
                     You have an active pass for {selectedLocation?.name}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPassModal(activePass)}
-                  className="text-xs text-green-700 hover:text-green-800 font-medium"
+                  className="text-xs text-[#1c1917] hover:text-[#292524] font-medium underline"
                 >
                   View
                 </button>

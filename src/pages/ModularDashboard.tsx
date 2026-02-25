@@ -1,4 +1,4 @@
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/Button'
@@ -22,7 +22,7 @@ import PolkadotLogo from '../components/PolkadotLogo'
 import { useEVM } from '../providers/EVMProvider'
 
 export default function ModularDashboard() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const evm = useEVM()
   const navigate = useNavigate()
   const { address: profileAddress } = useParams<{ address?: string }>()
@@ -49,7 +49,7 @@ export default function ModularDashboard() {
   const { data: searchResults = [], isLoading: isSearching } = useUserSearch(searchQuery)
 
   // Use access control hook
-  const accessControl = useAccessControl(connectedAccount?.address || evm.account || undefined)
+  const accessControl = useAccessControl(selectedAccount?.address || evm.account || undefined)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,17 +80,17 @@ export default function ModularDashboard() {
 
   // Show identity onboarding modal if user doesn't have verified identity
   useEffect(() => {
-    if (!connectedAccount || isViewingOtherProfile) {
+    if (!selectedAccount || isViewingOtherProfile) {
       console.log('🔍 Identity modal check: Not showing (no account or viewing other profile)')
       return
     }
 
     const dismissed = localStorage.getItem(
-      `intran3t_identity_onboarding_dismissed_${connectedAccount.address}`
+      `intran3t_identity_onboarding_dismissed_${selectedAccount.address}`
     )
 
     console.log('🔍 Identity modal check:', {
-      address: connectedAccount.address,
+      address: selectedAccount.address,
       dismissed: !!dismissed,
       hasVerifiedIdentity: accessControl.hasVerifiedIdentity,
       isLoading: accessControl.isLoading
@@ -100,11 +100,11 @@ export default function ModularDashboard() {
     const shouldShow = !dismissed && !accessControl.hasVerifiedIdentity && !accessControl.isLoading
     console.log('🔍 Should show identity modal:', shouldShow)
     setShowOnboarding(shouldShow)
-  }, [connectedAccount, accessControl.hasVerifiedIdentity, accessControl.isLoading, isViewingOtherProfile])
+  }, [selectedAccount, accessControl.hasVerifiedIdentity, accessControl.isLoading, isViewingOtherProfile])
 
   return (
     <>
-    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!connectedAccount && !evm.connected ? 'blur-md pointer-events-none' : ''}`}>
+    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!selectedAccount && !evm.connected ? 'blur-md pointer-events-none' : ''}`}>
       <div className="max-w-[1600px] mx-auto">
         {/* Top Bar with Branding, Search, and Settings */}
         <div className="flex items-center justify-between gap-6 mb-6">
@@ -265,9 +265,9 @@ export default function ModularDashboard() {
         open={showOnboarding}
         onOpenChange={setShowOnboarding}
         onDismiss={() => {
-          if (connectedAccount) {
+          if (selectedAccount) {
             localStorage.setItem(
-              `intran3t_identity_onboarding_dismissed_${connectedAccount.address}`,
+              `intran3t_identity_onboarding_dismissed_${selectedAccount.address}`,
               'true'
             )
           }
@@ -276,7 +276,7 @@ export default function ModularDashboard() {
       />
     </div>
 
-    {!connectedAccount && !evm.connected && (
+    {!selectedAccount && !evm.connected && (
       <div className="fixed inset-0 bg-[#0f0f0f]/60 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white rounded-2xl border border-[#e7e5e4] p-10 max-w-sm w-full mx-4 shadow-xl text-center">
           <div className="w-14 h-14 bg-[#fafaf9] rounded-xl border border-[#e7e5e4] flex items-center justify-center mx-auto mb-5">

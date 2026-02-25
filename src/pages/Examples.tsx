@@ -234,21 +234,21 @@ function BalanceDisplay({ address }: { address: string }) {
     description: "Sign and send a balance transfer with the connected account",
     category: "transaction",
     code: `import { usePolkadot } from './providers/PolkadotProvider'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { web3FromAddress } from '@polkadot/extension-dapp'
 
 function TransferButton({ to, amount }: Props) {
   const { api } = usePolkadot()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [status, setStatus] = useState('')
 
   const handleTransfer = async () => {
-    if (!api || !connectedAccount) return
+    if (!api || !selectedAccount) return
 
     try {
       setStatus('Signing...')
       const injector = await web3FromAddress(
-        connectedAccount.address
+        selectedAccount.address
       )
 
       const transfer = api.tx.balances.transferKeepAlive(
@@ -257,7 +257,7 @@ function TransferButton({ to, amount }: Props) {
       )
 
       await transfer.signAndSend(
-        connectedAccount.address,
+        selectedAccount.address,
         { signer: injector.signer },
         ({ status }) => {
           if (status.isInBlock) {
@@ -285,20 +285,20 @@ function TransferButton({ to, amount }: Props) {
     description: "Real-time balance updates for connected account",
     category: "subscription",
     code: `import { usePolkadot } from './providers/PolkadotProvider'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { formatBalance } from '@polkadot/util'
 
 function LiveBalance() {
   const { api } = usePolkadot()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [balance, setBalance] = useState('')
 
   useEffect(() => {
-    if (!api || !connectedAccount) return
+    if (!api || !selectedAccount) return
     let unsub: any
 
     api.query.system.account(
-      connectedAccount.address,
+      selectedAccount.address,
       ({ data }) => {
         setBalance(formatBalance(data.free, {
           withSi: true
@@ -307,7 +307,7 @@ function LiveBalance() {
     ).then((u) => { unsub = u })
 
     return () => { if (unsub) unsub() }
-  }, [api, connectedAccount])
+  }, [api, selectedAccount])
 
   return <div>Balance: {balance}</div>
 }`,
@@ -316,25 +316,25 @@ function LiveBalance() {
     title: "Use Wallet Hook",
     description: "Access wallet state and connection methods with Typink",
     category: "hook",
-    code: `import { useTypink } from 'typink'
+    code: `import { useWallet } from '../providers/WalletProvider'
 
 function WalletInfo() {
   const {
     wallets,           // All available wallets
     connectedWallets,  // Currently connected
     accounts,          // All accounts
-    connectedAccount,  // Active account
+    selectedAccount,  // Active account
     connectWallet,     // Connect function
     disconnect,        // Disconnect function
-  } = useTypink()
+  } = useWallet()
 
   return (
     <div>
       <div>Wallets: {wallets.length}</div>
       <div>Connected: {connectedWallets.length}</div>
       <div>Accounts: {accounts.length}</div>
-      {connectedAccount && (
-        <div>Active: {connectedAccount.name}</div>
+      {selectedAccount selectedAccount && selectedAccount &&  (
+        <div>Active: {selectedAccount.name}</div>
       )}
     </div>
   )
@@ -414,16 +414,16 @@ function FeeEstimator({ to, amount, from }: Props) {
     description: "Submit multiple transactions in a single batch",
     category: "transaction",
     code: `import { usePolkadot } from './providers/PolkadotProvider'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { web3FromSource } from '@polkadot/extension-dapp'
 
 function BatchTransfer({ transfers }: Props) {
   const { api } = usePolkadot()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [status, setStatus] = useState('')
 
   const handleBatch = async () => {
-    if (!api || !connectedAccount) return
+    if (!api || !selectedAccount) return
 
     try {
       setStatus('Preparing batch...')
@@ -436,12 +436,12 @@ function BatchTransfer({ transfers }: Props) {
       // Batch all transactions
       const batchTx = api.tx.utility.batch(txs)
 
-      const injected = await web3FromSource(connectedAccount.source)
+      const injected = await web3FromSource(selectedAccount.source)
       api.setSigner(injected.signer)
 
       setStatus('Signing...')
       await batchTx.signAndSend(
-        connectedAccount.address,
+        selectedAccount.address,
         ({ status }) => {
           if (status.isInBlock) {
             setStatus(\`Batch in block: \${status.asInBlock}\`)
@@ -468,26 +468,26 @@ function BatchTransfer({ transfers }: Props) {
     description: "Add on-chain data with a remark",
     category: "transaction",
     code: `import { usePolkadot } from './providers/PolkadotProvider'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { web3FromSource } from '@polkadot/extension-dapp'
 import { stringToHex } from '@polkadot/util'
 
 function RemarkButton({ message }: { message: string }) {
   const { api } = usePolkadot()
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [status, setStatus] = useState('')
 
   const handleRemark = async () => {
-    if (!api || !connectedAccount) return
+    if (!api || !selectedAccount) return
 
     try {
-      const injected = await web3FromSource(connectedAccount.source)
+      const injected = await web3FromSource(selectedAccount.source)
       api.setSigner(injected.signer)
 
       const remark = api.tx.system.remark(stringToHex(message))
 
       await remark.signAndSend(
-        connectedAccount.address,
+        selectedAccount.address,
         ({ status }) => {
           if (status.isInBlock) {
             setStatus('Remark in block!')

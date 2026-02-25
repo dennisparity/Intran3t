@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import { useTypink } from 'typink'
+import React, { useState, useEffect } from 'react'
 import { Wallet, ChevronRight, Check, Download, User } from 'lucide-react'
 import { Button } from './ui/Button'
 import {
@@ -11,57 +10,136 @@ import {
 } from './ui/Dialog'
 import Identicon from '@polkadot/react-identicon'
 import { useEVM } from '../providers/EVMProvider'
+import { useWallet } from '../providers/WalletProvider'
 
 type View = 'wallets' | 'accounts'
+
+interface WalletInfo {
+  id: string
+  name: string
+  logo?: string
+  installed: boolean
+  installUrl: string
+}
+
+// Known wallets with their metadata
+const KNOWN_WALLETS: WalletInfo[] = [
+  {
+    id: 'polkadot-js',
+    name: 'Polkadot.js',
+    installed: false,
+    installUrl: 'https://polkadot.js.org/extension/'
+  },
+  {
+    id: 'talisman',
+    name: 'Talisman',
+    installed: false,
+    installUrl: 'https://talisman.xyz/'
+  },
+  {
+    id: 'subwallet-js',
+    name: 'SubWallet',
+    installed: false,
+    installUrl: 'https://subwallet.app/'
+  },
+  {
+    id: 'nova',
+    name: 'Nova Wallet',
+    installed: false,
+    installUrl: 'https://novawallet.io/'
+  }
+]
 
 export default function ConnectWallet() {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<View>('wallets')
-  
+  const [availableWallets, setAvailableWallets] = useState<WalletInfo[]>([])
+
   const {
-    wallets,
-    connectedWallets,
+    isConnected,
     accounts,
-    connectedAccount,
-    connectWallet,
+    selectedAccount,
+    connect,
     disconnect,
-    setConnectedAccount,
-  } = useTypink()
+    selectAccount,
+    inHost
+  } = useWallet()
 
   const evm = useEVM()
   const isMetaMaskInstalled = !!(window as any).ethereum?.isMetaMask
 
-  const handleConnectWallet = async (walletId: string) => {
+  // Detect installed wallets on mount
+  useEffect(() => {
+    const detectWallets = () => {
+      if (inHost) {
+        // In host: show Spektr only
+        setAvailableWallets([{
+          id: 'spektr',
+          name: 'Spektr (Host)',
+          installed: true,
+          installUrl: ''
+        }])
+        return
+      }
+
+      // Check window.injectedWeb3 for installed extensions
+      const injected = (window as any).injectedWeb3 || {}
+      const detected = KNOWN_WALLETS.map(wallet => ({
+        ...wallet,
+        installed: !!injected[wallet.id],
+        logo: injected[wallet.id]?.logo
+      }))
+
+      // Sort: installed first
+      detected.sort((a, b) => {
+        if (a.installed && !b.installed) return -1
+        if (!a.installed && b.installed) return 1
+        return 0
+      })
+
+      setAvailableWallets(detected)
+    }
+
+    detectWallets()
+  }, [inHost])
+
+  const handleConnectWallet = async () => {
     try {
-      console.log('Attempting to connect wallet:', walletId)
+      console.log('🔌 Attempting to connect wallet...')
 
-      // Connect with Typink - this will trigger only the selected wallet extension
-      await connectWallet(walletId)
-      console.log('Wallet connected successfully:', walletId)
+      // Product SDK handles wallet selection automatically
+      await connect()
+      console.log('✅ Wallet connected successfully')
 
-      setView('accounts')
+      // Note: accounts state will be updated by WalletProvider
+      // The useEffect below will handle showing the accounts view
     } catch (error) {
-      console.error('Failed to connect wallet:', error)
+      console.error('❌ Failed to connect wallet:', error)
 
-      // Provide helpful error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      const walletName = walletId === 'polkadot-js' ? 'Polkadot.js' :
-                        walletId === 'subwallet-js' ? 'SubWallet' :
-                        walletId.charAt(0).toUpperCase() + walletId.slice(1)
 
       alert(
-        `Failed to connect ${walletName}:\n\n${errorMessage}\n\n` +
-        `If the wallet didn't open, please:\n` +
-        `1. Open the ${walletName} extension\n` +
-        `2. Check "Manage Website Access" settings\n` +
-        `3. Authorize this site\n` +
-        `4. Try connecting again`
+        `Failed to connect wallet:\n\n${errorMessage}\n\n` +
+        `Please ensure:\n` +
+        `1. Your wallet extension is installed and enabled\n` +
+        `2. You have authorized this site in your wallet settings\n` +
+        `3. Try refreshing the page and connecting again`
       )
     }
   }
 
+  // Show accounts view when connected with multiple accounts
+  useEffect(() => {
+    if (isConnected && accounts.length > 1 && view === 'wallets') {
+      setView('accounts')
+    } else if (isConnected && accounts.length === 1 && open) {
+      // Auto-close modal if only one account
+      setOpen(false)
+    }
+  }, [isConnected, accounts.length, view, open])
+
   const handleSelectAccount = (account: any) => {
-    setConnectedAccount(account)
+    selectAccount(account.address)
     setOpen(false)
     setView('wallets')
   }
@@ -79,7 +157,7 @@ export default function ConnectWallet() {
       setTimeout(() => setView('wallets'), 200)
     } else {
       // If opening and wallet is already connected with multiple accounts, go directly to accounts view
-      if (connectedAccount && accounts.length > 1) {
+      if (selectedAccount && accounts.length > 1) {
         setView('accounts')
       }
     }
@@ -98,14 +176,14 @@ export default function ConnectWallet() {
           onClick={() => setOpen(true)}
           className="gap-2"
         >
-          {connectedAccount ? (
+          {selectedAccount ? (
             <div className="flex items-center gap-2">
               <Identicon
-                value={connectedAccount.address}
+                value={selectedAccount.address}
                 size={24}
                 theme="polkadot"
               />
-              <span>{connectedAccount.name || truncateAddress(connectedAccount.address)}</span>
+              <span>{selectedAccount.name || truncateAddress(selectedAccount.address)}</span>
             </div>
           ) : evm.connected && evm.account ? (
             <div className="flex items-center gap-2">
@@ -121,7 +199,7 @@ export default function ConnectWallet() {
             </>
           )}
         </Button>
-        {connectedAccount && accounts.length > 1 && (
+        {selectedAccount && accounts.length > 1 && (
           <Button
             variant="outline"
             size="lg"
@@ -141,14 +219,14 @@ export default function ConnectWallet() {
           <>
             <DialogHeader>
               <DialogTitle>
-                {connectedWallets.length > 0 ? 'Connected Wallets' : 'Connect Wallet'}
+                {isConnected ? 'Connected' : 'Connect Wallet'}
               </DialogTitle>
               <DialogDescription>
-                {connectedWallets.length > 0
-                  ? 'Select a wallet to view accounts or connect a new one'
-                  : 'Choose a wallet to connect to your Polkadot account'}
+                {isConnected
+                  ? 'Manage your wallet connections'
+                  : 'Connect your wallet to access Polkadot features'}
               </DialogDescription>
-              {connectedAccount && accounts.length > 1 && (
+              {selectedAccount && accounts.length > 1 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -211,112 +289,107 @@ export default function ConnectWallet() {
                 </div>
               </div>
 
-              {/* Polkadot Wallets — Sort: installed first, then not installed */}
-              {[...wallets]
-                .sort((a, b) => {
-                  if (a.installed && !b.installed) return -1
-                  if (!a.installed && b.installed) return 1
-                  return 0
-                })
-                .map((wallet) => {
-                  const isConnected = connectedWallets.some((w) => w.id === wallet.id)
-                  const accountCount = accounts.filter((a) => a.source === wallet.id).length
-
-                  return (
-                    <div
-                      key={wallet.id}
-                      className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1] transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3">
-                        {wallet.logo ? (
-                          <img
-                            src={wallet.logo}
-                            alt={wallet.name}
-                            className="w-10 h-10 rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-[#f5f5f4] flex items-center justify-center">
-                            <Wallet className="w-6 h-6 text-[#78716c]" />
-                          </div>
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[#1c1917]">{wallet.name}</span>
-                            {isConnected && (
-                              <div className="flex items-center gap-1 text-xs text-green-600">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                Connected
-                              </div>
-                            )}
-                          </div>
-                          {isConnected && accountCount > 0 && (
-                            <p className="text-xs text-[#78716c] mt-0.5">
-                              {accountCount} account{accountCount !== 1 ? 's' : ''}
-                            </p>
-                          )}
+              {/* Polkadot Wallets */}
+              <div className="group relative flex items-center justify-between p-4 rounded-xl border border-[#e7e5e4] bg-white hover:bg-[#fafaf9] hover:border-[#d6d3d1] transition-all duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#f5f5f4] flex items-center justify-center">
+                    <Wallet className="w-6 h-6 text-[#e6007a]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[#1c1917]">
+                        {inHost ? 'Spektr (Host)' : 'Polkadot Wallet'}
+                      </span>
+                      {isConnected && (
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          Connected
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {wallet.installed ? (
-                          isConnected ? (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setView('accounts')}
-                                className="gap-1"
-                              >
-                                View Accounts
-                                <ChevronRight className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleDisconnect}
-                              >
-                                Disconnect
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleConnectWallet(wallet.id)}
-                              className="gap-1"
-                            >
-                              Connect
-                              <ChevronRight className="w-4 h-4" />
-                            </Button>
-                          )
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Typink wallets have different install URLs based on wallet type
-                              const installUrls: Record<string, string> = {
-                                'polkadot-js': 'https://polkadot.js.org/extension/',
-                                'talisman': 'https://talisman.xyz/',
-                                'subwallet-js': 'https://subwallet.app/',
-                                'nova': 'https://novawallet.io/',
-                              }
-                              const url = installUrls[wallet.id]
-                              if (url) window.open(url, '_blank')
-                            }}
-                            className="gap-1"
-                          >
-                            <Download className="w-4 h-4" />
-                            Install
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  )
-                })}
+                    {isConnected && accounts.length > 0 && (
+                      <p className="text-xs text-[#78716c] mt-0.5">
+                        {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {!isConnected && !inHost && (
+                      <p className="text-xs text-[#78716c] mt-0.5">
+                        {availableWallets.filter(w => w.installed).length > 0
+                          ? `${availableWallets.filter(w => w.installed).map(w => w.name).join(', ')} detected`
+                          : 'Talisman, SubWallet, Polkadot.js'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isConnected ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setView('accounts')}
+                        className="gap-1"
+                      >
+                        View Accounts
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDisconnect}
+                      >
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : availableWallets.some(w => w.installed) || inHost ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleConnectWallet}
+                      className="gap-1"
+                    >
+                      Connect
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <div className="text-xs text-[#78716c]">
+                      <a
+                        href="https://talisman.xyz/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#e6007a] hover:underline"
+                      >
+                        Install Wallet
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
 
-            {(connectedAccount || evm.connected) && (
+              {/* Wallet Installation Guide (if no wallets detected) */}
+              {!isConnected && !inHost && !availableWallets.some(w => w.installed) && (
+                <div className="p-4 rounded-xl border border-[#e7e5e4] bg-[#fafaf9]">
+                  <p className="text-sm text-[#78716c] mb-2">No Polkadot wallet detected. Install one:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableWallets.map(wallet => (
+                      <Button
+                        key={wallet.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(wallet.installUrl, '_blank')}
+                        className="gap-1"
+                      >
+                        <Download className="w-4 h-4" />
+                        {wallet.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              </div>
+
+            {(selectedAccount || evm.connected) && (
               <div className="mt-6 pt-6 border-t border-[#e7e5e4]">
                 <Button
                   variant="destructive"
@@ -357,7 +430,7 @@ export default function ConnectWallet() {
                 </div>
               ) : (
                 accounts.map((account) => {
-                  const isSelected = connectedAccount?.address === account.address
+                  const isSelected = selectedAccount?.address === account.address
 
                   return (
                     <button
@@ -388,9 +461,6 @@ export default function ConnectWallet() {
                           </div>
                           <p className="text-xs text-[#78716c] mt-0.5 font-mono">
                             {truncateAddress(account.address)}
-                          </p>
-                          <p className="text-xs text-[#a8a29e] mt-0.5">
-                            {account.source}
                           </p>
                         </div>
                       </div>

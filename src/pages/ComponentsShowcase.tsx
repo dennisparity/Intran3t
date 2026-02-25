@@ -15,7 +15,8 @@ import {
   Wallet,
 } from "lucide-react";
 import React, { useState } from "react";
-import { useTypink } from "typink";
+import { useWallet } from "../providers/WalletProvider";
+import { useWallet } from '../providers/WalletProvider'
 import AddressDisplay from "../components/polkadot/AddressDisplay";
 import BalanceDisplay from "../components/polkadot/BalanceDisplay";
 import BlockNumber from "../components/polkadot/BlockNumber";
@@ -59,17 +60,17 @@ interface ComponentExample {
 }
 
 export default function Components() {
-  const { connectedAccount } = useTypink();
+  const { selectedAccount } = useWallet();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Hook examples
   const { blockNumber } = useBlockNumber();
-  const { balance } = useBalance(connectedAccount?.address);
+  const { balance } = useBalance(selectedAccount?.address);
   const { chainInfo } = useChainInfo();
   const { stakingInfo } = useStakingInfo();
-  const { nonce } = useNonce(connectedAccount?.address);
+  const { nonce } = useNonce(selectedAccount?.address);
   const { events } = useEvents(5);
 
   // Demo/sample fallbacks so the live preview always shows something
@@ -111,7 +112,7 @@ export default function Components() {
           <p className="mt-2 text-xs">Already implemented in this template</p>
         </div>
       ),
-      code: `import { ConnectWallet } from 'typink'
+      code: `import { ConnectWallet } from '../providers/WalletProvider'
 
 function App() {
   return <ConnectWallet />
@@ -126,10 +127,10 @@ function App() {
       component: (
         <div className="space-y-4">
           <AddressDisplay
-            address={connectedAccount?.address ?? sampleAccount.address}
+            address={selectedAccount?.address ?? sampleAccount.address}
           />
           <AddressDisplay
-            address={connectedAccount?.address ?? sampleAccount.address}
+            address={selectedAccount?.address ?? sampleAccount.address}
             showCopy={false}
             showExplorer={false}
           />
@@ -153,9 +154,9 @@ function MyComponent({ address }: { address: string }) {
       description: "Conditional rendering based on account connection",
       component: (
         <div className="p-4 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5">
-          {connectedAccount ? (
+          {selectedAccount ? (
             <div className="text-green-400">
-              ✓ Account connected: {connectedAccount.name}
+              ✓ Account connected: {selectedAccount.name}
             </div>
           ) : (
             <div className="text-cyan-300">
@@ -164,16 +165,16 @@ function MyComponent({ address }: { address: string }) {
           )}
         </div>
       ),
-      code: `import { useTypink } from 'typink'
+      code: `import { useWallet } from '../providers/WalletProvider'
 
 function MyComponent() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
 
-  if (!connectedAccount) {
+  if (!selectedAccount) {
     return <div>Please connect an account</div>
   }
 
-  return <div>Connected: {connectedAccount.name}</div>
+  return <div>Connected: {selectedAccount.name}</div>
 }`,
       category: "wallet",
       icon: <User className="w-5 h-5" />,
@@ -187,31 +188,31 @@ function MyComponent() {
           <div className="space-y-2 text-sm">
             <div>
               <strong>Name:</strong>{" "}
-              {connectedAccount?.name ?? sampleAccount.name}
+              {selectedAccount?.name ?? sampleAccount.name}
             </div>
             <div>
               <strong>Address:</strong>{" "}
-              {(connectedAccount?.address ?? sampleAccount.address).slice(0, 8)}
+              {(selectedAccount?.address ?? sampleAccount.address).slice(0, 8)}
               ...
-              {(connectedAccount?.address ?? sampleAccount.address).slice(-8)}
+              {(selectedAccount?.address ?? sampleAccount.address).slice(-8)}
             </div>
             <div>
               <strong>Source:</strong>{" "}
-              {connectedAccount?.source ?? sampleAccount.source}
+              {selectedAccount?.source ?? sampleAccount.source}
             </div>
           </div>
         </div>
       ),
-      code: `import { useTypink } from 'typink'
+      code: `import { useWallet } from '../providers/WalletProvider'
 
 function AccountInfo() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
 
   return (
     <div>
-      <div>Name: {connectedAccount?.name}</div>
-      <div>Address: {connectedAccount?.address}</div>
-      <div>Source: {connectedAccount?.source}</div>
+      <div>Name: {selectedAccount?.name}</div>
+      <div>Address: {selectedAccount?.address}</div>
+      <div>Source: {selectedAccount?.source}</div>
     </div>
   )
 }`,
@@ -298,10 +299,10 @@ function MyComponent() {
       component: (
         <div className="space-y-4">
           <BalanceDisplay
-            address={connectedAccount?.address ?? sampleAccount.address}
+            address={selectedAccount?.address ?? sampleAccount.address}
           />
           <BalanceDisplay
-            address={connectedAccount?.address ?? sampleAccount.address}
+            address={selectedAccount?.address ?? sampleAccount.address}
             type="detailed"
             showIcon={false}
           />
@@ -411,7 +412,7 @@ function MyComponent() {
 // npx polkadot-ui add tx-button
 
 import { TxButton } from './components/polkadot/TxButton'
-import { useTx } from 'typink'
+import { useTx } from '../providers/WalletProvider'
 
 function MyComponent() {
   const tx = useTx((tx) => tx.system.remark)
@@ -802,13 +803,13 @@ function MyComponent() {
           <div className="flex justify-between text-sm">
             <span className="text-gray-300">Free:</span>
             <span className="text-white font-mono">
-              {(connectedAccount ? balance?.free : sampleBalance.free) ?? "—"}
+              {(selectedAccount ? balance?.free : sampleBalance.free) ?? "—"}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-300">Reserved:</span>
             <span className="text-white font-mono">
-              {(connectedAccount
+              {(selectedAccount
                 ? balance?.reserved
                 : sampleBalance.reserved) ?? "—"}
             </span>
@@ -912,7 +913,7 @@ function MyComponent() {
         <div className="p-4 rounded-lg bg-black/40 border border-white/10">
           <div className="text-sm text-gray-300 mb-2">Account Nonce:</div>
           <div className="text-2xl font-bold text-white">
-            {connectedAccount ? (nonce != null ? nonce : "—") : sampleNonce}
+            {selectedAccount ? (nonce != null ? nonce : "—") : sampleNonce}
           </div>
         </div>
       ),

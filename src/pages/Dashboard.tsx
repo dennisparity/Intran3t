@@ -15,7 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTypink } from "typink";
+import { useWallet } from "../providers/WalletProvider";
+import { useWallet } from '../providers/WalletProvider'
 import AddressDisplay from "../components/polkadot/AddressDisplay";
 import BlockNumber from "../components/polkadot/BlockNumber";
 import NetworkIndicator from "../components/polkadot/NetworkIndicator";
@@ -29,7 +30,7 @@ import {
 import { usePolkadot } from "../providers/PolkadotProvider";
 
 export default function Dashboard() {
-  const { connectedAccount } = useTypink();
+  const { selectedAccount } = useWallet();
   const { api } = usePolkadot();
 
   const [chainData, setChainData] = useState({
@@ -114,7 +115,7 @@ export default function Dashboard() {
   }, [api]);
 
   useEffect(() => {
-    if (!api || !connectedAccount) return;
+    if (!api || !selectedAccount) return;
 
     let unsub: any;
 
@@ -122,7 +123,7 @@ export default function Dashboard() {
       try {
         // Subscribe to account balance changes
         unsub = await api.query.system.account(
-          connectedAccount.address,
+          selectedAccount.address,
           (accountInfo: any) => {
             setAccountBalance({
               free: formatBalance(accountInfo.data.free.toString(), {
@@ -147,7 +148,7 @@ export default function Dashboard() {
     return () => {
       if (unsub) unsub();
     };
-  }, [api, connectedAccount]);
+  }, [api, selectedAccount]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -188,15 +189,15 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-          {connectedAccount && (
+          {selectedAccount selectedAccount && selectedAccount &&  (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
               <AddressDisplay
-                address={connectedAccount.address}
-                name={connectedAccount.name}
+                address={selectedAccount.address}
+                name={selectedAccount.name}
                 truncate={6}
                 className="bg-gradient-to-r from-violet-500/10 to-pink-500/10 border border-white/20 px-4 py-2.5 rounded-xl backdrop-blur-sm"
               />
@@ -234,13 +235,13 @@ export default function Dashboard() {
                   <Sparkles className="w-6 h-6 text-pink-400" />
                 </motion.div>
                 <h1 className="text-5xl font-bold text-gradient">
-                  {connectedAccount
-                    ? `Welcome back, ${connectedAccount.name || "User"}!`
+                  {selectedAccount
+                    ? `Welcome back, ${selectedAccount.name || "User"}!`
                     : "Network Dashboard"}
                 </h1>
               </div>
               <p className="text-gray-300 text-lg leading-relaxed max-w-2xl">
-                {connectedAccount
+                {selectedAccount
                   ? `Connected to ${chainData.chainName || "Polkadot"}. Monitor real-time network activity, track your balances, and explore on-chain data with elegant visualizations.`
                   : "Connect your wallet to unlock personalized insights, view your account balance, and interact seamlessly with the Polkadot ecosystem."}
               </p>
@@ -462,7 +463,7 @@ export default function Dashboard() {
           </motion.div>
 
           <AnimatePresence>
-            {connectedAccount && (
+            {selectedAccount selectedAccount && selectedAccount &&  (
               <motion.div
                 variants={item}
                 whileHover={{ y: -4 }}
@@ -519,7 +520,7 @@ export default function Dashboard() {
 
       {/* Enhanced Getting Started / Features Section */}
       <AnimatePresence>
-        {!connectedAccount ? (
+        {!selectedAccount ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -620,7 +621,7 @@ export default function Dashboard() {
                 <div className="p-6 rounded-2xl bg-black/20 border border-white/10">
                   <div className="text-gray-400 text-sm mb-2">Account Name</div>
                   <div className="text-white font-semibold text-lg">
-                    {connectedAccount.name || "Unnamed Account"}
+                    {selectedAccount.name || "Unnamed Account"}
                   </div>
                 </div>
                 <div className="p-6 rounded-2xl bg-black/20 border border-white/10">
@@ -628,7 +629,7 @@ export default function Dashboard() {
                     Wallet Source
                   </div>
                   <div className="text-white font-semibold text-lg capitalize">
-                    {connectedAccount.source}
+                    {selectedAccount.source}
                   </div>
                 </div>
                 <div className="p-6 rounded-2xl bg-black/20 border border-white/10">

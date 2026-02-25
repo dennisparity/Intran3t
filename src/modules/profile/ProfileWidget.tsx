@@ -1,4 +1,5 @@
-import { useTypink, useBalance } from 'typink'
+import { useBalance } from 'typink'
+import { useWallet } from '../../providers/WalletProvider'
 import Identicon from '@polkadot/react-identicon'
 import { User, CheckCircle2, Shield, Users as UsersIcon } from 'lucide-react'
 import type { ProfileConfig } from './types'
@@ -36,12 +37,12 @@ export function ProfileWidget({
   profileEvmAddress,
   isOwnProfile = true
 }: ProfileWidgetProps) {
-  const { connectedAccount, connectedNetworks } = useTypink()
+  const { selectedAccount } = useWallet()
   const { account: evmAccount, provider, signer } = useEVM()
   // RBAC removed - no role tracking needed
 
-  // Use profileAddress if provided, fall back to connectedAccount, then MetaMask
-  const displayAddress = profileAddress || connectedAccount?.address || evmAccount
+  // Use profileAddress if provided, fall back to selectedAccount, then MetaMask
+  const displayAddress = profileAddress || selectedAccount?.address || evmAccount
 
   // Determine which EVM address to use for role lookup
   // Priority: profileEvmAddress prop > profileAddress if EVM format > evmAccount for own profile
@@ -53,11 +54,9 @@ export function ProfileWidget({
   const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
 
   // Get balance (only for Substrate addresses)
-  const network = connectedNetworks?.[0];
   const balance = useBalance(
     (!isEvm && displayAddress) ? displayAddress : '',
     {
-      networkId: network?.id,
       enabled: !isEvm && !!displayAddress
     }
   );
@@ -89,7 +88,7 @@ export function ProfileWidget({
       )}
 
       <div className="p-6">
-        {connectedAccount && config.useOnChainIdentity ? (
+        {selectedAccount && config.useOnChainIdentity ? (
         <div className="mb-4">
           {/* Compact Profile Header - Avatar + Identity - Centered */}
           <div className="flex flex-col items-center mb-3">
@@ -235,7 +234,7 @@ export function ProfileWidget({
             </div>
           </div>
         </div>
-      ) : (connectedAccount || evmAccount) ? (
+      ) : (selectedAccount || evmAccount) ? (
         <>
           {/* Compact Profile Header - Avatar + Info - Centered */}
           <div className="flex justify-center mb-3">
@@ -287,7 +286,7 @@ export function ProfileWidget({
       )}
 
       {/* Balance */}
-      {(connectedAccount || evmAccount) && (
+      {(selectedAccount || evmAccount) && (
         <div className="mb-3">
           {balance?.free ? (
             <p className="text-lg font-semibold text-[#1c1917] text-center">
@@ -295,7 +294,7 @@ export function ProfileWidget({
             </p>
           ) : (
             <p className="text-sm text-[#a8a29e] text-center">
-              {network ? 'Syncing...' : 'Connecting...'}
+              {selectedAccount ? 'Syncing...' : 'Connecting...'}
             </p>
           )}
         </div>

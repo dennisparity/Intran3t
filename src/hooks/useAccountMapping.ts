@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { decodeAddress } from '@polkadot/util-crypto'
 import { keccak256 } from 'viem'
 
@@ -30,7 +30,7 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  * }
  */
 export function useAccountMapping(substrateAddress?: string) {
-  const { apiClient, connectedAccount, signer } = useTypink()
+  const { apiClient, selectedAccount, signer } = useWallet()
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -69,9 +69,19 @@ export function useAccountMapping(substrateAddress?: string) {
           })
         }
       } catch (error) {
-        console.error('Failed to check account mapping:', error)
-        if (isMounted) {
-          setIsMapped(null)
+        // Handle incompatible runtime (chain metadata mismatch)
+        if (error instanceof Error && error.message.includes('Incompatible runtime entry')) {
+          console.warn('⚠️ Account mapping check unavailable (chain metadata mismatch)')
+          if (isMounted) {
+            // Set to null (unknown) rather than false (unmapped)
+            // This prevents showing "Map Account" when we can't actually verify
+            setIsMapped(null)
+          }
+        } else {
+          console.error('Failed to check account mapping:', error)
+          if (isMounted) {
+            setIsMapped(null)
+          }
         }
       } finally {
         if (isMounted) {
@@ -92,8 +102,8 @@ export function useAccountMapping(substrateAddress?: string) {
    * Requires user to sign transaction in wallet
    */
   const mapAccount = async () => {
-    if (!apiClient || !connectedAccount?.address) {
-      throw new Error('API client or connected account not available')
+    if (!apiClient || !selectedAccount?.address) {
+      throw new Error('API client or selected account not available')
     }
 
     try {
@@ -102,7 +112,7 @@ export function useAccountMapping(substrateAddress?: string) {
       // Create the map_account transaction
       const tx = apiClient.tx.Revive.map_account({})
 
-      // Sign and submit the transaction using Typink's signer
+      // Sign and submit the transaction using Product SDK signer
       if (!signer) {
         throw new Error('Signer not available. Please ensure your wallet is connected.')
       }

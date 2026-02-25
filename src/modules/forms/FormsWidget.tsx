@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
-import { useTypink } from 'typink'
-import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical, ExternalLink, AlertCircle } from 'lucide-react'
+import { useWallet } from '../../providers/WalletProvider'
+import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical, ExternalLink, AlertCircle, Lock } from 'lucide-react'
 import type { Form, FormField, FormsConfig, FieldType } from './types'
 import { loadForms, saveForms, defaultFormsConfig, FORMS_STORAGE_KEY, RESPONSES_STORAGE_KEY } from './config'
 import { generateFormKey, saveFormKey } from '../../lib/form-keys'
 import { useFormsContract } from '../../hooks/useFormsContract'
 import { uploadRawToBulletin } from '../../lib/bulletin-storage'
+import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
+import { useAccountMapping } from '../../hooks/useAccountMapping'
+import { MapAccountModal } from '../../components/MapAccountModal'
+import { encodeFunctionData } from 'viem'
 
 export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsConfig }) {
-  const { connectedAccount, signer } = useTypink()
+  const { selectedAccount, signer } = useWallet()
   const {
     isLoading: contractLoading,
     registerForm: contractRegisterForm,
@@ -16,10 +20,19 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     getResponseCount
   } = useFormsContract()
 
+  // Substrate EVM signer for contract calls
+  const substrateEVM = useSubstrateEVMSigner()
+
+  // Account mapping check
+  const accountMapping = useAccountMapping(selectedAccount?.address)
+
+  // UI state for mapping modal
+  const [showMapModal, setShowMapModal] = useState(false)
+
   // Debug: Log what the hook returns
   useEffect(() => {
-    console.log('[FormsWidget] Hook state:', { contractLoading, hasAccount: !!connectedAccount })
-  }, [contractLoading, connectedAccount])
+    console.log('[FormsWidget] Hook state:', { contractLoading, hasAccount: !!selectedAccount })
+  }, [contractLoading, selectedAccount])
   const [activeTab, setActiveTab] = useState<'create' | 'submissions'>('create')
   const [forms, setForms] = useState<Form[]>([])
   const [isCreating, setIsCreating] = useState(false)
@@ -63,7 +76,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
   // Fetch on-chain response counts for forms
   useEffect(() => {
-    const myForms = forms.filter(f => f.creator === connectedAccount?.address)
+    const myForms = forms.filter(f => f.creator === selectedAccount?.address)
     if (myForms.length === 0) return
     const numericForms = myForms.filter(f => !isNaN(Number(f.onChainId || f.id)))
     if (numericForms.length === 0) return
@@ -80,14 +93,14 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       }
       setOnChainCounts(counts)
     })
-  }, [forms, connectedAccount?.address, getResponseCount])
+  }, [forms, selectedAccount?.address, getResponseCount])
 
   const generateFormId = () => {
     return `form-${Date.now()}-${Math.random().toString(36).slice(2)}`
   }
 
   const handleCreateForm = async () => {
-    if (!formTitle.trim() || !connectedAccount || isCreating) return
+    if (!formTitle.trim() || !selectedAccount || isCreating) return
 
     setIsCreating(true)
     setContractWarning(null)
@@ -127,16 +140,45 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             }
             const formDefBytes = new TextEncoder().encode(JSON.stringify(formDef))
 
-            // 2. Upload to Bulletin (via Alice relay - acceptable for testnet, form def is public data)
+            // 2. Upload to Bulletin (via Alice relay - consistent with voter submissions)
             const formCID = await uploadRawToBulletin(formDefBytes)
             console.log('[dForms] Bulletin upload done, CID:', formCID)
 
             // 3. Register CID on contract
+            if (!selectedAccount) {
+              throw new Error('Please connect a wallet first')
+            }
+
+            if (substrateEVM.isMapped !== true) {
+              throw new Error('Account mapping required. Please map your account first.')
+            }
+
             const currentCount = await getFormCount()
             const predictedOnChainId = Math.max(Number(currentCount) + 1, lastOnChainId + 1)
             const timestamp = Date.now()
 
-            await contractRegisterForm(formCID)
+            // Use the logged-in wallet for contract call
+            console.log('[dForms] Registering form on-chain with connected wallet...')
+            const contractAddress = import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as `0x${string}`
+
+            // Encode registerForm(string formCid) call
+            const calldata = encodeFunctionData({
+              abi: [{
+                name: 'registerForm',
+                type: 'function',
+                inputs: [{ name: 'formCid', type: 'string' }],
+                outputs: [{ name: '', type: 'uint256' }],
+                stateMutability: 'nonpayable'
+              }],
+              functionName: 'registerForm',
+              args: [formCID]
+            })
+
+            await substrateEVM.sendTransaction({
+              to: contractAddress,
+              data: calldata,
+              value: 0n
+            })
             console.log('✅ Form registered on-chain, id:', predictedOnChainId, 'CID:', formCID)
             setLastOnChainId(predictedOnChainId)
 
@@ -146,7 +188,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             onChainMetadata = {
               onChainId: predictedOnChainId.toString(),
               onChainTimestamp: timestamp,
-              signerAddress: connectedAccount.address,
+              signerAddress: selectedAccount.address,
               bulletinCid: formCID,
             }
           } catch (contractErr) {
@@ -167,7 +209,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             id: formId,
             title: formTitle.trim(),
             description: formDescription.trim(),
-            creator: connectedAccount.address,
+            creator: selectedAccount.address,
             createdAt: Date.now(),
             status: 'active',
             fields,
@@ -302,7 +344,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     setEditingFormId(null)
   }
 
-  const myForms = forms.filter(f => f.creator === connectedAccount?.address)
+  const myForms = forms.filter(f => f.creator === selectedAccount?.address)
 
   return (
     <div className="bg-white border border-[#e7e5e4] rounded-2xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] h-full flex flex-col">
@@ -347,7 +389,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'create' && (
           <div className="space-y-3">
-            {!connectedAccount ? (
+            {!selectedAccount ? (
               <div className="text-center py-8 text-[#78716c] text-sm">
                 Connect your wallet to create forms
               </div>
@@ -595,6 +637,27 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
+                {/* Account Mapping Gate (if Substrate wallet is not mapped) */}
+                {selectedAccount && accountMapping.isMapped === false && (
+                  <div className="mb-4 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Lock className="w-5 h-5 text-[#1c1917] mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-[#1c1917]">Account Mapping Required</p>
+                        <p className="text-xs text-[#57534e] mt-0.5">
+                          Map your Substrate account to publish forms on-chain.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowMapModal(true)}
+                      className="w-full py-2 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-lg hover:bg-[#292524] transition-colors"
+                    >
+                      Map Account
+                    </button>
+                  </div>
+                )}
+
                 {/* Create/Update Buttons */}
                 <div className="flex gap-3">
                   {editingFormId && (
@@ -607,7 +670,12 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   )}
                   <button
                     onClick={handleCreateForm}
-                    disabled={!formTitle.trim() || fields.length === 0 || isCreating}
+                    disabled={
+                      !formTitle.trim() ||
+                      fields.length === 0 ||
+                      isCreating ||
+                      (selectedAccount && accountMapping.isMapped === false)
+                    }
                     className="flex-1 flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold bg-gradient-to-r from-[#1c1917] to-[#292524] text-white rounded-xl hover:from-[#292524] hover:to-[#1c1917] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
                     <FileText className="w-5 h-5" />
@@ -761,6 +829,19 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
           </div>
         )}
       </div>
+
+      {/* Account Mapping Modal */}
+      {showMapModal && substrateEVM.evmAddress && (
+        <MapAccountModal
+          evmAddress={substrateEVM.evmAddress}
+          onClose={() => setShowMapModal(false)}
+          onSuccess={() => {
+            setShowMapModal(false)
+            // Mapping state will auto-refresh via useAccountMapping hook
+          }}
+          onMap={accountMapping.mapAccount}
+        />
+      )}
     </div>
   )
 }

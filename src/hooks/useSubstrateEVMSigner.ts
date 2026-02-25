@@ -11,14 +11,11 @@
  * 4. Transactions submitted via pallet_revive to EVM layer
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useTypink } from 'typink'
+import { useState, useEffect, useCallback } from 'react'
+import { useWallet } from '../providers/WalletProvider'
 import { keccak256, hexToBytes } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
-import { createClient } from 'polkadot-api'
-import { getWsProvider } from 'polkadot-api/ws-provider/web'
 import { Binary } from 'polkadot-api'
-import { paseo } from '../../.papi/descriptors'
 
 interface SubstrateEVMSignerReturn {
   // Derived/mapped EVM address
@@ -54,54 +51,21 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  * Hook to provide EVM signing capabilities using Substrate wallet
  */
 export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
-  const typinkState = useTypink()
-  const { connectedAccount, signer } = typinkState
+  // Use Product SDK wallet provider - signer comes from connectInjectedExtension
+  const { selectedAccount, apiClient, signer } = useWallet()
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const assetHubClientRef = useRef<any>(null)
-  const assetHubApiRef = useRef<any>(null)
-  const typinkStateRef = useRef(typinkState)
-
-  // Keep typink state ref updated
-  useEffect(() => {
-    typinkStateRef.current = typinkState
-  }, [typinkState])
-
-  // Debug logs removed - was causing console spam
-
-  // Initialize Asset Hub client
-  useEffect(() => {
-    const initClient = async () => {
-      try {
-        const wsProvider = getWsProvider('wss://sys.ibp.network/asset-hub-paseo')
-        const client = createClient(wsProvider)
-        assetHubClientRef.current = client
-        assetHubApiRef.current = client.getTypedApi(paseo)
-        console.log('✅ Asset Hub client initialized')
-      } catch (err) {
-        console.error('Failed to initialize Asset Hub client:', err)
-      }
-    }
-
-    initClient()
-
-    return () => {
-      if (assetHubClientRef.current) {
-        assetHubClientRef.current.destroy()
-      }
-    }
-  }, [])
 
   // Derive EVM address (skip on-chain mapping check)
   useEffect(() => {
     console.log('🔍 SubstrateEVMSigner - checking conditions:', {
-      hasAccount: !!connectedAccount?.address,
-      address: connectedAccount?.address
+      hasAccount: !!selectedAccount?.address,
+      address: selectedAccount?.address
     })
 
-    if (!connectedAccount?.address) {
+    if (!selectedAccount?.address) {
       setEvmAddress(null)
       setIsMapped(false)
       return
@@ -109,14 +73,14 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
     try {
       // Derive EVM address from Substrate address
-      const derived = deriveEvmAddress(connectedAccount.address)
+      const derived = deriveEvmAddress(selectedAccount.address)
       setEvmAddress(derived)
 
       // Assume mapped (will fail at transaction time if not)
       setIsMapped(true)
 
       console.log('🔗 Substrate EVM Signer:', {
-        substrateAddress: connectedAccount.address,
+        substrateAddress: selectedAccount.address,
         derivedEvmAddress: derived,
         note: 'Mapping check skipped - assuming account is mapped'
       })
@@ -125,7 +89,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       setIsMapped(false)
       setError('Failed to derive EVM address')
     }
-  }, [connectedAccount?.address])
+  }, [selectedAccount?.address])
 
   /**
    * Send EVM transaction using Substrate wallet
@@ -141,34 +105,24 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     value?: bigint
     gasLimit?: bigint
   }): Promise<string> => {
-    // Get fresh state from ref to avoid stale closure
-    const currentAccount = typinkStateRef.current.connectedAccount
-
-    // CRITICAL: Use signer from Typink state (NOT connectedAccount.wallet.signer)
-    // Pattern: const { signer } = useTypink() then tx.signSubmitAndWatch(signer)
-    const currentSigner = typinkStateRef.current.signer
-
-    console.log('🔍 sendTransaction called with state:', {
-      hasAssetHubApi: !!assetHubApiRef.current,
-      hasConnectedAccount: !!currentAccount,
-      accountAddress: currentAccount?.address,
-      hasSigner: !!currentSigner,
-      signerType: typeof currentSigner,
-      signerKeys: currentSigner ? Object.keys(currentSigner) : 'null',
-      evmAddress,
-      accountKeys: currentAccount ? Object.keys(currentAccount) : []
+    console.log('🔍 sendTransaction - debugging:', {
+      hasApiClient: !!apiClient,
+      hasSelectedAccount: !!selectedAccount,
+      accountAddress: selectedAccount?.address,
+      hasSigner: !!signer,
+      signerType: typeof signer
     })
 
-    if (!assetHubApiRef.current) {
-      throw new Error('Asset Hub API not initialized')
+    if (!apiClient) {
+      throw new Error('API client not initialized - please connect wallet')
     }
 
-    if (!currentAccount?.address) {
-      throw new Error('Substrate wallet not connected - no address')
+    if (!selectedAccount?.address) {
+      throw new Error('No account selected - please connect wallet')
     }
 
-    if (!currentSigner) {
-      throw new Error('Substrate wallet signer not available. Please ensure your wallet is properly connected.')
+    if (!signer) {
+      throw new Error('Signer not available - please ensure wallet is connected')
     }
 
     if (!evmAddress) {
@@ -193,17 +147,35 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       const destBytes = hexToBytes(txData.to as `0x${string}`)
       const dataBytes = hexToBytes(txData.data as `0x${string}`)
 
-      const tx = assetHubApiRef.current.tx.Revive.call({
+      console.log('📋 Transaction parameters:', {
+        destHex: txData.to,
+        destBytes: destBytes,
+        destBytesLength: destBytes?.length,
+        dataHex: txData.data.substring(0, 66) + '...',
+        dataBytes: dataBytes,
+        dataBytesLength: dataBytes?.length,
+        value: txData.value || 0n
+      })
+
+      const tx = apiClient.tx.Revive.call({
         dest: Binary.fromBytes(destBytes),
         value: txData.value || 0n,
-        // Let the chain estimate gas - setting to null
-        gas_limit: null,
-        storage_deposit_limit: null,
+        // CRITICAL: Direct Revive uses 'weight_limit' not 'gas_limit'
+        // Pattern from hackm3: { ref_time: bigint, proof_size: bigint }
+        weight_limit: {
+          ref_time: 500_000_000_000n,  // 500 billion (standard for contract calls)
+          proof_size: 2_000_000n        // 2MB proof size
+        },
+        storage_deposit_limit: 10_000_000_000_000n,  // 10 trillion (standard limit)
         data: Binary.fromBytes(dataBytes)
       })
 
+      console.log('📋 Transaction object created:', tx)
+
       // Sign and submit with Substrate wallet using Typink's signer
       console.log('⏳ Signing and submitting transaction...')
+      console.log('📋 Signer:', signer)
+      console.log('📋 Signer keys:', signer ? Object.keys(signer) : 'empty')
 
       // Use subscribe pattern to capture transaction hash from events
       return new Promise<string>((resolve, reject) => {
@@ -213,7 +185,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
         let txHash: string | null = null
 
-        tx.signSubmitAndWatch(currentSigner).subscribe({
+        tx.signSubmitAndWatch(signer).subscribe({
           next: (event: any) => {
             console.log(`📋 Transaction event: ${event.type}`)
 
@@ -255,7 +227,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [connectedAccount, isMapped, evmAddress])
+  }, [apiClient, selectedAccount, signer, isMapped, evmAddress])
 
   return {
     evmAddress,

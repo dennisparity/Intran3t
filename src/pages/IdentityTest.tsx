@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTypink } from 'typink'
+import { useWallet } from '../providers/WalletProvider'
 import { Button } from '../components/ui/Button'
 import {
   queryRegistrars,
@@ -11,7 +11,7 @@ import {
 import { getPeopleChainApi } from '../modules/profile/identity-helpers'
 
 export default function IdentityTest() {
-  const { connectedAccount } = useTypink()
+  const { selectedAccount } = useWallet()
   const [logs, setLogs] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -197,7 +197,7 @@ export default function IdentityTest() {
           {connectedAccount ? (
             <div>
               <p className="text-sm text-[#57534e]">
-                Connected: <span className="font-mono text-accent">{connectedAccount.address.slice(0, 10)}...{connectedAccount.address.slice(-8)}</span>
+                Connected: <span className="font-mono text-accent">{selectedAccount.address.slice(0, 10)}...{selectedAccount.address.slice(-8)}</span>
               </p>
             </div>
           ) : (
