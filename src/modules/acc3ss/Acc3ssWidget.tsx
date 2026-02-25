@@ -792,10 +792,10 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Checking account...
                     </>
-                  ) : activePassTokenId !== null ? (
+                  ) : hasActivePassForLocation ? (
                     <>
                       <Check className="w-4 h-4" />
-                      Active Pass Exists
+                      Active Pass for {selectedLocation?.name}
                     </>
                   ) : (
                     <>
@@ -835,10 +835,10 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Checking account...
                     </>
-                  ) : activePassTokenId !== null ? (
+                  ) : hasActivePassForLocation ? (
                     <>
                       <Check className="w-4 h-4" />
-                      Active Pass Exists
+                      Active Pass for {selectedLocation?.name}
                     </>
                   ) : (
                     <>

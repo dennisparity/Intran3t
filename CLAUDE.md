@@ -160,6 +160,14 @@ node contracts/solidity/scripts/check-mapping.js <substrate-address>
 
 ## Common Issues
 
+### Form Creation - Invalid Byte Sequence (CRITICAL)
+**Problem:** Form creation fails with "Invalid byte sequence" error, UUID links instead of numeric IDs
+**Cause:** Vercel strips `0x` prefix and adds `\n` to `VITE_FORMS_CONTRACT_ADDRESS`
+**Fix:**
+1. Code: `.trim()` to remove newline + check for `0x` prefix
+2. Vercel: Set env var with `0x` prefix: `0xe2F988c1aD2533F473265aCD9C0699bE47643316`
+**Result:** Contract succeeds → numeric form IDs → shareable across devices
+
 ### Response Counts Don't Match
 **Problem:** Different counts on `/admin`, `/dashboard`, `/admin/forms/7`
 **Cause:** Using `form.id` instead of `form.onChainId` when querying contract

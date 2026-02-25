@@ -1,5 +1,5 @@
-import { useBalance } from 'typink'
 import { useWallet } from '../../providers/WalletProvider'
+import { useBalance } from '../../hooks/useBalance'
 import Identicon from '@polkadot/react-identicon'
 import { User, CheckCircle2, Shield, Users as UsersIcon } from 'lucide-react'
 import type { ProfileConfig } from './types'
@@ -53,12 +53,9 @@ export function ProfileWidget({
   // Check if the display address is EVM format (skip Substrate queries if so)
   const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
 
-  // Get balance (only for Substrate addresses)
-  const balance = useBalance(
-    (!isEvm && displayAddress) ? displayAddress : '',
-    {
-      enabled: !isEvm && !!displayAddress
-    }
+  // Get balance (only for Substrate addresses) - using Product SDK
+  const { data: balance, isLoading: balanceLoading } = useBalance(
+    (!isEvm && displayAddress) ? displayAddress : undefined
   );
 
   // Fetch on-chain identity from Polkadot People Chain (only for Substrate addresses)

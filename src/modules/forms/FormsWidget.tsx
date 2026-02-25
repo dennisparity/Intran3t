@@ -159,7 +159,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
             // Use the logged-in wallet for contract call
             console.log('[dForms] Registering form on-chain with connected wallet...')
-            const contractAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string).trim() as `0x${string}`
+            const rawAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string || '').trim()
+            // Ensure 0x prefix (Vercel may strip it)
+            const contractAddress = (rawAddress.startsWith('0x') ? rawAddress : `0x${rawAddress}`) as `0x${string}`
 
             // Encode registerForm(string formCid) call
             const calldata = encodeFunctionData({
