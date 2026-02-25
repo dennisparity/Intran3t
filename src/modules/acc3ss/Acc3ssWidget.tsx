@@ -675,6 +675,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
     ? passes.find(p => p.nftId === activePassTokenId)
     : null
 
+  // CRITICAL: Check if active pass matches current location
+  const hasActivePassForLocation = activePass && activePass.location === selectedLocation?.name
+
   // Restore active pass on mount/reload
   useEffect(() => {
     if (passes.length > 0 && activePassTokenId === null) {
@@ -716,7 +719,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         {/* CTA Section */}
         {effectiveEvmAddress ? (
           <div className="space-y-3">
-            {activePass && (
+            {hasActivePassForLocation && (
               <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-lg p-3 flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#1c1917]" />
                 <div className="flex-1">
@@ -775,7 +778,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     isGenerating ||
                     !accessPassContract.contract ||
                     accountMapping.isLoading ||
-                    activePassTokenId !== null
+                    hasActivePassForLocation
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
@@ -818,7 +821,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                     isGenerating ||
                     !accessPassContract.contract ||
                     accountMapping.isLoading ||
-                    activePassTokenId !== null
+                    hasActivePassForLocation
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >

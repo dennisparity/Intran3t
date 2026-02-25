@@ -16,7 +16,7 @@ export default function Admin() {
 
   useEffect(() => {
     const all = loadForms()
-    const filtered = connectedAccount
+    const filtered = selectedAccount
       ? all.filter(f => f.creator === selectedAccount.address)
       : []
     // Deduplicate by id (keep first occurrence)
