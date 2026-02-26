@@ -725,7 +725,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                       const active = currentIdx === stepIdx
                       return (
                         <div key={step.key} className={`flex items-center gap-3 px-3 py-2.5 ${i === 0 ? '' : 'border-t border-[#e7e5e4]'} ${active ? 'bg-white' : ''}`}>
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${done ? 'bg-[#E6007A] text-white' : active ? 'bg-[#1c1917] text-white' : 'bg-[#e7e5e4] text-[#a8a29e]'}`}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${done ? 'bg-[#44403c] text-white' : active ? 'bg-[#1c1917] text-white' : 'bg-[#e7e5e4] text-[#a8a29e]'}`}>
                             {done ? '✓' : i + 1}
                           </div>
                           <div className="flex-1 min-w-0">
