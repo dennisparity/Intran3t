@@ -124,16 +124,6 @@ function AccessPassModal({
     }
   }
 
-  const handleViewNft = () => {
-    if (ACCESSPASS_CONTRACT_ADDRESS) {
-      // Routescan contract page — shows all minted tokens for this contract
-      window.open(
-        `https://polkadot.testnet.routescan.io/address/${ACCESSPASS_CONTRACT_ADDRESS}`,
-        '_blank'
-      )
-    }
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
@@ -195,26 +185,15 @@ function AccessPassModal({
           </div>
 
           {/* Action Buttons */}
-          {pass.onChain && (
+          {pass.onChain && pass.txHash && (
             <div className="flex gap-2 pt-2">
-              {pass.txHash && (
-                <button
-                  onClick={handleViewExtrinsic}
-                  className="flex-1 px-3 py-2 border border-[#e7e5e4] text-xs text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-1.5"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Extrinsic
-                </button>
-              )}
-              {pass.nftId && (
-                <button
-                  onClick={handleViewNft}
-                  className="flex-1 px-3 py-2 border border-[#e7e5e4] text-xs text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-1.5"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  View NFT
-                </button>
-              )}
+              <button
+                onClick={handleViewExtrinsic}
+                className="flex-1 px-3 py-2 border border-[#e7e5e4] text-xs text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View on Subscan
+              </button>
             </div>
           )}
           <div className="flex gap-3 pt-2">
@@ -598,8 +577,14 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         console.log('Substrate account:', selectedAccount.address)
         console.log('Mapped EVM address:', effectiveEvmAddress)
 
-        // Auto-map if needed (same pattern as FormsWidget)
-        if (accountMapping.isMapped !== true) {
+        // Auto-map if needed.
+        // isMapped === true  → skip (verified on-chain or from cache)
+        // isMapped === false → must map (confirmed unmapped)
+        // isMapped === null  → on-chain check failed (metadata mismatch); check localStorage directly
+        //                      as fallback before triggering an unnecessary re-map
+        const localCacheKey = `intran3t_mapped_${selectedAccount.address}`
+        const cachedMapped = localStorage.getItem(localCacheKey) === 'true'
+        if (accountMapping.isMapped === false || (accountMapping.isMapped === null && !cachedMapped)) {
           console.log('🗺️ [Acc3ss] Mapping account before mint...')
           setMintingStatus('mapping')
           try {
