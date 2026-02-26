@@ -2,7 +2,6 @@ import { useWallet } from '../providers/WalletProvider'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/Button'
-import { IdentityOnboardingModal } from '../components/identity/IdentityOnboardingModal'
 import { Acc3ssWidget, defaultAcc3ssConfig } from '../modules/acc3ss'
 import { GovernanceWidget, defaultGovernanceConfig } from '../modules/governance'
 import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigation'
@@ -43,8 +42,6 @@ export default function ModularDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
-  const [showOnboarding, setShowOnboarding] = useState(false)
-
   // Use search hook
   const { data: searchResults = [], isLoading: isSearching } = useUserSearch(searchQuery)
 
@@ -77,30 +74,6 @@ export default function ModularDashboard() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  // Show identity onboarding modal if user doesn't have verified identity
-  useEffect(() => {
-    if (!selectedAccount || isViewingOtherProfile) {
-      console.log('🔍 Identity modal check: Not showing (no account or viewing other profile)')
-      return
-    }
-
-    const dismissed = localStorage.getItem(
-      `intran3t_identity_onboarding_dismissed_${selectedAccount.address}`
-    )
-
-    console.log('🔍 Identity modal check:', {
-      address: selectedAccount.address,
-      dismissed: !!dismissed,
-      hasVerifiedIdentity: accessControl.hasVerifiedIdentity,
-      isLoading: accessControl.isLoading
-    })
-
-    // Show modal if: wallet connected + no verified identity + not dismissed
-    const shouldShow = !dismissed && !accessControl.hasVerifiedIdentity && !accessControl.isLoading
-    console.log('🔍 Should show identity modal:', shouldShow)
-    setShowOnboarding(shouldShow)
-  }, [selectedAccount, accessControl.hasVerifiedIdentity, accessControl.isLoading, isViewingOtherProfile])
 
   return (
     <>
@@ -260,20 +233,6 @@ export default function ModularDashboard() {
         </div>
       </div>
 
-      {/* Identity Onboarding Modal */}
-      <IdentityOnboardingModal
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-        onDismiss={() => {
-          if (selectedAccount) {
-            localStorage.setItem(
-              `intran3t_identity_onboarding_dismissed_${selectedAccount.address}`,
-              'true'
-            )
-          }
-          setShowOnboarding(false)
-        }}
-      />
     </div>
 
     {!selectedAccount && !evm.connected && (

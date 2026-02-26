@@ -10,17 +10,18 @@ const POLKADOT_PEOPLE_RPC_ENDPOINTS = [
 
 // Singleton API instance for People Chain
 let peopleChainApiInstance: ApiPromise | null = null
+let peopleChainApiPromise: Promise<ApiPromise> | null = null
 
 /**
  * Connect to Polkadot People Chain
  */
 export async function getPeopleChainApi(): Promise<ApiPromise> {
-  if (peopleChainApiInstance) {
-    return peopleChainApiInstance
-  }
+  if (peopleChainApiInstance) return peopleChainApiInstance
+  if (peopleChainApiPromise) return peopleChainApiPromise
 
   console.log('Initializing connection to Polkadot People Chain...')
 
+  peopleChainApiPromise = (async () => {
   const errors: string[] = []
 
   for (const endpoint of POLKADOT_PEOPLE_RPC_ENDPOINTS) {
@@ -64,6 +65,9 @@ export async function getPeopleChainApi(): Promise<ApiPromise> {
   const errorMessage = `Failed to connect to Polkadot People Chain. Tried ${POLKADOT_PEOPLE_RPC_ENDPOINTS.length} endpoints:\n${errors.join('\n')}`
   console.error(errorMessage)
   throw new Error(errorMessage)
+  })()
+
+  return peopleChainApiPromise
 }
 
 export interface IdentityInfo {
@@ -340,5 +344,6 @@ export async function disconnectPeopleChain() {
   if (peopleChainApiInstance) {
     await peopleChainApiInstance.disconnect()
     peopleChainApiInstance = null
+    peopleChainApiPromise = null
   }
 }

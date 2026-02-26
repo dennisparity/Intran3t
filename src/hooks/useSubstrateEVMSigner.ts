@@ -47,6 +47,9 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
   return ('0x' + hash.slice(-40)) as `0x${string}`
 }
 
+// Module-level cache for mapping results — shared across all hook instances
+const mappingCache = new Map<string, boolean | null>()
+
 /**
  * Hook to provide EVM signing capabilities using Substrate wallet
  */
@@ -77,6 +80,13 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
         const derived = deriveEvmAddress(selectedAccount.address)
         setEvmAddress(derived)
 
+        // Return cached result if available — skip chain read
+        const cached = mappingCache.get(selectedAccount.address)
+        if (cached !== undefined) {
+          setIsMapped(cached)
+          return
+        }
+
         // Actually check if account is mapped
         if (!apiClient) {
           setIsMapped(null)
@@ -86,6 +96,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
         const result = await apiClient.query.Revive.OriginalAccount.getValue(derived)
         const mapped = result !== null
 
+        mappingCache.set(selectedAccount.address, mapped)
         setIsMapped(mapped)
         console.log('🔗 Substrate EVM Signer:', {
           substrateAddress: selectedAccount.address,
