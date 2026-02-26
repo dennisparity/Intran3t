@@ -156,24 +156,24 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             // null = check failed (metadata mismatch) — treat same as false and attempt mapping
             if (accountMapping.isMapped !== true) {
               console.log('🗺️ Account not mapped (or status unknown), mapping automatically...')
-              setCreationStatus('Mapping your account...')
+              setCreationStatus('step:map')
 
               try {
                 await accountMapping.mapAccount()
                 console.log('✅ Account mapped successfully')
-                setCreationStatus('Uploading to Polkadot...')
+                setCreationStatus('step:register')
               } catch (mapErr) {
                 // If mapping fails because already mapped, continue — don't block
                 const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
                 if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('mapped')) {
                   console.log('ℹ️ Account already mapped, continuing...')
-                  setCreationStatus('Uploading to Polkadot...')
+                  setCreationStatus('step:register')
                 } else {
                   throw new Error(`Failed to map account: ${errMsg}`)
                 }
               }
             } else {
-              setCreationStatus('Uploading to Polkadot...')
+              setCreationStatus('step:register')
             }
 
             // 4. Register CID on contract
@@ -182,7 +182,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             const timestamp = Date.now()
 
             // Use the logged-in wallet for contract call
-            setCreationStatus('Registering on-chain...')
+            setCreationStatus('step:confirming')
             console.log('[dForms] Registering form on-chain with connected wallet...')
             const rawAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string || '').trim()
             // Ensure 0x prefix (Vercel may strip it)
@@ -696,6 +696,49 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
+                {/* First-time setup notice — shown when mapping status is unknown/false */}
+                {selectedAccount && accountMapping.isMapped !== true && !isCreating && !editingFormId && (
+                  <div className="mb-3 flex items-start gap-2.5 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-3">
+                    <div className="w-4 h-4 rounded-full bg-[#1c1917] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">i</div>
+                    <div>
+                      <p className="text-xs font-semibold text-[#1c1917]">First-time setup: 2 wallet signatures required</p>
+                      <p className="text-xs text-[#78716c] mt-0.5">
+                        <span className="font-medium">1.</span> Map your account <span className="text-[#a8a29e]">(one-time, ~30s)</span>
+                        <span className="mx-1.5 text-[#d6d3d1]">·</span>
+                        <span className="font-medium">2.</span> Register form on-chain
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step indicator during creation */}
+                {isCreating && accountMapping.isMapped !== true && (
+                  <div className="mb-3 border border-[#e7e5e4] rounded-xl overflow-hidden">
+                    {[
+                      { key: 'step:map', label: 'Map account', sub: 'Sign in your wallet — one-time setup' },
+                      { key: 'step:register', label: 'Register form on-chain', sub: 'Confirm the transaction in your wallet' },
+                    ].map((step, i) => {
+                      const steps = ['step:map', 'step:register', 'step:confirming']
+                      const currentIdx = steps.indexOf(creationStatus)
+                      const stepIdx = steps.indexOf(step.key)
+                      const done = currentIdx > stepIdx
+                      const active = currentIdx === stepIdx
+                      return (
+                        <div key={step.key} className={`flex items-center gap-3 px-3 py-2.5 ${i === 0 ? '' : 'border-t border-[#e7e5e4]'} ${active ? 'bg-white' : ''}`}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${done ? 'bg-green-500 text-white' : active ? 'bg-[#1c1917] text-white' : 'bg-[#e7e5e4] text-[#a8a29e]'}`}>
+                            {done ? '✓' : i + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-semibold ${active ? 'text-[#1c1917]' : done ? 'text-[#78716c]' : 'text-[#a8a29e]'}`}>{step.label}</p>
+                            {active && <p className="text-xs text-[#78716c] mt-0.5">{step.sub}</p>}
+                          </div>
+                          {active && <div className="w-3 h-3 border-2 border-[#1c1917] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
                 {/* Create/Update Buttons */}
                 <div className="flex gap-3">
                   {editingFormId && (
@@ -716,7 +759,12 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     className="flex-1 flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold bg-gradient-to-r from-[#1c1917] to-[#292524] text-white rounded-xl hover:from-[#292524] hover:to-[#1c1917] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                   >
                     <FileText className="w-5 h-5" />
-                    {isCreating ? (creationStatus || 'Publishing to Polkadot...') : editingFormId ? 'Update Form' : 'Create Form'}
+                    {isCreating
+                      ? creationStatus === 'step:map' ? 'Mapping account...'
+                        : creationStatus === 'step:register' ? 'Registering form...'
+                        : creationStatus === 'step:confirming' ? 'Confirming on-chain...'
+                        : 'Publishing to Polkadot...'
+                      : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
               </>
