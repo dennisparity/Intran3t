@@ -152,9 +152,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               throw new Error('Please connect a wallet first')
             }
 
-            // Check if account is mapped, if not, map it automatically
-            if (accountMapping.isMapped === false) {
-              console.log('🗺️ Account not mapped, mapping automatically...')
+            // Check if account is mapped, if not (or unknown), map it automatically
+            // null = check failed (metadata mismatch) — treat same as false and attempt mapping
+            if (accountMapping.isMapped !== true) {
+              console.log('🗺️ Account not mapped (or status unknown), mapping automatically...')
               setCreationStatus('Mapping your account...')
 
               try {
@@ -162,7 +163,14 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                 console.log('✅ Account mapped successfully')
                 setCreationStatus('Uploading to Polkadot...')
               } catch (mapErr) {
-                throw new Error(`Failed to map account: ${mapErr instanceof Error ? mapErr.message : 'Unknown error'}`)
+                // If mapping fails because already mapped, continue — don't block
+                const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
+                if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('mapped')) {
+                  console.log('ℹ️ Account already mapped, continuing...')
+                  setCreationStatus('Uploading to Polkadot...')
+                } else {
+                  throw new Error(`Failed to map account: ${errMsg}`)
+                }
               }
             } else {
               setCreationStatus('Uploading to Polkadot...')
