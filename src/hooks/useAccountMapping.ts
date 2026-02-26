@@ -109,11 +109,25 @@ export function useAccountMapping(substrateAddress?: string) {
       if (!signer) {
         throw new Error('Signer not available. Please ensure your wallet is connected.')
       }
-      const result = await tx.signSubmitAndWatch(signer)
-
-      // Wait for finalization
-      console.log('⏳ Waiting for transaction finalization...')
-      await result.ok
+      // Use subscribe pattern to properly detect on-chain success/failure
+      await new Promise<void>((resolve, reject) => {
+        tx.signSubmitAndWatch(signer).subscribe({
+          next: (event: any) => {
+            console.log(`🗺️ map_account event: ${event.type}`)
+            if (event.type === 'finalized') {
+              if (event.ok) {
+                resolve()
+              } else {
+                const errEvents = (event.events || [])
+                  .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
+                const detail = errEvents.length > 0 ? JSON.stringify(errEvents[0].value) : 'unknown'
+                reject(new Error(`map_account failed on-chain: ${detail}`))
+              }
+            }
+          },
+          error: (err: any) => reject(err)
+        })
+      })
 
       console.log('✅ Account mapping successful!')
 

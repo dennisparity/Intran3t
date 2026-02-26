@@ -261,8 +261,15 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
                   resolve(substrateHash || 'finalized-no-hash')
                 }
               } else {
-                console.error('❌ Transaction finalized but failed')
-                reject(new Error('Transaction finalized but marked as failed'))
+                // Extract dispatch error for diagnosis
+                const failedEvents = (event.events || [])
+                  .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
+                const dispatchError = failedEvents.length > 0
+                  ? JSON.stringify(failedEvents[0].value?.value ?? failedEvents[0].value)
+                  : 'unknown'
+                console.error('❌ Transaction finalized but failed. Dispatch error:', dispatchError)
+                console.error('❌ Full finalized event:', JSON.stringify(event, null, 2))
+                reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
               }
             } else if (event.type === 'invalid') {
               clearTimeout(timeout)
