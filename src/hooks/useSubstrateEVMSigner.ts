@@ -229,9 +229,11 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
             if (event.type === 'finalized') {
               clearTimeout(timeout)
+              const safeStringify = (obj: any) =>
+                JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
               if (event.ok) {
                 console.log('✅ Transaction finalized successfully!')
-                console.log('📋 Full finalized event:', JSON.stringify(event, null, 2))
+                console.log('📋 Full finalized event:', safeStringify(event))
 
                 // Extract EVM transaction hash from Revive.EthTransacted event
                 try {
@@ -261,9 +263,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
                   resolve(substrateHash || 'finalized-no-hash')
                 }
               } else {
-                // Extract dispatch error for diagnosis (BigInt-safe serializer)
-                const safeStringify = (obj: any) =>
-                  JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
+                // Extract dispatch error for diagnosis
                 const failedEvents = (event.events || [])
                   .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
                 const dispatchError = failedEvents.length > 0
