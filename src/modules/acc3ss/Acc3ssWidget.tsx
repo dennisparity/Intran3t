@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useWallet } from '../../providers/WalletProvider'
-import { MapPin, Check, CheckCircle2, Download, KeyRound, Lock, Loader2 } from 'lucide-react'
+import { MapPin, Check, CheckCircle2, Download, KeyRound, Lock, Loader2, ExternalLink } from 'lucide-react'
 import type { Acc3ssConfig, Location, AccessPass } from './types'
 import { loadAccessPasses, saveAccessPasses } from './config'
 import QRCode from 'qrcode'
@@ -10,7 +10,6 @@ import { queryOnChainIdentity } from '../profile/identity-helpers'
 import { ACCESSPASS_CONTRACT_ADDRESS } from '../../contracts/intran3t-accesspass'
 import { substrateToEvm } from '../../lib/address-conversion'
 import { useSubstrateEvmLink } from '../../hooks/useSubstrateEvmLink'
-import { useAccountMapping } from '../../hooks/useAccountMapping'
 import { MapAccountModal } from '../../components/MapAccountModal'
 import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
 import { encodeFunctionData } from 'viem'
@@ -116,15 +115,18 @@ function AccessPassModal({
     link.click()
   }
 
-  const handleViewOnChain = () => {
+  // txHash from Substrate wallet is a Substrate extrinsic hash, not an EVM tx hash.
+  // Use Subscan Paseo AssetHub for extrinsics (always works with Substrate hash).
+  // Use Routescan for the contract/NFT page.
+  const handleViewExtrinsic = () => {
     if (pass.txHash) {
-      // Open transaction on explorer
-      window.open(
-        `https://polkadot.testnet.routescan.io/tx/${pass.txHash}`,
-        '_blank'
-      )
-    } else if (pass.nftId && ACCESSPASS_CONTRACT_ADDRESS) {
-      // Fallback: Open contract on explorer
+      window.open(`https://assethub-paseo.subscan.io/extrinsic/${pass.txHash}`, '_blank')
+    }
+  }
+
+  const handleViewNft = () => {
+    if (ACCESSPASS_CONTRACT_ADDRESS) {
+      // Routescan contract page — shows all minted tokens for this contract
       window.open(
         `https://polkadot.testnet.routescan.io/address/${ACCESSPASS_CONTRACT_ADDRESS}`,
         '_blank'
@@ -193,21 +195,35 @@ function AccessPassModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          {pass.onChain && (
+            <div className="flex gap-2 pt-2">
+              {pass.txHash && (
+                <button
+                  onClick={handleViewExtrinsic}
+                  className="flex-1 px-3 py-2 border border-[#e7e5e4] text-xs text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Extrinsic
+                </button>
+              )}
+              {pass.nftId && (
+                <button
+                  onClick={handleViewNft}
+                  className="flex-1 px-3 py-2 border border-[#e7e5e4] text-xs text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  View NFT
+                </button>
+              )}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium"
             >
               Close
             </button>
-            {pass.onChain && (pass.txHash || pass.nftId) && (
-              <button
-                onClick={handleViewOnChain}
-                className="flex-1 px-4 py-2 border border-[#e7e5e4] text-[#1c1917] rounded-lg hover:bg-[#fafaf9] transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                {pass.txHash ? 'Check Transaction' : 'View Contract'}
-              </button>
-            )}
             <button
               onClick={handleDownload}
               className="flex-1 px-4 py-2 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors duration-200 font-medium flex items-center justify-center gap-2"
@@ -334,7 +350,7 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const substrateSigner = useSubstrateEVMSigner()
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [mintingStatus, setMintingStatus] = useState<'idle' | 'checking' | 'broadcasting' | 'complete'>('idle')
+  const [mintingStatus, setMintingStatus] = useState<'idle' | 'checking' | 'mapping' | 'broadcasting' | 'in_block' | 'complete'>('idle')
 
   // Debug: Log status changes
   useEffect(() => {
@@ -347,9 +363,10 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const [showVirtualDoor, setShowVirtualDoor] = useState(false)
 
   // Account mapping — shared state from WalletProvider (single source of truth)
-  const { isMapped, mapAccount, resetMappingCache } = useWallet()
-  const accountMapping = { isMapped, mapAccount, resetCache: resetMappingCache }
+  const { isMapped, evmAddress: walletEvmAddress, mapAccount, resetMappingCache } = useWallet()
+  const accountMapping = { isMapped, evmAddress: walletEvmAddress, mapAccount, resetCache: resetMappingCache }
   const [showMapModal, setShowMapModal] = useState(false)
+  const [showPreActionModal, setShowPreActionModal] = useState(false)
 
   const locations = config.locations || []
 
@@ -495,6 +512,19 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
   // No RBAC checks - anyone can mint to themselves
 
+  const handleMintClick = () => {
+    if (!selectedLocation) {
+      alert('Please select a location')
+      return
+    }
+    // When Substrate-only and mapping status unknown, warn before triggering wallet popups
+    if (hasSubstrateWallet && !hasMetaMask && accountMapping.isMapped === null) {
+      setShowPreActionModal(true)
+      return
+    }
+    handleGeneratePass()
+  }
+
   const handleGeneratePass = async () => {
     if (!selectedLocation || !effectiveEvmAddress || !accessPassContract.contract) {
       alert('Please connect your Polkadot wallet and select a location')
@@ -567,10 +597,18 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         console.log('🔗 Using Substrate wallet for EVM transaction')
         console.log('Substrate account:', selectedAccount.address)
         console.log('Mapped EVM address:', effectiveEvmAddress)
-        console.log('Is mapped?', substrateSigner.isMapped)
 
-        if (!substrateSigner.isMapped) {
-          throw new Error('Please map your Substrate account first (use the Map Account button)')
+        // Auto-map if needed (same pattern as FormsWidget)
+        if (accountMapping.isMapped !== true) {
+          console.log('🗺️ [Acc3ss] Mapping account before mint...')
+          setMintingStatus('mapping')
+          try {
+            await accountMapping.mapAccount()
+            console.log('✅ [Acc3ss] Account mapped')
+          } catch (mapErr) {
+            const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
+            throw new Error(`Failed to map account: ${errMsg}`)
+          }
         }
 
         // Get current total before minting (so we can predict the new token ID)
@@ -597,12 +635,15 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
         // Status: broadcasting (covers signing, sending, and waiting for finalization)
         setMintingStatus('broadcasting')
 
-        // This will wait for finalization before returning
+        // Resolves on finalized. onProgress fires earlier for UI stage updates.
         txHash = await substrateSigner.sendTransaction({
           to: ACCESSPASS_CONTRACT_ADDRESS,
           data: callData,
           value: 0n,
-          gasLimit: 500000n
+          gasLimit: 500000n,
+          onProgress: (stage) => {
+            if (stage === 'in_block') setMintingStatus('in_block')
+          }
         })
 
         console.log(`✅ Transaction finalized: ${txHash}`)
@@ -712,7 +753,27 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
 
   return (
     <>
-      <div className="bg-white border border-[#e7e5e4] rounded-2xl p-6 h-full flex flex-col shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_8px_rgba(0,0,0,0.02)]">
+      <div className="relative bg-white border border-[#e7e5e4] rounded-2xl p-6 h-full flex flex-col shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_8px_rgba(0,0,0,0.02)]">
+        {/* Minting overlay — covers widget while transaction is in progress */}
+        {isGenerating && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10 gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-[#1c1917]" />
+            <div className="text-center px-8">
+              <p className="text-sm font-semibold text-[#1c1917]">
+                {mintingStatus === 'checking' && 'Checking for existing pass...'}
+                {mintingStatus === 'mapping' && 'Mapping account...'}
+                {mintingStatus === 'broadcasting' && 'Broadcasting transaction...'}
+                {mintingStatus === 'in_block' && 'Transaction in block...'}
+                {mintingStatus === 'complete' && 'Complete!'}
+              </p>
+              <p className="text-xs text-[#78716c] mt-1.5">
+                {mintingStatus === 'mapping' && 'One-time setup — approve in your wallet'}
+                {mintingStatus === 'broadcasting' && 'Approve in your wallet to continue'}
+                {mintingStatus === 'in_block' && 'Waiting for finalization (~12s)'}
+              </p>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="mb-4">
           <h2 className="text-lg font-bold text-[#1c1917] font-serif mb-1">
@@ -794,12 +855,11 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                 </div>
 
                 <button
-                  onClick={handleGeneratePass}
+                  onClick={handleMintClick}
                   disabled={
                     !selectedLocation ||
                     isGenerating ||
                     !accessPassContract.contract ||
-                    accountMapping.isLoading ||
                     hasActivePassForLocation
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -810,11 +870,6 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                       {mintingStatus === 'checking' && 'Checking for existing pass...'}
                       {mintingStatus === 'broadcasting' && 'Processing transaction...'}
                       {mintingStatus === 'complete' && 'Minting complete!'}
-                    </>
-                  ) : accountMapping.isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Checking account...
                     </>
                   ) : hasActivePassForLocation ? (
                     <>
@@ -836,15 +891,14 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                 )}
               </>
             ) : (
-              /* No mapping required - show mint button */
+              /* No mapping required (or MetaMask fallback) — show mint button */
               <>
                 <button
-                  onClick={handleGeneratePass}
+                  onClick={handleMintClick}
                   disabled={
                     !selectedLocation ||
                     isGenerating ||
                     !accessPassContract.contract ||
-                    accountMapping.isLoading ||
                     hasActivePassForLocation
                   }
                   className="w-full py-3 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-xl hover:bg-[#292524] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -855,11 +909,6 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
                       {mintingStatus === 'checking' && 'Checking for existing pass...'}
                       {mintingStatus === 'broadcasting' && 'Processing transaction...'}
                       {mintingStatus === 'complete' && 'Minting complete!'}
-                    </>
-                  ) : accountMapping.isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Checking account...
                     </>
                   ) : hasActivePassForLocation ? (
                     <>
@@ -890,6 +939,41 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
           </div>
         )}
       </div>
+
+      {/* Pre-action notice: account needs to be mapped first */}
+      {showPreActionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-[#fafaf9] border border-[#e7e5e4] flex items-center justify-center flex-shrink-0 text-sm font-bold text-[#1c1917]">i</div>
+              <div>
+                <p className="text-sm font-semibold text-[#1c1917]">Account needs to be mapped first</p>
+                <p className="text-xs text-[#78716c] mt-1">
+                  Minting an access pass requires your account to be mapped for smart contract access. Up to 2 wallet signatures will be requested:
+                </p>
+              </div>
+            </div>
+            <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-lg px-4 py-3 mb-4 space-y-1">
+              <p className="text-xs text-[#57534e]"><span className="font-semibold">1.</span> Map account <span className="text-[#a8a29e]">(one-time setup)</span></p>
+              <p className="text-xs text-[#57534e]"><span className="font-semibold">2.</span> Mint access pass on-chain</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPreActionModal(false)}
+                className="flex-1 px-4 py-2 text-sm border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowPreActionModal(false); handleGeneratePass() }}
+                className="flex-1 px-4 py-2 text-sm bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors font-medium"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPassModal && showVirtualDoor && (
         <VirtualDoor

@@ -259,10 +259,27 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     console.log('🗺️ Initiating account mapping...')
     const tx = apiClient.tx.Revive.map_account({})
     await new Promise<void>((resolve, reject) => {
+      let settled = false
       tx.signSubmitAndWatch(signer).subscribe({
         next: (event: any) => {
           console.log(`🗺️ map_account event: ${event.type}`)
+          // Resolve on in-block success for fast UX (saves ~12s vs waiting for finalized)
+          if (event.type === 'txBestBlocksState' && !settled) {
+            if (event.found && event.ok) {
+              settled = true
+              console.log('✅ map_account in best block')
+              resolve()
+            } else if (event.found && !event.ok) {
+              console.warn('⚠️ map_account in best block but not ok — waiting for finalized error details')
+            }
+            return
+          }
           if (event.type === 'finalized') {
+            if (settled) {
+              console.log(`📋 map_account finalized (already resolved): ok=${event.ok}`)
+              return
+            }
+            settled = true
             if (event.ok) {
               resolve()
             } else {
@@ -280,7 +297,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             }
           }
         },
-        error: (err: any) => reject(err)
+        error: (err: any) => {
+          if (settled) return
+          reject(err)
+        }
       })
     })
     console.log('✅ Account mapping successful!')

@@ -7,7 +7,6 @@ import { generateFormKey, saveFormKey } from '../../lib/form-keys'
 import { useFormsContract } from '../../hooks/useFormsContract'
 import { uploadRawToBulletin } from '../../lib/bulletin-storage'
 import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
-import { useAccountMapping } from '../../hooks/useAccountMapping'
 import { MapAccountModal } from '../../components/MapAccountModal'
 import { encodeFunctionData } from 'viem'
 
@@ -29,6 +28,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
   // UI state for mapping modal
   const [showMapModal, setShowMapModal] = useState(false)
+  const [showPreActionModal, setShowPreActionModal] = useState(false)
 
   // Debug: Log what the hook returns
   useEffect(() => {
@@ -99,6 +99,16 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
   const generateFormId = () => {
     return `form-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+
+  const handleCreateFormClick = () => {
+    if (!formTitle.trim() || fields.length === 0 || isCreating) return
+    // When mapping status is unknown (null), warn the user before triggering wallet popups
+    if (isMapped === null && selectedAccount) {
+      setShowPreActionModal(true)
+      return
+    }
+    handleCreateForm()
   }
 
   const handleCreateForm = async () => {
@@ -703,8 +713,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
-                {/* First-time setup notice — shown when not confirmed mapped */}
-                {selectedAccount && accountMapping.isMapped !== true && !isCreating && !editingFormId && (
+                {/* First-time setup notice — only shown when confirmed unmapped */}
+                {selectedAccount && accountMapping.isMapped === false && !isCreating && !editingFormId && (
                   <div className="mb-3 flex items-start gap-2.5 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-3">
                     <div className="w-4 h-4 rounded-full bg-[#1c1917] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">i</div>
                     <div>
@@ -757,7 +767,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                   )}
                   <button
-                    onClick={handleCreateForm}
+                    onClick={handleCreateFormClick}
                     disabled={
                       !formTitle.trim() ||
                       fields.length === 0 ||
@@ -921,6 +931,41 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
           </div>
         )}
       </div>
+
+      {/* Pre-action notice: account needs to be mapped first */}
+      {showPreActionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-[#fafaf9] border border-[#e7e5e4] flex items-center justify-center flex-shrink-0 text-sm font-bold text-[#1c1917]">i</div>
+              <div>
+                <p className="text-sm font-semibold text-[#1c1917]">Account needs to be mapped first</p>
+                <p className="text-xs text-[#78716c] mt-1">
+                  Creating a form requires your account to be mapped for smart contract access. Up to 2 wallet signatures will be requested:
+                </p>
+              </div>
+            </div>
+            <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-lg px-4 py-3 mb-4 space-y-1">
+              <p className="text-xs text-[#57534e]"><span className="font-semibold">1.</span> Map account <span className="text-[#a8a29e]">(one-time setup)</span></p>
+              <p className="text-xs text-[#57534e]"><span className="font-semibold">2.</span> Register form on-chain</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPreActionModal(false)}
+                className="flex-1 px-4 py-2 text-sm border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowPreActionModal(false); handleCreateForm() }}
+                className="flex-1 px-4 py-2 text-sm bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors font-medium"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Account Mapping Modal */}
       {showMapModal && substrateEVM.evmAddress && (
