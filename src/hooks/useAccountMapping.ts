@@ -142,10 +142,23 @@ export function useAccountMapping(substrateAddress?: string) {
     }
   }
 
+  /**
+   * Clears the mapping cache — use when a transaction fails with a mapping error
+   * so the next form creation attempt re-runs the mapping flow.
+   */
+  const resetCache = () => {
+    if (substrateAddress) {
+      localStorage.removeItem(MAPPING_CACHE_KEY(substrateAddress))
+      console.warn('⚠️ Mapping cache cleared — next attempt will re-check mapping')
+    }
+    setIsMapped(null)
+  }
+
   return {
     isMapped,
     evmAddress,
     isLoading,
-    mapAccount
+    mapAccount,
+    resetCache
   }
 }

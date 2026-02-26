@@ -261,15 +261,26 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
                   resolve(substrateHash || 'finalized-no-hash')
                 }
               } else {
-                // Extract dispatch error for diagnosis
+                // Extract dispatch error for diagnosis (BigInt-safe serializer)
+                const safeStringify = (obj: any) =>
+                  JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
                 const failedEvents = (event.events || [])
                   .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
                 const dispatchError = failedEvents.length > 0
-                  ? JSON.stringify(failedEvents[0].value?.value ?? failedEvents[0].value)
+                  ? safeStringify(failedEvents[0].value?.value ?? failedEvents[0].value)
                   : 'unknown'
                 console.error('❌ Transaction finalized but failed. Dispatch error:', dispatchError)
-                console.error('❌ Full finalized event:', JSON.stringify(event, null, 2))
-                reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
+                console.error('❌ Full finalized event:', safeStringify(event))
+
+                // Surface mapping-related failures with a recognisable error type
+                // so callers (e.g. FormsWidget) can reset the mapping cache and retry
+                const errLower = dispatchError.toLowerCase()
+                if (errLower.includes('map') || errLower.includes('caller') || errLower.includes('origin')) {
+                  console.warn('⚠️ Dispatch error suggests account not mapped — caller should reset mapping cache')
+                  reject(new Error('MAPPING_REQUIRED: Account not mapped on-chain. Please try again.'))
+                } else {
+                  reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
+                }
               }
             } else if (event.type === 'invalid') {
               clearTimeout(timeout)

@@ -154,25 +154,35 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
             // Check if account is mapped, if not (or unknown), map it automatically
             // null = check failed (metadata mismatch) — treat same as false and attempt mapping
+            console.log('[dForms] Step 1/2: Mapping check', {
+              address: selectedAccount.address,
+              isMapped: accountMapping.isMapped,
+              willMap: accountMapping.isMapped !== true
+            })
+
             if (accountMapping.isMapped !== true) {
-              console.log('🗺️ Account not mapped (or status unknown), mapping automatically...')
+              console.log('🗺️ [dForms] Step 1/2: Requesting map_account signature...')
               setCreationStatus('step:map')
 
               try {
                 await accountMapping.mapAccount()
-                console.log('✅ Account mapped successfully')
+                console.log('✅ [dForms] Step 1/2 complete: Account mapped')
               } catch (mapErr) {
                 // If mapping fails because already mapped, continue — don't block
                 const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
-                if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('mapped')) {
-                  console.log('ℹ️ Account already mapped, continuing...')
-                  // Cache so we skip this step on next create
+                if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('alreadymapped')) {
+                  console.log('ℹ️ [dForms] Account already mapped on-chain, continuing...')
+                  // Cache: on-chain confirmed the account is mapped (AlreadyMapped error = was already done)
                   localStorage.setItem(`intran3t_mapped_${selectedAccount.address}`, 'true')
                 } else {
                   throw new Error(`Failed to map account: ${errMsg}`)
                 }
               }
+            } else {
+              console.log('✅ [dForms] Step 1/2: Skipped — account already mapped (cached)')
             }
+
+            console.log('[dForms] Step 2/2: Registering form on-chain...')
             setCreationStatus('step:register')
 
             // 4. Register CID on contract
@@ -182,7 +192,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
             // Use the logged-in wallet for contract call
             setCreationStatus('step:confirming')
-            console.log('[dForms] Registering form on-chain with connected wallet...')
+            console.log('[dForms] Step 2/2: Requesting Revive.call signature...')
             const rawAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string || '').trim()
             // Ensure 0x prefix (Vercel may strip it)
             const contractAddress = (rawAddress.startsWith('0x') ? rawAddress : `0x${rawAddress}`) as `0x${string}`
@@ -219,8 +229,17 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             }
           } catch (contractErr) {
             const msg = contractErr instanceof Error ? contractErr.message : String(contractErr)
-            console.error('❌ Bulletin/contract call failed:', contractErr)
-            // Any failure here means the form was NOT registered on-chain — never save locally
+            console.error('❌ [dForms] Bulletin/contract call failed:', msg)
+
+            // If the on-chain call failed because the account isn't mapped, reset the cache
+            // so the NEXT attempt re-runs the mapping flow (clears stale localStorage + React state)
+            if (msg.startsWith('MAPPING_REQUIRED:') || msg.includes('Account not mapped')) {
+              console.warn('[dForms] Mapping cache invalidated — stale cache detected. Retry to re-map.')
+              accountMapping.resetCache()
+              throw new Error('Account not mapped on-chain. Your wallet session may have expired. Please try creating the form again — you will be prompted to sign a mapping transaction first.')
+            }
+
+            // Any other failure means the form was NOT registered — never save locally
             throw new Error(`Form creation failed: ${msg}`)
           }
         } else {
