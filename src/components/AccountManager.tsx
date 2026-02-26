@@ -223,7 +223,7 @@ function AccountItem({
       className={cn(
         "p-3 rounded-lg mb-2 transition-all",
         isActive
-          ? "bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-2 border-pink-500/30"
+          ? "bg-[#f5f5f4] border-2 border-[#e7e5e4]"
           : "bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
       )}
     >
@@ -248,7 +248,7 @@ function AccountItem({
                     onEdit("", "");
                   }
                 }}
-                className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-sm text-white focus:outline-none focus:border-pink-500"
+                className="flex-1 px-2 py-1 bg-white/10 border border-white/20 rounded text-sm text-white focus:outline-none focus:border-[#a8a29e]"
                 placeholder="Enter nickname"
                 autoFocus
               />
@@ -265,7 +265,7 @@ function AccountItem({
                 {account.name || "Unnamed Account"}
               </span>
               {isActive && (
-                <span className="px-2 py-0.5 text-xs font-semibold text-pink-400 bg-pink-500/10 border border-pink-500/20 rounded">
+                <span className="px-2 py-0.5 text-xs font-semibold text-[#78716c] bg-[#f5f5f4] border border-[#e7e5e4] rounded">
                   Active
                 </span>
               )}

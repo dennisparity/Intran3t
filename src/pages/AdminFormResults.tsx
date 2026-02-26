@@ -473,7 +473,7 @@ export default function AdminFormResults() {
                                 href={`https://ipfs.dotspark.app/ipfs/${response.cid}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-mono text-xs text-[#1c1917] hover:text-[#ff2867] underline decoration-dotted max-w-xs block truncate"
+                                className="font-mono text-xs text-[#1c1917] hover:text-[#44403c] underline decoration-dotted max-w-xs block truncate"
                                 title={response.cid}
                               >
                                 {response.cid}

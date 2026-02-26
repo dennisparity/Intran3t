@@ -24,7 +24,7 @@ export default function Start() {
           </div>
 
           <h1 className="text-6xl font-bold text-[#1c1917] mb-4 font-serif">
-            Intran<span className="text-[#ff2867]">3</span>t
+            Intran<span className="text-[#a8a29e]">3</span>t
           </h1>
 
           <p className="text-xl text-[#57534e] max-w-md mx-auto">

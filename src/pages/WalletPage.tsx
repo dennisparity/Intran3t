@@ -84,9 +84,9 @@ export default function WalletPage() {
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-violet-500/10 to-cyan-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#f5f5f4]/10 via-violet-500/10 to-cyan-500/10" />
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-0 left-0 w-96 h-96 bg-[#e7e5e4] rounded-full blur-3xl animate-pulse" />
           <div
             className="absolute bottom-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "1s" }}
@@ -104,9 +104,9 @@ export default function WalletPage() {
                     repeat: Infinity,
                     ease: "linear",
                   }}
-                  className="p-3 rounded-2xl bg-gradient-to-br from-pink-500/20 to-violet-500/20 border border-white/10"
+                  className="p-3 rounded-2xl bg-gradient-to-br from-[#e7e5e4]/20 to-violet-500/20 border border-white/10"
                 >
-                  <Wallet className="w-7 h-7 text-pink-400" />
+                  <Wallet className="w-7 h-7 text-[#78716c]" />
                 </motion.div>
                 <div>
                   <h1 className="text-5xl font-bold text-gradient">
@@ -279,7 +279,7 @@ export default function WalletPage() {
               transition={{ delay: idx * 0.1 }}
               whileHover={{ y: -4 }}
             >
-              <Card className="glass-dark border-white/10 hover:border-pink-500/30 transition-all duration-300 h-full group">
+              <Card className="glass-dark border-white/10 hover:border-[#a8a29e] transition-all duration-300 h-full group">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -328,7 +328,7 @@ export default function WalletPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-3xl"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-pink-500/10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-[#f5f5f4]/10" />
           <div className="relative glass-dark border border-white/20 p-8 backdrop-blur-xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/10">
@@ -344,7 +344,7 @@ export default function WalletPage() {
                   title: "Install a Wallet",
                   desc: "Choose and install one of the supported wallet extensions from the list above",
                   icon: Wallet,
-                  color: "pink",
+                  color: "stone",
                 },
                 {
                   step: "2",

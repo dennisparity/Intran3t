@@ -147,7 +147,7 @@ export default function Accounts() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <User className="w-8 h-8 text-pink-500" />
+              <User className="w-8 h-8 text-[#78716c]" />
               <h1 className="text-4xl font-bold text-gradient">Your Accounts</h1>
             </div>
             <p className="text-gray-400 text-lg">
@@ -181,7 +181,7 @@ export default function Accounts() {
                       value={transferTo}
                       onChange={(e) => setTransferTo(e.target.value)}
                       placeholder="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-                      className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-pink-500 focus:outline-none"
+                      className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-[#a8a29e] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -195,7 +195,7 @@ export default function Accounts() {
                       placeholder="1.0"
                       step="0.1"
                       min="0"
-                      className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-pink-500 focus:outline-none"
+                      className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-[#a8a29e] focus:outline-none"
                     />
                   </div>
                   {transferStatus && (
@@ -247,8 +247,8 @@ export default function Accounts() {
             return (
               <motion.div key={account.address} variants={item}>
                 <Card className={`glass-dark transition-all duration-300 ${
-                  isActive 
-                    ? 'border-pink-500 shadow-lg shadow-pink-500/20' 
+                  isActive
+                    ? 'border-[#a8a29e] shadow-lg shadow-[#a8a29e]/20'
                     : 'border-white/10 hover:border-violet-500/50'
                 }`}>
                   <CardHeader>
@@ -263,7 +263,7 @@ export default function Accounts() {
                           <CardTitle className="text-white flex items-center gap-2">
                             {account.name || 'Unnamed Account'}
                             {isActive && (
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30">
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-[#f5f5f4] text-[#78716c] border border-[#e7e5e4]">
                                 Active
                               </span>
                             )}
@@ -280,7 +280,7 @@ export default function Accounts() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Balance */}
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-pink-500/10 to-violet-500/10 border border-white/10">
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-[#f5f5f4] to-violet-500/10 border border-white/10">
                       <div className="text-sm text-gray-400 mb-1">Total Balance</div>
                       <div className="text-2xl font-bold text-gradient">
                         {account.balance}

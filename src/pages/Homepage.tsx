@@ -22,7 +22,7 @@ export default function Homepage() {
       {/* Elegant Animated Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a1f] via-[#150a28] to-[#0a0a1f]">
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[var(--color-polkadot-pink)] rounded-full blur-[140px] animate-pulse"></div>
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#e7e5e4] rounded-full blur-[140px] animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[var(--color-polkadot-cyan)] rounded-full blur-[140px] animate-pulse delay-700"></div>
           <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-[var(--color-polkadot-violet)] rounded-full blur-[120px] animate-pulse delay-1000"></div>
         </div>
@@ -288,7 +288,7 @@ export default function Homepage() {
                     {
                       icon: Package,
                       text: "Modular components - use what you need",
-                      color: "polkadot-pink",
+                      color: "polkadot-stone",
                     },
                   ].map((item, index) => (
                     <motion.div
@@ -343,23 +343,23 @@ export default function Homepage() {
                       {"  "}
                       <span className="text-purple-400">return</span> ({"\n"}
                       {"    "}
-                      <span className="text-pink-400">&lt;div&gt;</span>
+                      <span className="text-[#78716c]">&lt;div&gt;</span>
                       {"\n"}
                       {"      "}
-                      <span className="text-pink-400">
+                      <span className="text-[#78716c]">
                         &lt;ConnectWallet /&gt;
                       </span>
                       {"\n"}
                       {"      "}
-                      <span className="text-pink-400">
+                      <span className="text-[#78716c]">
                         &lt;BalanceDisplay
                       </span>{" "}
                       <span className="text-cyan-300">address</span>=
                       <span className="text-green-400">{`{address}`}</span>{" "}
-                      <span className="text-pink-400">/&gt;</span>
+                      <span className="text-[#78716c]">/&gt;</span>
                       {"\n"}
                       {"    "}
-                      <span className="text-pink-400">&lt;/div&gt;</span>
+                      <span className="text-[#78716c]">&lt;/div&gt;</span>
                       {"\n"}
                       {"  "}){"\n"}
                       {`}`}
@@ -375,7 +375,7 @@ export default function Homepage() {
         <section className="container mx-auto px-6 py-24 mb-20">
           <div className="max-w-5xl mx-auto relative">
             {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-polkadot-pink)]/20 via-[var(--color-polkadot-violet)]/20 to-[var(--color-polkadot-cyan)]/20 rounded-3xl blur-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#e7e5e4]/20 via-[var(--color-polkadot-violet)]/20 to-[var(--color-polkadot-cyan)]/20 rounded-3xl blur-3xl"></div>
 
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

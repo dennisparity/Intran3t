@@ -173,7 +173,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-2xl"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-violet-500/20 to-cyan-500/20 blur-xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#e7e5e4]/20 via-violet-500/20 to-cyan-500/20 blur-xl" />
         <div className="relative flex flex-wrap items-center justify-between gap-4 p-5 glass border border-white/20 backdrop-blur-xl">
           <div className="flex items-center gap-6 flex-wrap">
             <NetworkIndicator />
@@ -199,7 +199,7 @@ export default function Dashboard() {
                 address={selectedAccount.address}
                 name={selectedAccount.name}
                 truncate={6}
-                className="bg-gradient-to-r from-violet-500/10 to-pink-500/10 border border-white/20 px-4 py-2.5 rounded-xl backdrop-blur-sm"
+                className="bg-gradient-to-r from-violet-500/10 to-[#e7e5e4]/10 border border-white/20 px-4 py-2.5 rounded-xl backdrop-blur-sm"
               />
             </motion.div>
           )}
@@ -213,9 +213,9 @@ export default function Dashboard() {
         className="relative overflow-hidden rounded-3xl"
       >
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-violet-500/10 to-cyan-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#f5f5f4]/10 via-violet-500/10 to-cyan-500/10" />
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-0 left-0 w-72 h-72 bg-[#e7e5e4] rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
         </div>
 
@@ -230,9 +230,9 @@ export default function Dashboard() {
                     repeat: Infinity,
                     ease: "linear",
                   }}
-                  className="p-3 rounded-2xl bg-gradient-to-br from-pink-500/20 to-violet-500/20 border border-white/10"
+                  className="p-3 rounded-2xl bg-gradient-to-br from-[#e7e5e4]/20 to-violet-500/20 border border-white/10"
                 >
-                  <Sparkles className="w-6 h-6 text-pink-400" />
+                  <Sparkles className="w-6 h-6 text-[#78716c]" />
                 </motion.div>
                 <h1 className="text-5xl font-bold text-gradient">
                   {selectedAccount
@@ -300,9 +300,9 @@ export default function Dashboard() {
         >
           <motion.div variants={item} whileHover={{ y: -4 }}>
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-pink-500/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
-              <Card className="relative glass-dark hover:border-pink-500/50 border-white/10 transition-all duration-300 overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl -mr-16 -mt-16" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#e7e5e4]/20 to-[#e7e5e4]/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+              <Card className="relative glass-dark hover:border-[#a8a29e] border-white/10 transition-all duration-300 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#e7e5e4] rounded-full blur-2xl -mr-16 -mt-16" />
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -313,8 +313,8 @@ export default function Dashboard() {
                         Current block height
                       </CardDescription>
                     </div>
-                    <div className="p-3 rounded-xl bg-pink-500/10 border border-pink-500/20">
-                      <Activity className="w-6 h-6 text-pink-400" />
+                    <div className="p-3 rounded-xl bg-[#f5f5f4] border border-[#e7e5e4]">
+                      <Activity className="w-6 h-6 text-[#78716c]" />
                     </div>
                   </div>
                 </CardHeader>
@@ -430,9 +430,9 @@ export default function Dashboard() {
 
           <motion.div variants={item} whileHover={{ y: -4 }}>
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-violet-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
-              <Card className="relative glass-dark hover:border-pink-500/50 border-white/10 transition-all duration-300 overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl -mr-16 -mt-16" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#e7e5e4]/20 via-violet-500/20 to-cyan-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+              <Card className="relative glass-dark hover:border-[#a8a29e] border-white/10 transition-all duration-300 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#e7e5e4] rounded-full blur-2xl -mr-16 -mt-16" />
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -443,8 +443,8 @@ export default function Dashboard() {
                         Connected blockchain
                       </CardDescription>
                     </div>
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500/10 to-violet-500/10 border border-pink-500/20">
-                      <Zap className="w-6 h-6 text-pink-400" />
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-[#f5f5f4] to-violet-500/10 border border-[#e7e5e4]">
+                      <Zap className="w-6 h-6 text-[#78716c]" />
                     </div>
                   </div>
                 </CardHeader>
@@ -472,9 +472,9 @@ export default function Dashboard() {
                 exit={{ opacity: 0, scale: 0.9 }}
               >
                 <div className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-pink-500/20 to-violet-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-[#e7e5e4]/20 to-violet-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
                   <Card className="relative glass-dark hover:border-violet-500/50 border-white/10 transition-all duration-300 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-pink-500/20 rounded-full blur-2xl -mr-16 -mt-16" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-[#e7e5e4]/20 rounded-full blur-2xl -mr-16 -mt-16" />
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
@@ -485,7 +485,7 @@ export default function Dashboard() {
                             Available funds
                           </CardDescription>
                         </div>
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/10 to-pink-500/10 border border-violet-500/20">
+                        <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/10 to-[#f5f5f4] border border-violet-500/20">
                           <TrendingUp className="w-6 h-6 text-violet-400" />
                         </div>
                       </div>
@@ -528,7 +528,7 @@ export default function Dashboard() {
             transition={{ delay: 0.4 }}
             className="relative overflow-hidden rounded-3xl"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-pink-500/10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-[#f5f5f4]/10" />
             <div className="relative glass-dark border border-white/20 p-8 backdrop-blur-xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/10">
@@ -545,7 +545,7 @@ export default function Dashboard() {
                     icon: Wallet,
                     title: "Connect Your Wallet",
                     desc: 'Click "Connect Wallet" to link your Polkadot account',
-                    color: "pink",
+                    color: "stone",
                   },
                   {
                     icon: BarChart3,

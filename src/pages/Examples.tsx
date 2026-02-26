@@ -777,7 +777,7 @@ export default function Examples() {
         className="glass rounded-2xl p-8 border border-white/10"
       >
         <div className="flex items-center gap-3 mb-4">
-          <Book className="w-8 h-8 text-pink-500" />
+          <Book className="w-8 h-8 text-[#78716c]" />
           <h1 className="text-4xl font-bold text-gradient">Code Examples</h1>
         </div>
         <p className="text-gray-400 text-lg">
@@ -799,7 +799,7 @@ export default function Examples() {
           placeholder="Search examples..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 transition-all"
+          className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#e7e5e4] focus:border-[#a8a29e] transition-all"
         />
         {searchQuery && (
           <button
@@ -837,7 +837,7 @@ export default function Examples() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="glass-dark border-white/10 hover:border-pink-500/50 transition-all duration-300 h-full">
+              <Card className="glass-dark border-white/10 hover:border-[#a8a29e] transition-all duration-300 h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -882,7 +882,7 @@ export default function Examples() {
                     </Button>
                   </div>
                   <div className="mt-3">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20 capitalize">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f4] text-[#78716c] border border-[#e7e5e4] capitalize">
                       {example.category}
                     </span>
                   </div>
@@ -909,7 +909,7 @@ export default function Examples() {
             href="https://polkadot.js.org/docs/"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-pink-500/50"
+            className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-[#a8a29e]"
           >
             <div className="font-semibold text-white mb-1">
               Polkadot.js Documentation

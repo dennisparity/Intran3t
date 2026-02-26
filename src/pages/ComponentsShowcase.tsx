@@ -153,7 +153,7 @@ function MyComponent({ address }: { address: string }) {
       title: "RequireAccount",
       description: "Conditional rendering based on account connection",
       component: (
-        <div className="p-4 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5">
+        <div className="p-4 border border-[#e7e5e4] rounded-lg bg-[#fafaf9]">
           {selectedAccount ? (
             <div className="text-green-400">
               ✓ Account connected: {selectedAccount.name}
@@ -396,14 +396,14 @@ function MyComponent() {
       title: "TxButton",
       description: "Submit transactions with progress states and notifications",
       component: (
-        <div className="p-6 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5 text-center space-y-2">
+        <div className="p-6 border border-[#e7e5e4] rounded-lg bg-[#fafaf9] text-center space-y-2">
           <div className="text-sm font-semibold text-gray-200">
             Transaction Button Component
           </div>
           <div className="text-xs text-gray-400">
             Handles signing, submission, and notifications
           </div>
-          <div className="text-[10px] text-polkadot-pink/70 mt-2 px-3 py-1 rounded bg-black/30 inline-block">
+          <div className="text-[10px] text-[#78716c] mt-2 px-3 py-1 rounded bg-black/30 inline-block">
             Install: npx polkadot-ui add tx-button
           </div>
         </div>
@@ -556,8 +556,8 @@ function MyComponent() {
           <div className="p-4 rounded-lg bg-black/20 border border-white/5">
             <div className="text-xs text-gray-300 mb-3">Available themes:</div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded bg-black/30 border border-polkadot-pink/20">
-                <div className="text-xs font-semibold text-polkadot-pink mb-1">
+              <div className="p-3 rounded bg-black/30 border border-[#e7e5e4]">
+                <div className="text-xs font-semibold text-[#1c1917] mb-1">
                   polkadot
                 </div>
                 <div className="text-[10px] text-gray-400">
@@ -634,7 +634,7 @@ function MyComponent() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 rounded-full bg-polkadot-pink"></div>
+                <div className="w-2 h-2 rounded-full bg-[#a8a29e]"></div>
                 <span className="text-gray-300">Polkadot People</span>
                 <code className="text-xs text-gray-400 ml-auto">
                   polkadotPeople
@@ -697,7 +697,7 @@ function MyComponent() {
             Example: DOT balance with USDC comparison
           </div>
           <div className="space-y-2">
-            <div className="p-3 rounded bg-black/30 border border-polkadot-pink/20">
+            <div className="p-3 rounded bg-black/30 border border-[#e7e5e4]">
               <div className="text-lg font-bold text-white">12.3456 DOT</div>
               <div className="text-xs text-gray-400 mt-1">≈ $98.76 USDC</div>
             </div>
@@ -738,8 +738,8 @@ function MyComponent() {
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-polkadot-pink/20 flex items-center justify-center">
-                <span className="text-lg font-bold text-polkadot-pink">
+              <div className="w-12 h-12 rounded-full bg-[#f5f5f4] flex items-center justify-center">
+                <span className="text-lg font-bold text-[#1c1917]">
                   DOT
                 </span>
               </div>
@@ -972,14 +972,14 @@ function MyComponent() {
       title: "ValidatorList",
       description: "Browse and select validators for staking",
       component: (
-        <div className="p-6 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5 text-center space-y-2">
+        <div className="p-6 border border-[#e7e5e4] rounded-lg bg-[#fafaf9] text-center space-y-2">
           <div className="text-sm font-semibold text-gray-200">
             Validator List Component
           </div>
           <div className="text-xs text-gray-400">
             Search, filter, and nominate validators with performance metrics
           </div>
-          <div className="text-[10px] text-polkadot-pink/70 mt-2 px-3 py-1 rounded bg-black/30 inline-block">
+          <div className="text-[10px] text-[#78716c] mt-2 px-3 py-1 rounded bg-black/30 inline-block">
             Install: npx polkadot-ui add validator-list
           </div>
         </div>
@@ -1162,14 +1162,14 @@ function TransferPage() {
       title: "ChainSelector",
       description: "Switch between networks and parachains",
       component: (
-        <div className="p-6 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5 text-center space-y-2">
+        <div className="p-6 border border-[#e7e5e4] rounded-lg bg-[#fafaf9] text-center space-y-2">
           <div className="text-sm font-semibold text-gray-200">
             Multi-Chain Selector
           </div>
           <div className="text-xs text-gray-400">
             Seamlessly switch between Polkadot, Kusama, and parachains
           </div>
-          <div className="text-[10px] text-polkadot-pink/70 mt-2 px-3 py-1 rounded bg-black/30 inline-block">
+          <div className="text-[10px] text-[#78716c] mt-2 px-3 py-1 rounded bg-black/30 inline-block">
             Install: npx polkadot-ui add chain-selector
           </div>
         </div>
@@ -1318,14 +1318,14 @@ function ReceivePage() {
       title: "AccountMenu",
       description: "Account switcher with balance and quick actions",
       component: (
-        <div className="p-6 border border-polkadot-pink/20 rounded-lg bg-polkadot-pink/5 text-center space-y-2">
+        <div className="p-6 border border-[#e7e5e4] rounded-lg bg-[#fafaf9] text-center space-y-2">
           <div className="text-sm font-semibold text-gray-200">
             Account Dropdown Menu
           </div>
           <div className="text-xs text-gray-400">
             Switch between accounts, view balances, and quick actions
           </div>
-          <div className="text-[10px] text-polkadot-pink/70 mt-2 px-3 py-1 rounded bg-black/30 inline-block">
+          <div className="text-[10px] text-[#78716c] mt-2 px-3 py-1 rounded bg-black/30 inline-block">
             Install: npx polkadot-ui add account-menu
           </div>
         </div>
@@ -1468,7 +1468,7 @@ function AccountDisplay() {
         className="glass rounded-2xl p-8 border border-white/10"
       >
         <div className="flex items-center gap-3 mb-4">
-          <Package className="w-8 h-8 text-pink-500" />
+          <Package className="w-8 h-8 text-[#78716c]" />
           <h1 className="text-4xl font-bold text-gradient">
             Polkadot Components
           </h1>
@@ -1492,7 +1492,7 @@ function AccountDisplay() {
           placeholder="Search components..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 transition-all"
+          className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-700 text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#e7e5e4] focus:border-[#a8a29e] transition-all"
         />
         {searchQuery && (
           <button
@@ -1552,7 +1552,7 @@ function AccountDisplay() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className="glass-dark border-white/10 hover:border-pink-500/50 transition-all duration-300 h-full">
+              <Card className="glass-dark border-white/10 hover:border-[#a8a29e] transition-all duration-300 h-full">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 flex-1">
@@ -1617,7 +1617,7 @@ function AccountDisplay() {
                   </div>
 
                   <div>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20 capitalize">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f4] text-[#78716c] border border-[#e7e5e4] capitalize">
                       {example.category}
                     </span>
                   </div>
@@ -1646,7 +1646,7 @@ function AccountDisplay() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-gradient-to-br from-polkadot-pink/10 to-polkadot-purple/10 border border-polkadot-pink/20">
+          <div className="p-4 rounded-lg bg-gradient-to-br from-[#f5f5f4] to-polkadot-purple/10 border border-[#e7e5e4]">
             <div className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-400" />
               Included Components
@@ -1682,13 +1682,13 @@ function AccountDisplay() {
           </div>
         </div>
 
-        <div className="p-6 rounded-lg bg-gradient-to-r from-polkadot-purple/10 via-polkadot-pink/10 to-polkadot-cyan/10 border border-polkadot-purple/20">
+        <div className="p-6 rounded-lg bg-gradient-to-r from-polkadot-purple/10 via-[#f5f5f4] to-polkadot-cyan/10 border border-polkadot-purple/20">
           <h3 className="text-lg font-bold text-white mb-3">
             🚀 Quick Start - Top 5 Components to Add
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div className="flex items-start gap-2">
-              <span className="text-polkadot-pink font-bold">1.</span>
+              <span className="text-[#1c1917] font-bold">1.</span>
               <div>
                 <div className="text-white font-semibold">TxButton</div>
                 <div className="text-xs text-gray-400">
@@ -1740,7 +1740,7 @@ function AccountDisplay() {
             href="https://github.com/Polkadot-UI-Initiative/polkadot-ui"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 p-4 rounded-lg bg-white/5 border border-white/10 hover:border-polkadot-pink/50 transition-colors text-center"
+            className="flex-1 p-4 rounded-lg bg-white/5 border border-white/10 hover:border-[#a8a29e] transition-colors text-center"
           >
             <div className="text-sm font-semibold text-white mb-1">
               📚 polkadot-ui Registry

@@ -27,8 +27,8 @@ function formatMarkdown(text: string) {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
     // Support both [text](url) AND (text)[url] formats
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] underline">$1</a>')
-    .replace(/\((.+?)\)\[(.+?)\]/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff2867] underline">$1</a>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#1c1917] underline">$1</a>')
+    .replace(/\((.+?)\)\[(.+?)\]/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#1c1917] underline">$1</a>')
     .replace(/\n/g, '<br />')
 }
 
@@ -448,7 +448,7 @@ export function PublicForm() {
               <div key={field.id}>
                 <label className="block text-sm font-medium text-[#1c1917] mb-2">
                   {field.label}
-                  {field.required && <span className="text-[#ff2867] ml-1">*</span>}
+                  {field.required && <span className="text-[#a8a29e] ml-1">*</span>}
                 </label>
 
                 {field.type === 'text' && (
@@ -458,7 +458,7 @@ export function PublicForm() {
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[#e7e5e4] focus:border-transparent transition-all duration-200"
                   />
                 )}
 
@@ -469,7 +469,7 @@ export function PublicForm() {
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-[#e7e5e4] rounded-lg focus:outline-none focus:ring-4 focus:ring-[#e7e5e4] focus:border-transparent transition-all duration-200"
                   />
                 )}
 
@@ -486,7 +486,7 @@ export function PublicForm() {
                             checked={selectedValue === option}
                             onChange={(e) => handleChange(field.id, e.target.value)}
                             required={field.required}
-                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all"
+                            className="w-4 h-4 text-[#1c1917] border-[#e7e5e4] focus:ring-4 focus:ring-[#e7e5e4] transition-all"
                           />
                           <span className="text-sm text-[#1c1917]">{option}</span>
                         </label>
@@ -505,7 +505,7 @@ export function PublicForm() {
                             type="checkbox"
                             checked={selectedValues.includes(option)}
                             onChange={(e) => handleMultiSelectChange(field.id, option, e.target.checked)}
-                            className="w-4 h-4 text-[#ff2867] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[rgba(255,40,103,0.08)] transition-all"
+                            className="w-4 h-4 text-[#1c1917] border-[#e7e5e4] rounded focus:ring-4 focus:ring-[#e7e5e4] transition-all"
                           />
                           <span className="text-sm text-[#1c1917]">{option}</span>
                         </label>

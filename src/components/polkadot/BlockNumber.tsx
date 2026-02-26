@@ -54,7 +54,7 @@ export function BlockNumber({ showIcon = true, className = '', format = 'full' }
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
       {showIcon && (
-        <Activity className={`w-4 h-4 text-pink-500 ${isLive ? 'animate-pulse' : ''}`} />
+        <Activity className={`w-4 h-4 text-[#78716c] ${isLive ? 'animate-pulse' : ''}`} />
       )}
       <span className="font-mono font-semibold text-white">
         #{formatNumber(blockNumber)}
