@@ -161,20 +161,19 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               try {
                 await accountMapping.mapAccount()
                 console.log('✅ Account mapped successfully')
-                setCreationStatus('step:register')
               } catch (mapErr) {
                 // If mapping fails because already mapped, continue — don't block
                 const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
                 if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('mapped')) {
                   console.log('ℹ️ Account already mapped, continuing...')
-                  setCreationStatus('step:register')
+                  // Cache so we skip this step on next create
+                  localStorage.setItem(`intran3t_mapped_${selectedAccount.address}`, 'true')
                 } else {
                   throw new Error(`Failed to map account: ${errMsg}`)
                 }
               }
-            } else {
-              setCreationStatus('step:register')
             }
+            setCreationStatus('step:register')
 
             // 4. Register CID on contract
             const currentCount = await getFormCount()
@@ -221,17 +220,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
           } catch (contractErr) {
             const msg = contractErr instanceof Error ? contractErr.message : String(contractErr)
             console.error('❌ Bulletin/contract call failed:', contractErr)
-            console.error('Stack trace:', contractErr instanceof Error ? contractErr.stack : 'N/A')
-
-            // Check if it's a BadProof or mapping error - these are critical
-            if (msg.includes('BadProof') || msg.includes('mapping') || msg.includes('Failed to map account')) {
-              // Don't save form locally, throw error to user
-              throw new Error(`Form creation failed: ${msg}. Please try again or contact support.`)
-            }
-
-            // For other errors, show warning but allow local-only form
-            setContractWarning(msg)
-            formId = generateFormId()
+            // Any failure here means the form was NOT registered on-chain — never save locally
+            throw new Error(`Form creation failed: ${msg}`)
           }
         } else {
           console.log('[dForms] Creating form locally - contractLoading:', contractLoading)
@@ -696,8 +686,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
-                {/* First-time setup notice — only shown when confirmed unmapped */}
-                {selectedAccount && accountMapping.isMapped === false && !isCreating && !editingFormId && (
+                {/* First-time setup notice — shown when not confirmed mapped */}
+                {selectedAccount && accountMapping.isMapped !== true && !isCreating && !editingFormId && (
                   <div className="mb-3 flex items-start gap-2.5 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-3">
                     <div className="w-4 h-4 rounded-full bg-[#1c1917] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">i</div>
                     <div>
@@ -712,7 +702,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                 )}
 
                 {/* Step indicator during creation */}
-                {isCreating && accountMapping.isMapped === false && (
+                {isCreating && accountMapping.isMapped !== true && (
                   <div className="mb-3 border border-[#e7e5e4] rounded-xl overflow-hidden">
                     {[
                       { key: 'step:map', label: 'Map account', sub: 'Sign in your wallet — one-time setup' },

@@ -29,9 +29,15 @@ function deriveEvmAddress(ss58Address: string): `0x${string}` {
  *   mapAccount: () => Promise<void> - Function to trigger account mapping
  * }
  */
+const MAPPING_CACHE_KEY = (address: string) => `intran3t_mapped_${address}`
+
 export function useAccountMapping(substrateAddress?: string) {
   const { apiClient, selectedAccount, signer } = useWallet()
-  const [isMapped, setIsMapped] = useState<boolean | null>(null)
+  // Seed from localStorage so mapped accounts are immediately recognised on load
+  const [isMapped, setIsMapped] = useState<boolean | null>(() => {
+    if (!substrateAddress) return null
+    return localStorage.getItem(MAPPING_CACHE_KEY(substrateAddress)) === 'true' ? true : null
+  })
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -42,59 +48,46 @@ export function useAccountMapping(substrateAddress?: string) {
       return
     }
 
+    // If already confirmed via localStorage, skip chain check
+    if (localStorage.getItem(MAPPING_CACHE_KEY(substrateAddress)) === 'true') {
+      try { setEvmAddress(deriveEvmAddress(substrateAddress)) } catch {}
+      setIsMapped(true)
+      return
+    }
+
     let isMounted = true
 
     const checkMapping = async () => {
       try {
         setIsLoading(true)
 
-        // Derive the fallback EVM address
         const derived = deriveEvmAddress(substrateAddress)
-        if (isMounted) {
-          setEvmAddress(derived)
-        }
+        if (isMounted) setEvmAddress(derived)
 
-        // Query pallet_revive.OriginalAccount storage
-        // If Some(accountId) -> account is mapped
-        // If None -> account is not mapped
         const result = await apiClient.query.Revive.OriginalAccount.getValue(derived)
 
         if (isMounted) {
-          setIsMapped(result !== null)
-          console.log('🗺️ Account mapping check:', {
-            substrateAddress,
-            derivedEvmAddress: derived,
-            isMapped: result !== null,
-            mappedTo: result ? result.toString() : null
-          })
+          const mapped = result !== null
+          setIsMapped(mapped)
+          if (mapped) localStorage.setItem(MAPPING_CACHE_KEY(substrateAddress), 'true')
+          console.log('🗺️ Account mapping check:', { substrateAddress, derivedEvmAddress: derived, isMapped: mapped })
         }
       } catch (error) {
-        // Handle incompatible runtime (chain metadata mismatch)
         if (error instanceof Error && error.message.includes('Incompatible runtime entry')) {
           console.warn('⚠️ Account mapping check unavailable (chain metadata mismatch)')
-          if (isMounted) {
-            // Set to null (unknown) rather than false (unmapped)
-            // This prevents showing "Map Account" when we can't actually verify
-            setIsMapped(null)
-          }
+          if (isMounted) setIsMapped(null)
         } else {
           console.error('Failed to check account mapping:', error)
-          if (isMounted) {
-            setIsMapped(null)
-          }
+          if (isMounted) setIsMapped(null)
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        if (isMounted) setIsLoading(false)
       }
     }
 
     checkMapping()
 
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [substrateAddress, apiClient])
 
   /**
@@ -124,7 +117,10 @@ export function useAccountMapping(substrateAddress?: string) {
 
       console.log('✅ Account mapping successful!')
 
-      // Update state to reflect mapping
+      // Cache and update state
+      if (selectedAccount?.address) {
+        localStorage.setItem(MAPPING_CACHE_KEY(selectedAccount.address), 'true')
+      }
       setIsMapped(true)
     } catch (error) {
       console.error('❌ Account mapping failed:', error)
