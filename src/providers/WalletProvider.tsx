@@ -11,11 +11,16 @@ import { getWsProvider } from 'polkadot-api/ws-provider/web'
 import type { InjectedPolkadotAccount, PolkadotSigner } from 'polkadot-api/pjs-signer'
 import { getWalletExtension, isInHost, type WalletExtension } from '../lib/wallet-provider'
 import { paseo } from '../../.papi/descriptors'
+import { keccak256 } from 'viem'
+import { decodeAddress } from '@polkadot/util-crypto'
+
+const MAPPING_CACHE_KEY = (addr: string) => `intran3t_mapped_${addr}`
 
 interface WalletContextValue {
   // Connection state
   isConnected: boolean
   isConnecting: boolean
+  isReconnecting: boolean
   inHost: boolean
 
   // Accounts
@@ -25,6 +30,12 @@ interface WalletContextValue {
   // PAPI
   apiClient: any | null
   signer: PolkadotSigner | null
+
+  // Account mapping — shared across all modules
+  isMapped: boolean | null
+  evmAddress: `0x${string}` | null
+  mapAccount: () => Promise<void>
+  resetMappingCache: () => void
 
   // Actions
   connect: (walletId?: string) => Promise<void>
@@ -42,8 +53,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<InjectedPolkadotAccount[]>([])
   const [selectedAccount, setSelectedAccount] = useState<InjectedPolkadotAccount | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isReconnecting, setIsReconnecting] = useState(false)
   const [apiClient, setApiClient] = useState<any>(null)
   const [signer, setSigner] = useState<PolkadotSigner | null>(null)
+
+  // Mapping state — single shared instance for all modules
+  const [isMapped, setIsMapped] = useState<boolean | null>(null)
+  const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
 
   const inHost = isInHost()
 
@@ -154,12 +170,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accounts])
 
-  // Auto-reconnect on mount if previously connected
+  // Auto-reconnect on mount if previously connected.
+  // Delay 500ms so browser extensions (Talisman, SubWallet) have time to inject
+  // themselves into window.injectedWeb3 before we try to connect.
   useEffect(() => {
     const wasConnected = localStorage.getItem(WALLET_STORAGE_KEY)
     if (wasConnected === 'true' || inHost) {
+      setIsReconnecting(true)
       console.log('🔄 Auto-reconnecting wallet...')
-      connect()
+      const timer = setTimeout(() => {
+        connect().finally(() => setIsReconnecting(false))
+      }, 500)
+      return () => clearTimeout(timer)
     }
   }, []) // Only run on mount
 
@@ -177,14 +199,117 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accounts, selectedAccount, selectAccount])
 
+  // Derive EVM address and check mapping state when account or apiClient changes
+  useEffect(() => {
+    const address = selectedAccount?.address
+    if (!address) {
+      setIsMapped(null)
+      setEvmAddress(null)
+      return
+    }
+
+    // Derive EVM address (deterministic, local)
+    let derived: `0x${string}` | null = null
+    try {
+      const decoded = decodeAddress(address)
+      const hash = keccak256(decoded)
+      derived = ('0x' + hash.slice(-40)) as `0x${string}`
+      setEvmAddress(derived)
+    } catch {
+      setEvmAddress(null)
+      return
+    }
+
+    // Fast path: localStorage cache
+    if (localStorage.getItem(MAPPING_CACHE_KEY(address)) === 'true') {
+      setIsMapped(true)
+      return
+    }
+
+    // Background on-chain check — determines true mapping state
+    // Sets isMapped = true/false so the banner only shows when confirmed unmapped
+    if (!apiClient) return
+    let cancelled = false
+
+    apiClient.query.Revive.OriginalAccount.getValue(derived)
+      .then((result: any) => {
+        if (cancelled) return
+        const mapped = result !== null
+        setIsMapped(mapped)
+        if (mapped) localStorage.setItem(MAPPING_CACHE_KEY(address), 'true')
+        console.log('🗺️ On-chain mapping check:', { address, mapped })
+      })
+      .catch((err: any) => {
+        if (cancelled) return
+        // Metadata mismatch or unavailable — leave as null, no banner shown
+        if (err?.message?.includes('Incompatible runtime entry')) {
+          console.warn('⚠️ Revive.OriginalAccount unavailable (metadata mismatch) — mapping state unknown')
+        } else {
+          console.warn('⚠️ Could not check mapping state:', err?.message)
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [selectedAccount?.address, apiClient])
+
+  const mapAccount = useCallback(async () => {
+    if (!apiClient || !selectedAccount?.address || !signer) {
+      throw new Error('Wallet not connected')
+    }
+    console.log('🗺️ Initiating account mapping...')
+    const tx = apiClient.tx.Revive.map_account({})
+    await new Promise<void>((resolve, reject) => {
+      tx.signSubmitAndWatch(signer).subscribe({
+        next: (event: any) => {
+          console.log(`🗺️ map_account event: ${event.type}`)
+          if (event.type === 'finalized') {
+            if (event.ok) {
+              resolve()
+            } else {
+              const safeStr = (v: any) => JSON.stringify(v, (_k, x) => typeof x === 'bigint' ? x.toString() : x)
+              const errEvents = (event.events || [])
+                .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
+              const detail = errEvents.length > 0 ? safeStr(errEvents[0].value) : 'unknown'
+              // AlreadyMapped = account was already mapped — treat as success
+              if (detail.toLowerCase().includes('already')) {
+                console.log('ℹ️ Account already mapped on-chain, confirming cache...')
+                resolve()
+              } else {
+                reject(new Error(`map_account failed on-chain: ${detail}`))
+              }
+            }
+          }
+        },
+        error: (err: any) => reject(err)
+      })
+    })
+    console.log('✅ Account mapping successful!')
+    localStorage.setItem(MAPPING_CACHE_KEY(selectedAccount.address), 'true')
+    setIsMapped(true)
+  }, [apiClient, selectedAccount, signer])
+
+  const resetMappingCache = useCallback(() => {
+    const address = selectedAccount?.address
+    if (address) {
+      localStorage.removeItem(MAPPING_CACHE_KEY(address))
+      console.warn('⚠️ Mapping cache cleared')
+    }
+    setIsMapped(null)
+  }, [selectedAccount?.address])
+
   const value: WalletContextValue = {
     isConnected: extension !== null,
     isConnecting,
+    isReconnecting,
     inHost,
     accounts,
     selectedAccount,
     apiClient,
     signer,
+    isMapped,
+    evmAddress,
+    mapAccount,
+    resetMappingCache,
     connect,
     disconnect,
     selectAccount

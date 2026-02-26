@@ -23,8 +23,9 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   // Substrate EVM signer for contract calls
   const substrateEVM = useSubstrateEVMSigner()
 
-  // Account mapping check
-  const accountMapping = useAccountMapping(selectedAccount?.address)
+  // Account mapping — shared state from WalletProvider (single source of truth)
+  const { isMapped, mapAccount, resetMappingCache } = useWallet()
+  const accountMapping = { isMapped, mapAccount, resetCache: resetMappingCache }
 
   // UI state for mapping modal
   const [showMapModal, setShowMapModal] = useState(false)
@@ -168,15 +169,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                 await accountMapping.mapAccount()
                 console.log('✅ [dForms] Step 1/2 complete: Account mapped')
               } catch (mapErr) {
-                // If mapping fails because already mapped, continue — don't block
+                // WalletProvider.mapAccount() already handles AlreadyMapped as success
+                // Any error here is a genuine failure
                 const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
-                if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('alreadymapped')) {
-                  console.log('ℹ️ [dForms] Account already mapped on-chain, continuing...')
-                  // Cache: on-chain confirmed the account is mapped (AlreadyMapped error = was already done)
-                  localStorage.setItem(`intran3t_mapped_${selectedAccount.address}`, 'true')
-                } else {
-                  throw new Error(`Failed to map account: ${errMsg}`)
-                }
+                throw new Error(`Failed to map account: ${errMsg}`)
               }
             } else {
               console.log('✅ [dForms] Step 1/2: Skipped — account already mapped (cached)')

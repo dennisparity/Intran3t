@@ -346,8 +346,9 @@ export function Acc3ssWidget({ config }: { config: Acc3ssConfig }) {
   const [derivedEvmAddress, setDerivedEvmAddress] = useState<string | null>(null)
   const [showVirtualDoor, setShowVirtualDoor] = useState(false)
 
-  // Account mapping check
-  const accountMapping = useAccountMapping(selectedAccount?.address)
+  // Account mapping — shared state from WalletProvider (single source of truth)
+  const { isMapped, mapAccount, resetMappingCache } = useWallet()
+  const accountMapping = { isMapped, mapAccount, resetCache: resetMappingCache }
   const [showMapModal, setShowMapModal] = useState(false)
 
   const locations = config.locations || []

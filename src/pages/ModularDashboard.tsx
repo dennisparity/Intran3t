@@ -21,7 +21,7 @@ import PolkadotLogo from '../components/PolkadotLogo'
 import { useEVM } from '../providers/EVMProvider'
 
 export default function ModularDashboard() {
-  const { selectedAccount } = useWallet()
+  const { selectedAccount, isReconnecting } = useWallet()
   const evm = useEVM()
   const navigate = useNavigate()
   const { address: profileAddress } = useParams<{ address?: string }>()
@@ -77,7 +77,7 @@ export default function ModularDashboard() {
 
   return (
     <>
-    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!selectedAccount && !evm.connected ? 'blur-md pointer-events-none' : ''}`}>
+    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!selectedAccount && !evm.connected && !isReconnecting ? 'blur-md pointer-events-none' : ''}`}>
       <div className="max-w-[1600px] mx-auto">
         {/* Top Bar with Branding, Search, and Settings */}
         <div className="flex items-center justify-between gap-6 mb-6">
@@ -239,13 +239,26 @@ export default function ModularDashboard() {
       <div className="fixed inset-0 bg-[#0f0f0f]/60 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white rounded-2xl border border-[#e7e5e4] p-10 max-w-sm w-full mx-4 shadow-xl text-center">
           <div className="w-14 h-14 bg-[#fafaf9] rounded-xl border border-[#e7e5e4] flex items-center justify-center mx-auto mb-5">
-            <PolkadotLogo className="w-8 h-8 text-[#1c1917]" />
+            {isReconnecting ? (
+              <div className="w-8 h-8 rounded-full border-2 border-[#e7e5e4] border-t-[#1c1917] animate-spin" />
+            ) : (
+              <PolkadotLogo className="w-8 h-8 text-[#1c1917]" />
+            )}
           </div>
-          <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Welcome back</h2>
-          <p className="text-sm text-[#78716c] mb-6">Connect your wallet to access the dashboard</p>
-          <div className="flex justify-center">
-            <ConnectWallet />
-          </div>
+          {isReconnecting ? (
+            <>
+              <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Reconnecting</h2>
+              <p className="text-sm text-[#78716c]">Detecting your wallet...</p>
+            </>
+          ) : (
+            <>
+              <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Welcome back</h2>
+              <p className="text-sm text-[#78716c] mb-6">Connect your wallet to access the dashboard</p>
+              <div className="flex justify-center">
+                <ConnectWallet />
+              </div>
+            </>
+          )}
         </div>
       </div>
     )}

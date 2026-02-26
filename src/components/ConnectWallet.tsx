@@ -72,11 +72,11 @@ export default function ConnectWallet() {
   const evm = useEVM()
   const isMetaMaskInstalled = !!(window as any).ethereum?.isMetaMask
 
-  // Detect installed wallets on mount
+  // Detect installed wallets — run immediately and again after 500ms
+  // so extensions that inject late (Talisman, SubWallet) are still detected
   useEffect(() => {
     const detectWallets = () => {
       if (inHost) {
-        // In host: show Spektr only
         setAvailableWallets([{
           id: 'spektr',
           name: 'Spektr (Host)',
@@ -86,7 +86,6 @@ export default function ConnectWallet() {
         return
       }
 
-      // Check window.injectedWeb3 for installed extensions
       const injected = (window as any).injectedWeb3 || {}
       const detected = KNOWN_WALLETS.map(wallet => ({
         ...wallet,
@@ -94,7 +93,6 @@ export default function ConnectWallet() {
         logo: injected[wallet.id]?.logo
       }))
 
-      // Sort: installed first
       detected.sort((a, b) => {
         if (a.installed && !b.installed) return -1
         if (!a.installed && b.installed) return 1
@@ -105,6 +103,9 @@ export default function ConnectWallet() {
     }
 
     detectWallets()
+    // Re-check after 500ms — extensions often inject after initial render
+    const timer = setTimeout(detectWallets, 500)
+    return () => clearTimeout(timer)
   }, [inHost])
 
   const handleConnectPolkadot = () => {
