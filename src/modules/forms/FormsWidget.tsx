@@ -186,8 +186,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             setCreationStatus('step:register')
 
             // 4. Register CID on contract
-            const currentCount = await getFormCount()
-            const predictedOnChainId = Math.max(Number(currentCount) + 1, lastOnChainId + 1)
             const timestamp = Date.now()
 
             // Use the logged-in wallet for contract call
@@ -215,14 +213,18 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               data: calldata,
               value: 0n
             })
-            console.log('✅ Form registered on-chain, id:', predictedOnChainId, 'CID:', formCID)
-            setLastOnChainId(predictedOnChainId)
+
+            // Read actual on-chain ID after tx — avoids prediction errors from concurrent registrations
+            const actualCount = await getFormCount()
+            const actualOnChainId = Number(actualCount)
+            console.log('✅ Form registered on-chain, id:', actualOnChainId, 'CID:', formCID)
+            setLastOnChainId(actualOnChainId)
 
             // Use unique local ID to avoid React key collisions
             formId = generateFormId()
 
             onChainMetadata = {
-              onChainId: predictedOnChainId.toString(),
+              onChainId: actualOnChainId.toString(),
               onChainTimestamp: timestamp,
               signerAddress: selectedAccount.address,
               bulletinCid: formCID,
