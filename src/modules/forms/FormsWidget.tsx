@@ -696,8 +696,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
-                {/* First-time setup notice — shown when mapping status is unknown/false */}
-                {selectedAccount && accountMapping.isMapped !== true && !isCreating && !editingFormId && (
+                {/* First-time setup notice — only shown when confirmed unmapped */}
+                {selectedAccount && accountMapping.isMapped === false && !isCreating && !editingFormId && (
                   <div className="mb-3 flex items-start gap-2.5 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-3">
                     <div className="w-4 h-4 rounded-full bg-[#1c1917] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">i</div>
                     <div>
@@ -712,7 +712,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                 )}
 
                 {/* Step indicator during creation */}
-                {isCreating && accountMapping.isMapped !== true && (
+                {isCreating && accountMapping.isMapped === false && (
                   <div className="mb-3 border border-[#e7e5e4] rounded-xl overflow-hidden">
                     {[
                       { key: 'step:map', label: 'Map account', sub: 'Sign in your wallet — one-time setup' },
