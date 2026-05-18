@@ -5,17 +5,17 @@ import {
   entropyToMiniSecret,
   mnemonicToEntropy,
 } from "@polkadot-labs/hdkd-helpers";
-import { Binary, createClient } from "polkadot-api";
-import { withPolkadotSdkCompat } from "polkadot-api/polkadot-sdk-compat";
+import { createClient } from "polkadot-api";
+import { Binary } from "@polkadot-api/substrate-bindings";
 import { getPolkadotSigner } from "polkadot-api/signer";
-import { getWsProvider } from "polkadot-api/ws-provider/web";
+import { getWsProvider } from "polkadot-api/ws";
 import { calculateCID } from "./cid";
 
 // Bulletin Chain endpoints
 export const BULLETIN_ENDPOINTS = {
-  dotspark: {
-    ws: "wss://bulletin.dotspark.app",
-    gateway: "https://ipfs.dotspark.app/ipfs/",
+  paseo: {
+    ws: "wss://paseo-bulletin-rpc.polkadot.io",
+    gateway: "https://paseo-ipfs.polkadot.io/ipfs/",
   },
   pop1: {
     ws: "wss://pop1-testnet.parity-lab.parity.io:443/10000",
@@ -99,7 +99,7 @@ export async function uploadToBulletin(
   // withPolkadotSdkCompat is REQUIRED wrapper - without it WS communication
   // with Substrate nodes won't work correctly
   const wsProvider = getWsProvider(bulletinEndpoint);
-  const client = createClient(withPolkadotSdkCompat(wsProvider));
+  const client = createClient(wsProvider);
 
   try {
     // getTypedApi uses generated PAPI descriptors for type-safe API
@@ -108,7 +108,7 @@ export async function uploadToBulletin(
 
     // 3. Create TransactionStorage.store extrinsic
     const storeCall = api.tx.TransactionStorage.store({
-      data: Binary.fromBytes(fileBytes),
+      data: Binary.fromBytes(fileBytes) as any,
     });
 
     // 4. Submit transaction

@@ -5,8 +5,8 @@
  * Falls back to regular wallet extensions when not in host
  */
 
-import { injectSpektrExtension, SpektrExtensionName } from '@novasamatech/product-sdk'
-import { connectInjectedExtension, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
+import { injectSpektrExtension } from '@novasamatech/product-sdk'
+import { connectInjectedExtension, getPolkadotSignerFromPjs, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
 
 export interface WalletExtension {
   name: string
@@ -16,40 +16,77 @@ export interface WalletExtension {
 }
 
 /**
- * Detects if app is running inside a Polkadot host
+ * Detects if app is running inside a Polkadot Triangle host (webview or iframe).
  */
 export function isInHost(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).__HOST_WEBVIEW_MARK__
+  if (typeof window === 'undefined') return false
+  if ((window as any).__HOST_WEBVIEW_MARK__) return true
+  try {
+    return window !== window.top
+  } catch {
+    return true // cross-origin iframe
+  }
+}
+
+const DAPP_NAME = 'intran3t'
+
+function buildAccountsFromBridge(
+  rawAccounts: any[],
+  bridge: { signPayload?: Function; signRaw?: Function } | null
+): InjectedPolkadotAccount[] {
+  return rawAccounts.map((account: any) => {
+    const address: string = account.address
+    const polkadotSigner = bridge?.signPayload && bridge?.signRaw
+      ? getPolkadotSignerFromPjs(
+          address,
+          bridge.signPayload.bind(bridge) as any,
+          bridge.signRaw.bind(bridge) as any,
+        )
+      : null
+    return { address, name: account.name || account.meta?.name || 'Triangle Account', polkadotSigner } as InjectedPolkadotAccount
+  })
 }
 
 /**
- * Gets the Spektr extension (Product SDK) if available
+ * Gets the Spektr extension (Triangle Host) via window.injectedWeb3.spektr.
+ * Matches dforms-powered-by-polkadot pattern.
  */
 async function getSpektrExtension(): Promise<WalletExtension | null> {
   try {
     const ready = await injectSpektrExtension()
+    if (!ready) return null
 
-    if (ready) {
-      const extension = await connectInjectedExtension(SpektrExtensionName)
-      const accounts = await extension.getAccounts()
+    const injectedWeb3 = (window as any).injectedWeb3
+    const spektrEntry = injectedWeb3?.spektr
+    if (!spektrEntry) return null
 
-      return {
-        name: SpektrExtensionName,
-        accounts,
-        getAccounts: () => extension.getAccounts(),
-        subscribe: (callback) => extension.subscribe(callback)
-      }
+    const spektrExtension = typeof spektrEntry.enable === 'function'
+      ? await spektrEntry.enable(DAPP_NAME)
+      : spektrEntry
+
+    const rawAccounts = await spektrExtension.accounts.get()
+    if (rawAccounts.length === 0) return null
+
+    const bridge = spektrExtension.signer ?? null
+    const accounts = buildAccountsFromBridge(rawAccounts, bridge)
+
+    return {
+      name: 'spektr',
+      accounts,
+      getAccounts: async () => {
+        const fresh = await spektrExtension.accounts.get()
+        return buildAccountsFromBridge(fresh, bridge)
+      },
+      subscribe: (_callback) => ({ unsubscribe: () => {} })
     }
   } catch (error) {
-    // Expected error in browser (Spektr only works in Polkadot Host)
     if (error instanceof Error && error.message.includes('Environment is not correct')) {
       console.log('ℹ️ Spektr requires Polkadot Host environment, using browser wallets')
     } else {
-      console.warn('Failed to inject Spektr extension:', error)
+      console.warn('[Spektr] Failed to initialize:', error)
     }
+    return null
   }
-
-  return null
 }
 
 /**

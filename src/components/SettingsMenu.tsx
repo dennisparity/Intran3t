@@ -8,7 +8,7 @@ export function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  const { disconnect } = useWallet()
+  const { disconnect, inHost } = useWallet()
   const evm = useEVM()
 
   const handleDisconnect = () => {
@@ -74,22 +74,24 @@ export function SettingsMenu() {
               <ChevronRight className="w-4 h-4 text-[#a8a29e] group-hover:text-[#78716c]" />
             </button>
 
-            {/* Divider */}
-            <div className="my-2 border-t border-[#e7e5e4]" />
-
-            {/* Disconnect Wallet */}
-            <button
-              onClick={handleDisconnect}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors group"
-            >
-              <div className="p-2 rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
-                <LogOut className="w-4 h-4 text-red-600" />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium text-red-600">Disconnect Wallet</p>
-                <p className="text-xs text-red-500">Sign out of your account</p>
-              </div>
-            </button>
+            {/* Disconnect Wallet — hidden in Triangle Host (Host controls the account) */}
+            {!inHost && (
+              <>
+                <div className="my-2 border-t border-[#e7e5e4]" />
+                <button
+                  onClick={handleDisconnect}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors group"
+                >
+                  <div className="p-2 rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
+                    <LogOut className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-red-600">Disconnect Wallet</p>
+                    <p className="text-xs text-red-500">Sign out of your account</p>
+                  </div>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { createClient } from "polkadot-api";
 import { getPolkadotSigner } from "polkadot-api/signer";
-import { getWsProvider } from "polkadot-api/ws-provider";
+import { getWsProvider } from "polkadot-api/ws";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { Binary } from "polkadot-api";

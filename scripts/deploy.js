@@ -14,8 +14,8 @@ import {
 import { createClient as createPolkadotClient } from "polkadot-api";
 import { Binary } from "@polkadot-api/substrate-bindings";
 import { getPolkadotSigner } from "polkadot-api/signer";
-import { getWsProvider } from "polkadot-api/ws-provider";
-import { withPolkadotSdkCompat } from "polkadot-api/polkadot-sdk-compat";
+import { getWsProvider } from "polkadot-api/ws";
+import { withPolkadotSdkCompat } from "@polkadot-api/polkadot-sdk-compat";
 import { bulletin } from "@polkadot-api/descriptors";
 import { CID } from "multiformats/cid";
 import { create as createMultihash } from "multiformats/hashes/digest";
@@ -71,7 +71,7 @@ function createSigner(mnemonic, derivePath = "") {
 
 async function getProvider() {
   console.log(`   Connecting to Bulletin: ${BULLETIN_RPC}`);
-  const client = createPolkadotClient(withPolkadotSdkCompat(getWsProvider(BULLETIN_RPC)));
+  const client = createPolkadotClient(getWsProvider(BULLETIN_RPC));
   const typedApi = client.getTypedApi(bulletin);
   const mnemonic = process.env.DOTNS_MNEMONIC || process.env.MNEMONIC || DEV_PHRASE;
   const signer = createSigner(mnemonic, "");

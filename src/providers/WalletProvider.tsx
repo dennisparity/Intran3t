@@ -7,12 +7,15 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createClient } from 'polkadot-api'
-import { getWsProvider } from 'polkadot-api/ws-provider/web'
+import { getWsProvider } from 'polkadot-api/ws'
+import { createPapiProvider } from '@novasamatech/product-sdk'
 import type { InjectedPolkadotAccount, PolkadotSigner } from 'polkadot-api/pjs-signer'
 import { getWalletExtension, isInHost, type WalletExtension } from '../lib/wallet-provider'
 import { paseo } from '../../.papi/descriptors'
 import { keccak256 } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
+
+const PASEO_ASSET_HUB_GENESIS = '0xd6eec26135305a8ad257a20d003357284c8aa03d0bdb2b357ab0a22371e11ef2'
 
 const MAPPING_CACHE_KEY = (addr: string) => `intran3t_mapped_${addr}`
 
@@ -67,11 +70,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initApi = async () => {
       try {
-        const wsProvider = getWsProvider('wss://sys.ibp.network/asset-hub-paseo')
-        const client = createClient(wsProvider)
+        const wsProvider = getWsProvider([
+          'wss://testnet-passet-hub.polkadot.io',
+          'wss://sys.ibp.network/asset-hub-paseo',
+          'wss://paseo-asset-hub-rpc.polkadot.io',
+        ] as unknown as string)
+        // In Triangle host: route chain calls through the host (smoldot/light client)
+        // with WS as fallback if the host doesn't support this chain.
+        // Standalone: use WS directly.
+        const provider = inHost ? createPapiProvider(PASEO_ASSET_HUB_GENESIS, wsProvider) : wsProvider
+        const client = createClient(provider)
         const api = client.getTypedApi(paseo)
         setApiClient(api)
-        console.log('✅ PAPI client initialized')
+        console.log(`✅ PAPI client initialized (${inHost ? 'host' : 'standalone'} mode)`)
       } catch (error) {
         console.error('Failed to initialize PAPI:', error)
       }
@@ -126,8 +137,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
         console.log('✅ Wallet connected:', ext.name)
 
-        // Save connection state to localStorage
-        localStorage.setItem(WALLET_STORAGE_KEY, 'true')
+        // Save connection state to localStorage (browser only — not needed in Host)
+        if (!inHost) localStorage.setItem(WALLET_STORAGE_KEY, 'true')
         // Note: Account address will be saved when user selects an account
       } else {
         console.warn('❌ No wallet available')
@@ -155,7 +166,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const account = accounts.find(a => a.address === address)
     if (account) {
       setSelectedAccount(account)
-      localStorage.setItem(ACCOUNT_STORAGE_KEY, address)
+      if (!inHost) localStorage.setItem(ACCOUNT_STORAGE_KEY, address)
 
       // Get signer for this account from connectInjectedExtension
       // The account object has a polkadotSigner property
@@ -170,24 +181,56 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accounts])
 
-  // Auto-reconnect on mount if previously connected.
-  // Delay 500ms so browser extensions (Talisman, SubWallet) have time to inject
-  // themselves into window.injectedWeb3 before we try to connect.
+  // Auto-reconnect on mount.
+  // - Host (__HOST_WEBVIEW_MARK__): connect immediately
+  // - Triangle (no mark, but Spektr available): connect immediately via silent detection
+  // - Browser with prior connection: delay 500ms for extensions to inject
   useEffect(() => {
     const wasConnected = localStorage.getItem(WALLET_STORAGE_KEY)
-    if (wasConnected === 'true' || inHost) {
+    const RECONNECT_TIMEOUT_MS = 12_000
+    let safetyTimer: ReturnType<typeof setTimeout> | null = null
+    let delayTimer: ReturnType<typeof setTimeout> | null = null
+
+    function attemptConnect() {
+      // Safety net: clear reconnecting after 12s even if connect() hangs
+      safetyTimer = setTimeout(() => {
+        console.warn('⚠️ Wallet reconnect timed out — continuing without wallet')
+        setIsReconnecting(false)
+      }, RECONNECT_TIMEOUT_MS)
+
+      connect().finally(() => {
+        if (safetyTimer) clearTimeout(safetyTimer)
+        setIsReconnecting(false)
+      })
+    }
+
+    if (inHost || wasConnected === 'true') {
       setIsReconnecting(true)
       console.log('🔄 Auto-reconnecting wallet...')
-      const timer = setTimeout(() => {
-        connect().finally(() => setIsReconnecting(false))
-      }, 500)
-      return () => clearTimeout(timer)
+      const delay = inHost ? 0 : 500
+      delayTimer = setTimeout(attemptConnect, delay)
+    } else {
+      // Try silent Spektr detection for Triangle hosts that don't set __HOST_WEBVIEW_MARK__
+      import('@novasamatech/product-sdk')
+        .then(({ injectSpektrExtension }) => injectSpektrExtension())
+        .then(ready => {
+          if (ready) {
+            setIsReconnecting(true)
+            attemptConnect()
+          }
+        })
+        .catch(() => {})
+    }
+
+    return () => {
+      if (delayTimer) clearTimeout(delayTimer)
+      if (safetyTimer) clearTimeout(safetyTimer)
     }
   }, []) // Only run on mount
 
-  // Restore selected account after accounts are loaded
+  // Restore selected account after accounts are loaded (browser only — Host auto-selects fresh accounts)
   useEffect(() => {
-    if (accounts.length > 0 && !selectedAccount) {
+    if (accounts.length > 0 && !selectedAccount && !inHost) {
       const savedAddress = localStorage.getItem(ACCOUNT_STORAGE_KEY)
       if (savedAddress) {
         const savedAccount = accounts.find(a => a.address === savedAddress)
@@ -197,7 +240,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [accounts, selectedAccount, selectAccount])
+  }, [accounts, selectedAccount, selectAccount, inHost])
 
   // Derive EVM address and check mapping state when account or apiClient changes
   useEffect(() => {

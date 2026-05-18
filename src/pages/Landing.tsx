@@ -1,10 +1,19 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import PolkadotLogo from '../components/PolkadotLogo'
+import { isInHost } from '../lib/wallet-provider'
 
 export default function Landing() {
   const navigate = useNavigate()
+
+  // In Triangle Host: skip the landing page entirely, go straight to the app
+  useEffect(() => {
+    if (isInHost()) navigate('/dashboard', { replace: true })
+  }, [navigate])
+
+  if (isInHost()) return null
 
   return (
     <div className="min-h-screen bg-white">

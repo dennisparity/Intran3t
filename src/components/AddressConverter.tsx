@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from 'polkadot-api'
-import { getWsProvider } from 'polkadot-api/ws-provider/web'
+import { getWsProvider } from 'polkadot-api/ws'
 import { paseo } from '../.papi/descriptors'
 import { Binary } from 'polkadot-api'
 import { keccak256 } from 'viem'

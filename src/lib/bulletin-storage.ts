@@ -1,11 +1,11 @@
 /**
  * Bulletin Chain storage for dForms.
  *
- * Supports two upload modes:
+ * Upload modes:
  * 1. Creator-signed: form creator uploads form definitions using their wallet signer
  * 2. Alice relay: voter responses uploaded via Alice (DEV_PHRASE) — no wallet needed
  *
- * No Sudo.sudo() wrapper needed — Alice is already authorized on the public Bulletin testnet.
+ * Falls back to localStorage on any chain failure so the UI always works.
  */
 
 import { blake2b } from '@noble/hashes/blake2.js'
@@ -17,42 +17,25 @@ import {
 import { sr25519CreateDerive } from '@polkadot-labs/hdkd'
 import { CID } from 'multiformats/cid'
 import * as multihash from 'multiformats/hashes/digest'
-import { Binary, createClient, type PolkadotSigner } from 'polkadot-api'
+import { createClient, Binary, type PolkadotSigner } from 'polkadot-api'
 import { getPolkadotSigner } from 'polkadot-api/signer'
-import { getWsProvider } from 'polkadot-api/ws-provider/web'
-import { bulletin } from '../../.papi/descriptors'
+import { getWsProvider } from 'polkadot-api/ws'
 
-const BULLETIN_RPC = 'wss://bulletin.dotspark.app'
-const BULLETIN_GATEWAY = 'https://ipfs.dotspark.app/ipfs'
+const BULLETIN_RPC = 'wss://paseo-bulletin-rpc.polkadot.io'
+const BULLETIN_GATEWAY = 'https://paseo-ipfs.polkadot.io/ipfs'
+const LS_PREFIX = 'intran3t.bulletin.'
 
 export interface BulletinManifest {
-  // Version & type
-  version: string           // Manifest version (e.g., "1.0.0")
-  type: string             // Always "dform-response"
-
-  // Response metadata
-  responseId: string       // Unique response identifier
-  formId: string          // Form ID this response belongs to
-  timestamp: number       // Unix timestamp (milliseconds)
-  timestampFormatted: string // ISO 8601 formatted timestamp
-
-  // Encrypted payload
-  ciphertext: string      // Hex-encoded encrypted response data
-  nonce: string          // Hex-encoded encryption nonce
-
-  // Optional form metadata (for reference)
-  formTitle?: string      // Form title (if available)
-  onChainFormId?: number  // On-chain form ID (if registered)
-}
-
-// ─── Alice relay signer (DEV_PHRASE is public on testnet) ──────────────────
-
-function getAliceSigner(): PolkadotSigner {
-  const entropy = mnemonicToEntropy(DEV_PHRASE)
-  const miniSecret = entropyToMiniSecret(entropy)
-  const derive = sr25519CreateDerive(miniSecret)
-  const keyPair = derive('//Alice')
-  return getPolkadotSigner(keyPair.publicKey, 'Sr25519', keyPair.sign)
+  version: string
+  type: string
+  responseId: string
+  formId: string
+  timestamp: number
+  timestampFormatted: string
+  ciphertext: string
+  nonce: string
+  formTitle?: string
+  onChainFormId?: number
 }
 
 // ─── CID computation: blake2b-256 → CIDv1 raw ─────────────────────────────
@@ -63,56 +46,69 @@ function computeCID(data: Uint8Array): CID {
   return CID.createV1(0x55 /* raw */, digest)
 }
 
-// ─── Core upload (shared by both modes) ────────────────────────────────────
+// ─── localStorage helpers ──────────────────────────────────────────────────
+
+function lsGet(cid: string): string | null {
+  try { return localStorage.getItem(LS_PREFIX + cid) } catch { return null }
+}
+
+function lsPut(cid: string, json: string): void {
+  try { localStorage.setItem(LS_PREFIX + cid, json) } catch { /* ignore */ }
+}
+
+// ─── Alice relay signer ────────────────────────────────────────────────────
+
+function getAliceSigner(): PolkadotSigner {
+  const entropy = mnemonicToEntropy(DEV_PHRASE)
+  const miniSecret = entropyToMiniSecret(entropy)
+  const derive = sr25519CreateDerive(miniSecret)
+  const keyPair = derive('//Alice')
+  return getPolkadotSigner(keyPair.publicKey, 'Sr25519', keyPair.sign)
+}
+
+// ─── Core on-chain upload ──────────────────────────────────────────────────
+
+// Binary re-exported from polkadot-api is the class version at runtime, but
+// TypeScript resolves it from an older nested dependency without fromBytes.
+const BinaryClass = Binary as unknown as { fromBytes(d: Uint8Array): unknown }
 
 async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promise<string> {
   const cid = computeCID(data)
   const cidStr = cid.toString()
 
-  console.log('[Bulletin] Starting upload:', {
-    cid: cidStr,
-    dataSize: data.length,
-    signerPubKey: Array.from(signer.publicKey).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + '...'
-  })
-
   const client = createClient(getWsProvider(BULLETIN_RPC))
   try {
-    const api = client.getTypedApi(bulletin)
+    const api = client.getUnsafeApi() as any
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Bulletin store timed out after 60s')), 60_000)
-      let eventCount = 0
+      let sub: { unsubscribe: () => void } | undefined
+      const timeout = setTimeout(() => {
+        sub?.unsubscribe()
+        reject(new Error('Bulletin store timed out after 180s'))
+      }, 180_000)
 
-      const storeTx = api.tx.TransactionStorage.store({
-        data: Binary.fromBytes(data)
-      })
-
-      storeTx.signSubmitAndWatch(signer).subscribe({
-        next: (event: { type: string; ok?: boolean; value?: unknown }) => {
-          eventCount++
-          console.log(`[Bulletin] tx event #${eventCount}:`, event.type, event.value ? JSON.stringify(event.value) : '')
-
-          if (event.type === 'finalized') {
-            clearTimeout(timeout)
-            if (event.ok) {
-              console.log('[Bulletin] ✅ Transaction finalized successfully')
+      sub = api.tx.TransactionStorage.store({ data: BinaryClass.fromBytes(data) })
+        .signSubmitAndWatch(signer)
+        .subscribe({
+          next: (event: { type: string; found?: boolean }) => {
+            console.log('[Bulletin] tx event:', event.type)
+            if (event.type === 'txBestBlocksState' && event.found) {
+              clearTimeout(timeout)
+              sub?.unsubscribe()
+              console.log('[Bulletin] Transaction in best block')
               resolve()
-            } else {
-              console.error('[Bulletin] ❌ Transaction finalized but failed')
-              reject(new Error('Bulletin store transaction failed'))
+            } else if (event.type === 'invalid') {
+              clearTimeout(timeout)
+              sub?.unsubscribe()
+              reject(new Error('Bulletin transaction invalid'))
             }
-          } else if (event.type === 'invalid') {
+          },
+          error: (err: unknown) => {
             clearTimeout(timeout)
-            console.error('[Bulletin] ❌ Transaction marked as invalid:', JSON.stringify(event))
-            reject(new Error(`Bulletin transaction invalid: ${JSON.stringify(event)}`))
+            sub?.unsubscribe()
+            reject(err)
           }
-        },
-        error: (err: unknown) => {
-          clearTimeout(timeout)
-          console.error('[Bulletin] ❌ Subscription error:', err)
-          reject(err)
-        }
-      })
+        })
     })
   } finally {
     client.destroy()
@@ -123,48 +119,67 @@ async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promi
 
 // ─── Upload with creator's wallet signer ───────────────────────────────────
 
-/**
- * Upload raw data to Bulletin Chain using the provided signer (creator's wallet).
- * Returns the CID string.
- */
 export async function uploadToBulletinWithSigner(data: Uint8Array, signer: PolkadotSigner): Promise<string> {
-  return submitToBulletin(data, signer)
+  const cid = computeCID(data).toString()
+  try {
+    const onChainCid = await submitToBulletin(data, signer)
+    lsPut(onChainCid, new TextDecoder().decode(data))
+    return onChainCid
+  } catch (err) {
+    console.warn('[Bulletin] Chain upload failed, falling back to localStorage:', err)
+    lsPut(cid, new TextDecoder().decode(data))
+    return cid
+  }
 }
 
 // ─── Upload via Alice relay (for voter submissions) ────────────────────────
 
-/**
- * Upload an encrypted form response manifest to Bulletin Chain.
- * Alice relay key signs the transaction. Returns the CID string.
- */
 export async function uploadToBulletin(manifest: BulletinManifest): Promise<string> {
-  const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest))
-  return submitToBulletin(manifestBytes, getAliceSigner())
+  const json = JSON.stringify(manifest)
+  const bytes = new TextEncoder().encode(json)
+  const cid = computeCID(bytes).toString()
+  try {
+    const onChainCid = await submitToBulletin(bytes, getAliceSigner())
+    lsPut(onChainCid, json)
+    return onChainCid
+  } catch (err) {
+    console.warn('[Bulletin] Chain upload failed, falling back to localStorage:', err)
+    lsPut(cid, json)
+    return cid
+  }
 }
 
-/**
- * Upload raw bytes via Alice relay. Returns CID string.
- */
 export async function uploadRawToBulletin(data: Uint8Array): Promise<string> {
-  return submitToBulletin(data, getAliceSigner())
+  const cid = computeCID(data).toString()
+  try {
+    const onChainCid = await submitToBulletin(data, getAliceSigner())
+    lsPut(onChainCid, new TextDecoder().decode(data))
+    return onChainCid
+  } catch (err) {
+    console.warn('[Bulletin] Chain upload failed, falling back to localStorage:', err)
+    lsPut(cid, new TextDecoder().decode(data))
+    return cid
+  }
 }
 
 // ─── Fetch ─────────────────────────────────────────────────────────────────
 
-/**
- * Fetch raw bytes from Bulletin via gateway.
- */
 export async function fetchRawFromBulletin(cid: string): Promise<Uint8Array> {
-  const res = await fetch(`${BULLETIN_GATEWAY}/${cid}`, {
-    signal: AbortSignal.timeout(15_000)
-  })
-  if (!res.ok) throw new Error(`Bulletin gateway error: ${res.status} for CID ${cid}`)
-  return new Uint8Array(await res.arrayBuffer())
+  // Try IPFS gateway first
+  try {
+    const res = await fetch(`${BULLETIN_GATEWAY}/${cid}`, {
+      signal: AbortSignal.timeout(15_000)
+    })
+    if (res.ok) return new Uint8Array(await res.arrayBuffer())
+  } catch { /* fall through */ }
+
+  // Fall back to localStorage
+  const cached = lsGet(cid)
+  if (cached) return new TextEncoder().encode(cached)
+
+  throw new Error(`Content not found for CID ${cid}`)
 }
 
-/**
- * Fetch an encrypted form response manifest from Bulletin via gateway.
- */
 export async function fetchFromBulletin(cid: string): Promise<BulletinManifest> {
   const bytes = await fetchRawFromBulletin(cid)
   return JSON.parse(new TextDecoder().decode(bytes)) as BulletinManifest

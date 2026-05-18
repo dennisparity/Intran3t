@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from '../providers/WalletProvider'
 import { keccak256, hexToBytes } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
-import { Binary } from 'polkadot-api'
+import { Binary } from '@polkadot-api/substrate-bindings'
 
 interface SubstrateEVMSignerReturn {
   // Derived/mapped EVM address
@@ -176,22 +176,17 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
 
       // Submit via pallet_revive.call
       // This extrinsic allows mapped accounts to execute EVM transactions
-      // CRITICAL: Convert hex strings to Binary objects for PAPI encoding
-      const destBytes = hexToBytes(txData.to as `0x${string}`)
       const dataBytes = hexToBytes(txData.data as `0x${string}`)
 
       console.log('📋 Transaction parameters:', {
         destHex: txData.to,
-        destBytes: destBytes,
-        destBytesLength: destBytes?.length,
         dataHex: txData.data.substring(0, 66) + '...',
-        dataBytes: dataBytes,
         dataBytesLength: dataBytes?.length,
         value: txData.value || 0n
       })
 
       const tx = apiClient.tx.Revive.call({
-        dest: Binary.fromBytes(destBytes),
+        dest: txData.to,
         value: txData.value || 0n,
         // CRITICAL: Direct Revive uses 'weight_limit' not 'gas_limit'
         // Pattern from hackm3: { ref_time: bigint, proof_size: bigint }
@@ -200,7 +195,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
           proof_size: 2_000_000n        // 2MB proof size
         },
         storage_deposit_limit: 10_000_000_000_000n,  // 10 trillion (standard limit)
-        data: Binary.fromBytes(dataBytes)
+        data: Binary.fromBytes(dataBytes) as any
       })
 
       console.log('📋 Transaction object created:', tx)
