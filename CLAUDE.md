@@ -1,6 +1,6 @@
 # Intran3t - Operational Context
 
-**TL;DR:** Decentralized workplace app on Polkadot. Forms + Access Passes + Identity. Live: https://intran3t.vercel.app + https://intran3t-app42.paseo.li
+**TL;DR:** Decentralized workplace app on Polkadot. Forms + Access Passes + Identity. Live: https://intran3t.dot.li (DotNS) / Triangle: intran3t.dot
 
 **BLUF:** Use dForms for surveys, Acc3ss for NFT passes. Substrate wallets preferred. Account mapping required for contract calls.
 
@@ -14,12 +14,11 @@
 - **Wallets:** Typink (Substrate), MetaMask (EVM)
 - **Contracts:** Solidity on AssetHub (FormsV2, AccessPass)
 - **Storage:** Bulletin (content), localStorage (keys), People Chain (identity)
-- **Deployment:** Vercel (traditional) + DotNS (decentralized)
+- **Deployment:** DotNS (`bulletin-deploy`)
 
 **Live Deployments:**
-- Production: https://intran3t.vercel.app
-- DotNS: https://intran3t-app42.paseo.li
-- Domain: `intran3t-app42.dot`
+- Browser: https://intran3t.dot.li
+- Triangle: `intran3t.dot`
 
 ---
 
@@ -117,12 +116,9 @@ npm run preview      # Preview build
 
 ### Deployment
 ```bash
-# Vercel
-vercel               # Preview deployment
-vercel --prod        # Production deployment
-
-# DotNS
-NODE_OPTIONS="--max-old-space-size=8192" npm run deploy:dotns
+# DotNS (decentralized)
+set -a; source .env; set +a
+NODE_OPTIONS="--max-old-space-size=8192" bulletin-deploy ./dist intran3t.dot --js-merkle
 ```
 
 ### Contracts
@@ -154,19 +150,14 @@ node contracts/solidity/scripts/check-mapping.js <substrate-address>
 ### Identity & Search
 - `src/services/dotid-registry.ts` - People Chain identity API
 - `src/hooks/useUserSearch.ts` - Combined local + registry search
-- `api/dotid-proxy.js` - CORS proxy (Vercel serverless)
-
 ---
 
 ## Common Issues
 
-### Form Creation - Invalid Byte Sequence (CRITICAL)
+### Form Creation - Invalid Byte Sequence
 **Problem:** Form creation fails with "Invalid byte sequence" error, UUID links instead of numeric IDs
-**Cause:** Vercel strips `0x` prefix and adds `\n` to `VITE_FORMS_CONTRACT_ADDRESS`
-**Fix:**
-1. Code: `.trim()` to remove newline + check for `0x` prefix
-2. Vercel: Set env var with `0x` prefix: `0xe2F988c1aD2533F473265aCD9C0699bE47643316`
-**Result:** Contract succeeds → numeric form IDs → shareable across devices
+**Cause:** Trailing `\n` in env var value for `VITE_FORMS_CONTRACT_ADDRESS`
+**Fix:** Code uses `.trim()` on env vars before passing to ethers.js
 
 ### Response Counts Don't Match
 **Problem:** Different counts on `/admin`, `/dashboard`, `/admin/forms/7`

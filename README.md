@@ -14,7 +14,6 @@
 |---------|-----|
 | Polkadot Desktop | `intran3t.dot` |
 | Browser | https://intran3t.dot.li |
-| Vercel | https://intran3t.vercel.app |
 
 ---
 
@@ -37,7 +36,7 @@ It runs inside the Polkadot Triangle host (Desktop/Mobile/Web) and uses the Prod
 | EVM interaction | ethers.js 6 |
 | Identity | `@polkadot/util-crypto`, `decodeAddress` |
 | Storage | Bulletin Chain (content), localStorage (keys) |
-| Hosting | DotNS (`bulletin-deploy`) + Vercel |
+| Hosting | DotNS (`bulletin-deploy`) |
 
 ### Target Chains
 
@@ -206,12 +205,6 @@ NODE_OPTIONS="--max-old-space-size=8192" bulletin-deploy ./dist intran3t.dot --j
 BULLETIN_RPC="wss://paseo-bulletin-next-rpc.polkadot.io" \
 NODE_OPTIONS="--max-old-space-size=8192" \
 bulletin-deploy --input-car dist.bulletin.car intran3t.dot --js-merkle
-```
-
-### Vercel
-
-```bash
-vercel --prod
 ```
 
 ---

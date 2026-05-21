@@ -353,7 +353,7 @@ export function PublicForm() {
             </h3>
             <div className="flex flex-col gap-3">
               <a
-                href="https://intran3t.vercel.app/#"
+                href="https://intran3t.dot.li/#"
                 className="flex items-center justify-between px-6 py-4 bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-all duration-200 shadow-md hover:shadow-lg group"
               >
                 <div className="flex-1 min-w-0 mr-4">

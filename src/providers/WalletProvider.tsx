@@ -15,7 +15,7 @@ import { paseo } from '../../.papi/descriptors'
 import { keccak256 } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
 
-const PASEO_ASSET_HUB_GENESIS = '0xd6eec26135305a8ad257a20d003357284c8aa03d0bdb2b357ab0a22371e11ef2'
+const PASEO_ASSET_HUB_GENESIS = '0x173cea9df45656cf612c8b8ece56e04e9a693c69cfaac47d3628dae735067af8'
 
 const MAPPING_CACHE_KEY = (addr: string) => `intran3t_mapped_${addr}`
 
@@ -73,9 +73,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const initApi = async () => {
       try {
         const wsProvider = getWsProvider([
-          'wss://testnet-passet-hub.polkadot.io',
-          'wss://sys.ibp.network/asset-hub-paseo',
-          'wss://paseo-asset-hub-rpc.polkadot.io',
+          'wss://paseo-asset-hub-next-rpc.polkadot.io',
         ] as unknown as string)
         // In Triangle host: route chain calls through the host (smoldot/light client)
         // with WS as fallback if the host doesn't support this chain.
@@ -354,6 +352,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(MAPPING_CACHE_KEY(selectedAccount.address), 'true')
     setIsMapped(true)
   }, [apiClient, selectedAccount, signer])
+
+  // Auto-map silently when inside Triangle host and account is confirmed unmapped.
+  // No UI prompt — mapping is an implementation detail the user shouldn't see.
+  useEffect(() => {
+    if (!inHost || isMapped !== false || !signer || !apiClient) return
+    console.log('🗺️ Auto-mapping account in Triangle host (background)...')
+    mapAccount().catch(err => {
+      console.warn('⚠️ Background account mapping failed:', err?.message)
+    })
+  }, [isMapped, inHost, signer, apiClient]) // mapAccount excluded intentionally — stable callback, dep on its inputs above
 
   const resetMappingCache = useCallback(() => {
     const address = selectedAccount?.address

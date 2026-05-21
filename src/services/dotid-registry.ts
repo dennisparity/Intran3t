@@ -22,10 +22,11 @@ export interface RegistryIdentity {
   }>
 }
 
-// Use local proxy in development, serverless function in production
+// Dev: use Vite proxy (vite.config.mjs) to avoid CORS
+// Production: call dotid.app directly (Triangle host webview doesn't enforce CORS)
 const DOTID_API_BASE = import.meta.env.DEV
   ? '/api/dotid/identities'
-  : (import.meta.env.VITE_DOTID_API_URL || '/api/dotid-proxy')
+  : (import.meta.env.VITE_DOTID_API_URL || 'https://dotid.app/api/directory/identities')
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 // Simple in-memory cache

@@ -8,14 +8,14 @@ export function OfficeBookingCard() {
   return (
     <div className="bg-white rounded-2xl border border-stone-200 p-5 flex flex-col h-full">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center">
-          <Building2 className="w-5 h-5 text-[#1c1917]" />
+        <div>
+          <h3 className="text-lg font-bold text-[#1c1917] font-serif mb-1">Office Booking</h3>
+          <p className="text-xs text-[#78716c]">
+            Berlin, London &amp; Lisbon — book a desk or meeting room, on-chain.
+          </p>
         </div>
+        <Building2 className="w-5 h-5 text-[#78716c] flex-shrink-0 mt-0.5" />
       </div>
-      <h3 className="font-semibold text-sm text-[#1c1917] mb-1">Office Booking</h3>
-      <p className="text-xs text-stone-500 mb-4">
-        Berlin, London &amp; Lisbon — book a desk or meeting room, on-chain.
-      </p>
       <div className="flex gap-2 mt-auto">
         {OFFICES.map(office => (
           <button

@@ -6,7 +6,9 @@
  */
 
 import { injectSpektrExtension } from '@novasamatech/product-sdk'
-import { connectInjectedExtension, getPolkadotSignerFromPjs, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
+import { connectInjectedExtension, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
+import { decodeAddress } from '@polkadot/util-crypto'
+import { createStandaloneTxSigner } from './standalone-tx-signer'
 
 export interface WalletExtension {
   name: string
@@ -30,19 +32,17 @@ export function isInHost(): boolean {
 
 const DAPP_NAME = 'intran3t'
 
-function buildAccountsFromBridge(
-  rawAccounts: any[],
-  bridge: { signPayload?: Function; signRaw?: Function } | null
-): InjectedPolkadotAccount[] {
+function buildAccountsFromBridge(rawAccounts: any[]): InjectedPolkadotAccount[] {
   return rawAccounts.map((account: any) => {
     const address: string = account.address
-    const polkadotSigner = bridge?.signPayload && bridge?.signRaw
-      ? getPolkadotSignerFromPjs(
-          address,
-          bridge.signPayload.bind(bridge) as any,
-          bridge.signRaw.bind(bridge) as any,
-        )
-      : null
+    const publicKey = decodeAddress(address)
+    const polkadotSigner = createStandaloneTxSigner({
+      extensionName: 'spektr',
+      dappName: DAPP_NAME,
+      address,
+      publicKey,
+      keypairType: account.type || 'sr25519',
+    })
     return { address, name: account.name || account.meta?.name || 'Triangle Account', polkadotSigner } as InjectedPolkadotAccount
   })
 }
@@ -67,15 +67,14 @@ async function getSpektrExtension(): Promise<WalletExtension | null> {
     const rawAccounts = await spektrExtension.accounts.get()
     if (rawAccounts.length === 0) return null
 
-    const bridge = spektrExtension.signer ?? null
-    const accounts = buildAccountsFromBridge(rawAccounts, bridge)
+    const accounts = buildAccountsFromBridge(rawAccounts)
 
     return {
       name: 'spektr',
       accounts,
       getAccounts: async () => {
         const fresh = await spektrExtension.accounts.get()
-        return buildAccountsFromBridge(fresh, bridge)
+        return buildAccountsFromBridge(fresh)
       },
       subscribe: (_callback) => ({ unsubscribe: () => {} })
     }
@@ -104,14 +103,26 @@ async function getFallbackExtension(preferredWallet?: string): Promise<WalletExt
   for (const name of extensionNames) {
     try {
       const extension = await connectInjectedExtension(name)
-      const accounts = await extension.getAccounts()
+      const rawAccounts = await extension.getAccounts()
 
-      if (accounts.length > 0) {
+      if (rawAccounts.length > 0) {
+        const wrapAccounts = (accs: InjectedPolkadotAccount[]) =>
+          accs.map(acc => ({
+            ...acc,
+            polkadotSigner: createStandaloneTxSigner({
+              extensionName: name,
+              dappName: DAPP_NAME,
+              address: acc.address,
+              publicKey: acc.polkadotSigner.publicKey,
+              keypairType: (acc as any).type || 'sr25519',
+            }),
+          }))
+
         return {
           name,
-          accounts,
-          getAccounts: () => extension.getAccounts(),
-          subscribe: (callback) => extension.subscribe(callback)
+          accounts: wrapAccounts(rawAccounts),
+          getAccounts: () => extension.getAccounts().then(wrapAccounts),
+          subscribe: (callback) => extension.subscribe(accs => callback(wrapAccounts(accs))),
         }
       }
     } catch (error) {
