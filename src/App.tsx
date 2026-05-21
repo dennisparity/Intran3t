@@ -5,6 +5,7 @@ import ModularDashboard from "./pages/ModularDashboard";
 import Admin from "./pages/Admin";
 import AdminFormResults from "./pages/AdminFormResults";
 import IdentityTest from "./pages/IdentityTest";
+import OfficePage from "./pages/OfficePage";
 import { PolkadotProvider } from "@/lib/polkadot-provider.dedot";
 import { EVMProvider } from "./providers/EVMProvider";
 import { PublicForm } from "./modules/forms";
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/profile/:address" element={<ModularDashboard />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/forms/:formId" element={<AdminFormResults />} />
+              <Route path="/office" element={<OfficePage />} />
               <Route path="/identity-test" element={<IdentityTest />} />
             </Routes>
           </div>

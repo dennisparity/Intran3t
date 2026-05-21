@@ -20,7 +20,7 @@
 
 ## Overview
 
-Intran3t is a modular intranet-style app running fully on Polkadot. It demonstrates core workplace primitives built on decentralized infrastructure: forms with encrypted responses, NFT-based access passes, and People Chain identity.
+Intran3t is a modular intranet-style app running fully on Polkadot. It demonstrates core workplace primitives built on decentralized infrastructure: on-chain desk and room booking, forms with encrypted responses, NFT-based access passes, and People Chain identity.
 
 It runs inside the Polkadot Triangle host (Desktop/Mobile/Web) and uses the Product SDK to integrate with the host's account and signing system. In standalone browser mode, it connects to Substrate wallet extensions directly.
 
@@ -64,6 +64,18 @@ Privacy-preserving form builder with wallet-less submission:
 - Admin fetches and decrypts responses on demand
 - Full on-chain audit trail via the FormsV2 contract
 
+### Office Booking Module
+
+Fully on-chain desk and meeting room booking for Berlin, London, and Lisbon:
+
+- Interactive floor maps with per-desk booking state read from chain
+- Multi-date desk booking via `bookBatch` (single transaction)
+- 30-minute meeting room slots with on-chain reservation
+- Booker identity resolved from People Chain registry, shown as initials on the floor map
+- Who's-in-today banner aggregates all bookers for the selected date
+- QR code access pass auto-generated after successful booking, shown under My Bookings
+- Smart contract: `OfficeBooking.sol` on Paseo Asset Hub (`mapping locationId → date → resourceId → booker`)
+
 ### Acc3ss Module
 
 ERC-721 access passes as NFTs via the AccessPass smart contract:
@@ -91,6 +103,7 @@ All deployed on **Paseo Asset Hub** (chain ID `420420417`):
 |----------|---------|
 | FormsV2 | `0xe2F988c1aD2533F473265aCD9C0699bE47643316` |
 | AccessPass | `0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94` |
+| OfficeBooking | `0x311387B85F6d24e87E520b25cca4A706c5574EFf` |
 
 ---
 
@@ -113,6 +126,7 @@ The app detects whether it runs inside the Polkadot Triangle host (`window.__HOS
 | Encryption keys | localStorage (creator only) |
 | Identity data | People Chain (permanent, on-chain) |
 | Access passes | AccessPass smart contract (ERC-721) |
+| Desk/room bookings | OfficeBooking smart contract |
 
 ### Wallet-Less Submission Flow
 
@@ -151,6 +165,7 @@ VITE_ASSETHUB_EVM_RPC=https://eth-rpc-testnet.polkadot.io
 VITE_ASSETHUB_EVM_CHAIN_ID=420420417
 VITE_FORMS_CONTRACT_ADDRESS=0xe2F988c1aD2533F473265aCD9C0699bE47643316
 VITE_ACCESSPASS_CONTRACT_ADDRESS=0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94
+VITE_OFFICE_CONTRACT_ADDRESS=0x311387B85F6d24e87E520b25cca4A706c5574EFf
 VITE_RELAY_PRIVATE_KEY=<Alice_private_key>  # Testnet only
 ```
 
@@ -206,24 +221,34 @@ vercel --prod
 ```
 src/
   providers/
-    WalletProvider.tsx        # Wallet state, PAPI client, account mapping
+    WalletProvider.tsx            # Wallet state, PAPI client, account mapping
   modules/
-    profile/ProfileWidget.tsx # People Chain identity display
-    forms/FormsWidget.tsx     # Form creation with auto account mapping
-    forms/PublicForm.tsx      # Wallet-less public submission
-    acc3ss/Acc3ssWidget.tsx   # NFT access pass minting
+    profile/ProfileWidget.tsx     # People Chain identity display
+    forms/FormsWidget.tsx         # Form creation with auto account mapping
+    forms/PublicForm.tsx          # Wallet-less public submission
+    acc3ss/Acc3ssWidget.tsx       # NFT access pass minting
+    office-booking/
+      config.ts                   # Office/desk/room data + contract config
+      types.ts                    # Shared types
+      OfficeBookingCard.tsx        # Dashboard card with office shortcuts
+  components/
+    FloorMap.tsx                  # Interactive floor plan (PNG + desk overlays)
+    MonthCalendar.tsx             # Custom date picker (Mon-Fri only)
   hooks/
-    useSubstrateEVMSigner.ts  # Substrate wallet EVM signing
-    useAccountMapping.ts      # Mapping check and trigger
-    useFormsContract.ts       # FormsV2 contract interactions
+    useSubstrateEVMSigner.ts      # Substrate wallet EVM signing
+    useAccountMapping.ts          # Mapping check and trigger
+    useFormsContract.ts           # FormsV2 contract interactions
+    useOfficeBookingContract.ts   # OfficeBooking reads + writes
   lib/
-    bulletin-storage.ts       # Bulletin upload/fetch
-    forms-encryption.ts       # AES-256-GCM encryption
-    wallet-provider.ts        # Extension detection utilities
+    bulletin-storage.ts           # Bulletin upload/fetch
+    forms-encryption.ts           # AES-256-GCM encryption
+    wallet-provider.ts            # Extension detection utilities
   pages/
-    Landing.tsx               # Wallet connect entry
-    ModularDashboard.tsx      # Main dashboard
-    AdminFormResults.tsx      # Response viewing and decryption
+    ModularDashboard.tsx          # Main dashboard
+    OfficePage.tsx                # Full office booking UI (desks/rooms/bookings)
+    AdminFormResults.tsx          # Response viewing and decryption
+contracts/solidity/contracts/
+  OfficeBooking.sol               # On-chain booking registry
 ```
 
 ---

@@ -1,17 +1,15 @@
 /**
  * useDiscoveredUsers Hook
  *
- * Tracks all users who connect to the dapp and enriches them with People Chain identity data
+ * Tracks all users who connect to the dapp. Identity comes from the host wallet — no People Chain queries.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../providers/WalletProvider';
-import { queryOnChainIdentity, type IdentityInfo } from '../modules/profile/identity-helpers';
 
 export interface DiscoveredUser {
   substrateAddress: string;
   evmAddress: string | null;
-  identity: IdentityInfo | null;
   discoveredAt: string;
   lastSeen: string;
 }
@@ -71,45 +69,16 @@ export function useDiscoveredUsers() {
       return;
     }
 
-    // New user - discover and enrich with identity
-    setLoading(true);
-
-    // Query identity from People Chain
-    queryOnChainIdentity(substrateAddress).then(result => {
-      const newUser: DiscoveredUser = {
-        substrateAddress,
-        evmAddress: null, // Will be enriched when EVM connects
-        identity: result.success ? result.identity || null : null,
-        discoveredAt: now,
-        lastSeen: now,
-      };
-
-      const updated = [...discoveredUsers, newUser];
-      setDiscoveredUsers(updated);
-      saveDiscoveredUsers(updated);
-
-      console.log('✅ User discovered:', substrateAddress);
-      if (result.success && result.identity) {
-        console.log('   Identity:', result.identity.display);
-      }
-    }).catch(error => {
-      console.error('Failed to query identity:', error);
-
-      // Add user anyway without identity
-      const newUser: DiscoveredUser = {
-        substrateAddress,
-        evmAddress: null,
-        identity: null,
-        discoveredAt: now,
-        lastSeen: now,
-      };
-
-      const updated = [...discoveredUsers, newUser];
-      setDiscoveredUsers(updated);
-      saveDiscoveredUsers(updated);
-    }).finally(() => {
-      setLoading(false);
-    });
+    // New user — track address only, no People Chain query
+    const newUser: DiscoveredUser = {
+      substrateAddress,
+      evmAddress: null,
+      discoveredAt: now,
+      lastSeen: now,
+    };
+    const updated = [...discoveredUsers, newUser];
+    setDiscoveredUsers(updated);
+    saveDiscoveredUsers(updated);
   }, [selectedAccount?.address]);
 
   /**
@@ -135,14 +104,11 @@ export function useDiscoveredUsers() {
         return false;
       }
 
-      console.log('🔍 Querying People Chain identity for:', substrateAddress);
-      const result = await queryOnChainIdentity(substrateAddress);
       const now = new Date().toISOString();
 
       const newUser: DiscoveredUser = {
         substrateAddress,
         evmAddress: null,
-        identity: result.success ? result.identity || null : null,
         discoveredAt: now,
         lastSeen: now,
       };

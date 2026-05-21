@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '../../providers/WalletProvider'
-import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical, ExternalLink, AlertCircle, Lock } from 'lucide-react'
+import { FileText, Plus, Link2, Trash2, X, Copy, CheckCircle, Edit, GripVertical, ExternalLink, AlertCircle } from 'lucide-react'
 import type { Form, FormField, FormsConfig, FieldType } from './types'
 import { loadForms, saveForms, defaultFormsConfig, FORMS_STORAGE_KEY, RESPONSES_STORAGE_KEY } from './config'
 import { generateFormKey, saveFormKey } from '../../lib/form-keys'
 import { useFormsContract } from '../../hooks/useFormsContract'
 import { uploadRawToBulletin } from '../../lib/bulletin-storage'
 import { useSubstrateEVMSigner } from '../../hooks/useSubstrateEVMSigner'
-import { MapAccountModal } from '../../components/MapAccountModal'
 import { encodeFunctionData } from 'viem'
 
 export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsConfig }) {
-  const { selectedAccount, signer } = useWallet()
+  const { selectedAccount } = useWallet()
   const {
     isLoading: contractLoading,
     registerForm: contractRegisterForm,
@@ -19,21 +18,8 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     getResponseCount
   } = useFormsContract()
 
-  // Substrate EVM signer for contract calls
   const substrateEVM = useSubstrateEVMSigner()
 
-  // Account mapping — shared state from WalletProvider (single source of truth)
-  const { isMapped, mapAccount, resetMappingCache } = useWallet()
-  const accountMapping = { isMapped, mapAccount, resetCache: resetMappingCache }
-
-  // UI state for mapping modal
-  const [showMapModal, setShowMapModal] = useState(false)
-  const [showPreActionModal, setShowPreActionModal] = useState(false)
-
-  // Debug: Log what the hook returns
-  useEffect(() => {
-    console.log('[FormsWidget] Hook state:', { contractLoading, hasAccount: !!selectedAccount })
-  }, [contractLoading, selectedAccount])
   const [activeTab, setActiveTab] = useState<'create' | 'submissions'>('create')
   const [forms, setForms] = useState<Form[]>([])
   const [isCreating, setIsCreating] = useState(false)
@@ -65,7 +51,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
   useEffect(() => {
     setForms(loadForms())
 
-    // Listen for storage changes from other tabs (e.g., form submissions)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === FORMS_STORAGE_KEY || e.key === RESPONSES_STORAGE_KEY) {
         setForms(loadForms())
@@ -76,7 +61,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  // Fetch on-chain response counts for forms
   useEffect(() => {
     const myForms = forms.filter(f => f.creator === selectedAccount?.address)
     if (myForms.length === 0) return
@@ -101,16 +85,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
     return `form-${Date.now()}-${Math.random().toString(36).slice(2)}`
   }
 
-  const handleCreateFormClick = () => {
-    if (!formTitle.trim() || fields.length === 0 || isCreating) return
-    // When mapping status is unknown (null), warn the user before triggering wallet popups
-    if (isMapped === null && selectedAccount) {
-      setShowPreActionModal(true)
-      return
-    }
-    handleCreateForm()
-  }
-
   const handleCreateForm = async () => {
     if (!formTitle.trim() || !selectedAccount || isCreating) return
 
@@ -121,30 +95,20 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
     try {
       if (editingFormId) {
-        // Update existing form (local only — on-chain form definitions are immutable)
         updatedForms = forms.map(f =>
           f.id === editingFormId
             ? { ...f, title: formTitle.trim(), description: formDescription.trim(), fields }
             : f
         )
       } else {
-        // Generate AES-256 encryption key for this form (moved outside scope)
         const formKey = generateFormKey()
-
-        // Predict on-chain form ID (formCount + 1) and register on contract
         let formId: string
-
-        console.log('[dForms] Contract check:', { contractLoading })
-
         let onChainMetadata: { onChainId?: string; onChainTimestamp?: number; signerAddress?: string; bulletinCid?: string } = {}
 
         if (!contractLoading) {
           try {
-            console.log('[dForms] Uploading form definition to Bulletin (via Alice relay)...')
-            console.log('[dForms] formKey exists:', !!formKey, 'length:', formKey?.length)
-            setCreationStatus('Uploading form to Bulletin...')
+            setCreationStatus('Uploading to Bulletin...')
 
-            // 1. Build form definition JSON
             const formDef = {
               title: formTitle.trim(),
               description: formDescription.trim(),
@@ -153,55 +117,14 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               createdAt: Date.now(),
             }
             const formDefBytes = new TextEncoder().encode(JSON.stringify(formDef))
-
-            // 2. Upload to Bulletin (via Alice relay - consistent with voter submissions)
             const formCID = await uploadRawToBulletin(formDefBytes)
-            console.log('[dForms] Bulletin upload done, CID:', formCID)
 
-            // 3. Check account mapping and auto-map if needed
-            if (!selectedAccount) {
-              throw new Error('Please connect a wallet first')
-            }
-
-            // Check if account is mapped, if not (or unknown), map it automatically
-            // null = check failed (metadata mismatch) — treat same as false and attempt mapping
-            console.log('[dForms] Step 1/2: Mapping check', {
-              address: selectedAccount.address,
-              isMapped: accountMapping.isMapped,
-              willMap: accountMapping.isMapped !== true
-            })
-
-            if (accountMapping.isMapped !== true) {
-              console.log('🗺️ [dForms] Step 1/2: Requesting map_account signature...')
-              setCreationStatus('step:map')
-
-              try {
-                await accountMapping.mapAccount()
-                console.log('✅ [dForms] Step 1/2 complete: Account mapped')
-              } catch (mapErr) {
-                // WalletProvider.mapAccount() already handles AlreadyMapped as success
-                // Any error here is a genuine failure
-                const errMsg = mapErr instanceof Error ? mapErr.message : 'Unknown error'
-                throw new Error(`Failed to map account: ${errMsg}`)
-              }
-            } else {
-              console.log('✅ [dForms] Step 1/2: Skipped — account already mapped (cached)')
-            }
-
-            console.log('[dForms] Step 2/2: Registering form on-chain...')
-            setCreationStatus('step:register')
-
-            // 4. Register CID on contract
+            setCreationStatus('Registering on-chain...')
             const timestamp = Date.now()
 
-            // Use the logged-in wallet for contract call
-            setCreationStatus('step:confirming')
-            console.log('[dForms] Step 2/2: Requesting Revive.call signature...')
             const rawAddress = (import.meta.env.VITE_FORMS_CONTRACT_ADDRESS as string || '').trim()
-            // Ensure 0x prefix (Vercel may strip it)
             const contractAddress = (rawAddress.startsWith('0x') ? rawAddress : `0x${rawAddress}`) as `0x${string}`
 
-            // Encode registerForm(string formCid) call
             const calldata = encodeFunctionData({
               abi: [{
                 name: 'registerForm',
@@ -220,15 +143,11 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
               value: 0n
             })
 
-            // Read actual on-chain ID after tx — avoids prediction errors from concurrent registrations
             const actualCount = await getFormCount()
             const actualOnChainId = Number(actualCount)
-            console.log('✅ Form registered on-chain, id:', actualOnChainId, 'CID:', formCID)
             setLastOnChainId(actualOnChainId)
 
-            // Use unique local ID to avoid React key collisions
             formId = generateFormId()
-
             onChainMetadata = {
               onChainId: actualOnChainId.toString(),
               onChainTimestamp: timestamp,
@@ -237,21 +156,10 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
             }
           } catch (contractErr) {
             const msg = contractErr instanceof Error ? contractErr.message : String(contractErr)
-            console.error('❌ [dForms] Bulletin/contract call failed:', msg)
-
-            // If the on-chain call failed because the account isn't mapped, reset the cache
-            // so the NEXT attempt re-runs the mapping flow (clears stale localStorage + React state)
-            if (msg.startsWith('MAPPING_REQUIRED:') || msg.includes('Account not mapped')) {
-              console.warn('[dForms] Mapping cache invalidated — stale cache detected. Retry to re-map.')
-              accountMapping.resetCache()
-              throw new Error('Account not mapped on-chain. Your wallet session may have expired. Please try creating the form again — you will be prompted to sign a mapping transaction first.')
-            }
-
-            // Any other failure means the form was NOT registered — never save locally
+            console.error('❌ [dForms] Contract call failed:', msg)
             throw new Error(`Form creation failed: ${msg}`)
           }
         } else {
-          console.log('[dForms] Creating form locally - contractLoading:', contractLoading)
           formId = generateFormId()
         }
 
@@ -311,7 +219,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
       setFields([...fields, newField])
     }
 
-    // Reset field builder
     setFieldLabel('')
     setFieldType('text')
     setFieldPlaceholder('')
@@ -343,18 +250,14 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
 
     const { getFormKey } = await import('../../lib/form-keys')
     const formKey = getFormKey(formId)
-
-    // Use on-chain ID if available (shareable across devices), otherwise use local UUID
     const shareableId = form.onChainId ? String(form.onChainId) : formId
 
     let link: string
     if (formKey) {
-      // Generate shareable link with on-chain ID + encryption key
       const { toBase64url } = await import('../../lib/form-keys')
       const keyEncoded = toBase64url(formKey)
       link = `${window.location.origin}/#/f/${shareableId}#key=${keyEncoded}`
     } else {
-      // Fallback: simple link (voter must be on same device as creator)
       link = `${window.location.origin}/#/f/${shareableId}`
     }
 
@@ -671,7 +574,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
-
                 {/* Error Alert */}
                 {contractWarning && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -692,70 +594,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   </div>
                 )}
 
-                {/* Account Mapping Gate (if Substrate wallet is not mapped) */}
-                {selectedAccount && accountMapping.isMapped === false && (
-                  <div className="mb-4 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <Lock className="w-5 h-5 text-[#1c1917] mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-[#1c1917]">Account Mapping Required</p>
-                        <p className="text-xs text-[#57534e] mt-0.5">
-                          Map your Substrate account to publish forms on-chain.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowMapModal(true)}
-                      className="w-full py-2 px-4 bg-[#1c1917] text-white text-sm font-medium rounded-lg hover:bg-[#292524] transition-colors"
-                    >
-                      Map Account
-                    </button>
-                  </div>
-                )}
-
-                {/* First-time setup notice — only shown when confirmed unmapped */}
-                {selectedAccount && accountMapping.isMapped === false && !isCreating && !editingFormId && (
-                  <div className="mb-3 flex items-start gap-2.5 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl p-3">
-                    <div className="w-4 h-4 rounded-full bg-[#1c1917] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">i</div>
-                    <div>
-                      <p className="text-xs font-semibold text-[#1c1917]">First-time setup: 2 wallet signatures required</p>
-                      <p className="text-xs text-[#78716c] mt-0.5">
-                        <span className="font-medium">1.</span> Map your account <span className="text-[#a8a29e]">(one-time, ~30s)</span>
-                        <span className="mx-1.5 text-[#d6d3d1]">·</span>
-                        <span className="font-medium">2.</span> Register form on-chain
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step indicator during creation */}
-                {isCreating && accountMapping.isMapped !== true && (
-                  <div className="mb-3 border border-[#e7e5e4] rounded-xl overflow-hidden">
-                    {[
-                      { key: 'step:map', label: 'Map account', sub: 'Sign in your wallet — one-time setup' },
-                      { key: 'step:register', label: 'Register form on-chain', sub: 'Confirm the transaction in your wallet' },
-                    ].map((step, i) => {
-                      const steps = ['step:map', 'step:register', 'step:confirming']
-                      const currentIdx = steps.indexOf(creationStatus)
-                      const stepIdx = steps.indexOf(step.key)
-                      const done = currentIdx > stepIdx
-                      const active = currentIdx === stepIdx
-                      return (
-                        <div key={step.key} className={`flex items-center gap-3 px-3 py-2.5 ${i === 0 ? '' : 'border-t border-[#e7e5e4]'} ${active ? 'bg-white' : ''}`}>
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${done ? 'bg-[#44403c] text-white' : active ? 'bg-[#1c1917] text-white' : 'bg-[#e7e5e4] text-[#a8a29e]'}`}>
-                            {done ? '✓' : i + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-semibold ${active ? 'text-[#1c1917]' : done ? 'text-[#78716c]' : 'text-[#a8a29e]'}`}>{step.label}</p>
-                            {active && <p className="text-xs text-[#78716c] mt-0.5">{step.sub}</p>}
-                          </div>
-                          {active && <div className="w-3 h-3 border-2 border-[#1c1917] border-t-transparent rounded-full animate-spin flex-shrink-0" />}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
                 {/* Create/Update Buttons */}
                 <div className="flex gap-3">
                   {editingFormId && (
@@ -767,7 +605,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                   )}
                   <button
-                    onClick={handleCreateFormClick}
+                    onClick={handleCreateForm}
                     disabled={
                       !formTitle.trim() ||
                       fields.length === 0 ||
@@ -777,10 +615,7 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                   >
                     <FileText className="w-5 h-5" />
                     {isCreating
-                      ? creationStatus === 'step:map' ? 'Mapping account...'
-                        : creationStatus === 'step:register' ? 'Registering form...'
-                        : creationStatus === 'step:confirming' ? 'Confirming on-chain...'
-                        : 'Publishing to Polkadot...'
+                      ? creationStatus || 'Publishing to Polkadot...'
                       : editingFormId ? 'Update Form' : 'Create Form'}
                   </button>
                 </div>
@@ -892,7 +727,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
                     </button>
                   </div>
 
-                  {/* Expanded Responses */}
                   {expandedFormId === form.id && form.responses.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-[#e7e5e4] space-y-2">
                       {form.responses.map((response) => (
@@ -931,54 +765,6 @@ export function FormsWidget({ config = defaultFormsConfig }: { config?: FormsCon
           </div>
         )}
       </div>
-
-      {/* Pre-action notice: account needs to be mapped first */}
-      {showPreActionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#fafaf9] border border-[#e7e5e4] flex items-center justify-center flex-shrink-0 text-sm font-bold text-[#1c1917]">i</div>
-              <div>
-                <p className="text-sm font-semibold text-[#1c1917]">Account needs to be mapped first</p>
-                <p className="text-xs text-[#78716c] mt-1">
-                  Creating a form requires your account to be mapped for smart contract access. Up to 2 wallet signatures will be requested:
-                </p>
-              </div>
-            </div>
-            <div className="bg-[#fafaf9] border border-[#e7e5e4] rounded-lg px-4 py-3 mb-4 space-y-1">
-              <p className="text-xs text-[#57534e]"><span className="font-semibold">1.</span> Map account <span className="text-[#a8a29e]">(one-time setup)</span></p>
-              <p className="text-xs text-[#57534e]"><span className="font-semibold">2.</span> Register form on-chain</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowPreActionModal(false)}
-                className="flex-1 px-4 py-2 text-sm border border-[#e7e5e4] text-[#78716c] rounded-lg hover:bg-[#fafaf9] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setShowPreActionModal(false); handleCreateForm() }}
-                className="flex-1 px-4 py-2 text-sm bg-[#1c1917] text-white rounded-xl hover:bg-[#292524] transition-colors font-medium"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Account Mapping Modal */}
-      {showMapModal && substrateEVM.evmAddress && (
-        <MapAccountModal
-          evmAddress={substrateEVM.evmAddress}
-          onClose={() => setShowMapModal(false)}
-          onSuccess={() => {
-            setShowMapModal(false)
-            // Mapping state will auto-refresh via useAccountMapping hook
-          }}
-          onMap={accountMapping.mapAccount}
-        />
-      )}
     </div>
   )
 }

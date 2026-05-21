@@ -21,6 +21,12 @@ export default {
       chainId: 420420417,
       accounts: [configVariable("PRIVATE_KEY")],
     },
+    paseoNext: {
+      type: "http",
+      url: "https://services.polkadothub-rpc.com/testnet",
+      chainId: 420420417,
+      accounts: [configVariable("PRIVATE_KEY")],
+    },
     kusamaHub: {
       type: "http",
       url: "https://kusama-asset-hub-eth-rpc.polkadot.io",

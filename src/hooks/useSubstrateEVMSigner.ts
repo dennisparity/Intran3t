@@ -56,7 +56,7 @@ const mappingCache = new Map<string, boolean | null>()
  */
 export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
   // Use Product SDK wallet provider - signer comes from connectInjectedExtension
-  const { selectedAccount, apiClient, signer } = useWallet()
+  const { selectedAccount, apiClient, unsafeApiClient, signer } = useWallet()
   const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
   const [isMapped, setIsMapped] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -185,7 +185,9 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
         value: txData.value || 0n
       })
 
-      const tx = apiClient.tx.Revive.call({
+      // Use unsafe API to bypass stale typed descriptor validation (Incompatible runtime entry)
+      const txApi = unsafeApiClient || apiClient
+      const tx = txApi.tx.Revive.call({
         dest: txData.to,
         value: txData.value || 0n,
         // CRITICAL: Direct Revive uses 'weight_limit' not 'gas_limit'
@@ -205,75 +207,46 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
       console.log('📋 Signer:', signer)
       console.log('📋 Signer keys:', signer ? Object.keys(signer) : 'empty')
 
-      // Use subscribe pattern to capture transaction hash from events.
-      // Resolves on finalized (GRANDPA, ~18-24s) for correctness.
-      // Fires onProgress callbacks at 'broadcasted' and 'in_block' for UI stage updates.
+      // Resolves on txBestBlocksState (in-block, ~6-12s) — matches privatforms01 pattern.
+      // mortal: true is required; Spektr (Polkadot Desktop) silently drops immortal sign requests.
       return new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Transaction timed out after 2 minutes'))
-        }, 120_000)
-
-        let substrateHash: string | null = null
-        let settled = false  // prevent double resolve/reject
+        let isResolved = false
 
         const safeStringify = (obj: any) =>
           JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
 
-        tx.signSubmitAndWatch(signer).subscribe({
+        const sub = tx.signSubmitAndWatch(signer, {
+          mortality: { mortal: true, period: 256 },
+        }).subscribe({
           next: (event: any) => {
-            console.log(`📋 Transaction event: ${event.type}`)
+            if (isResolved) return
 
-            // Capture Substrate extrinsic hash and signal UI
             if (event.type === 'broadcasted' && event.txHash) {
-              substrateHash = event.txHash
-              console.log(`📋 Substrate extrinsic hash: ${substrateHash}`)
               txData.onProgress?.('broadcasted')
             }
 
-            // Signal in-block for UI update, but don't resolve yet — wait for finalized
-            if (event.type === 'txBestBlocksState') {
-              if (event.found && event.ok) {
-                console.log('⏳ Transaction in best block — waiting for finalization')
-                txData.onProgress?.('in_block')
-              } else if (event.found && !event.ok) {
-                console.warn('⚠️ Transaction in best block but not ok — waiting for finalized error details')
+            if (event.type === 'txBestBlocksState' && event.found) {
+              const failedEvent = event.events?.find(
+                (e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed'
+              )
+              if (failedEvent) {
+                isResolved = true
+                sub.unsubscribe()
+                const dispatchError = safeStringify(failedEvent.value?.value ?? failedEvent.value)
+                reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
+                return
               }
-              return
-            }
-
-            // Resolve or reject only on finalized
-            if (event.type === 'finalized') {
-              clearTimeout(timeout)
-              if (settled) return
-              settled = true
               if (event.ok) {
-                console.log('✅ Transaction finalized')
-                resolve(substrateHash || 'finalized-no-hash')
-              } else {
-                const failedEvents = (event.events || [])
-                  .filter((e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed')
-                const dispatchError = failedEvents.length > 0
-                  ? safeStringify(failedEvents[0].value?.value ?? failedEvents[0].value)
-                  : 'unknown'
-                console.error('❌ Transaction failed. Dispatch error:', dispatchError)
-                const errLower = dispatchError.toLowerCase()
-                if (errLower.includes('map') || errLower.includes('caller') || errLower.includes('origin')) {
-                  reject(new Error('MAPPING_REQUIRED: Account not mapped on-chain. Please try again.'))
-                } else {
-                  reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
-                }
+                isResolved = true
+                sub.unsubscribe()
+                txData.onProgress?.('in_block')
+                resolve(event.txHash || 'in-block-no-hash')
               }
-            } else if (event.type === 'invalid' && !settled) {
-              clearTimeout(timeout)
-              settled = true
-              console.error('❌ Transaction marked as invalid')
-              reject(new Error('Transaction marked as invalid'))
             }
           },
           error: (err: any) => {
-            if (settled) return
-            clearTimeout(timeout)
-            settled = true
+            if (isResolved) return
+            isResolved = true
             console.error('❌ Transaction subscription error:', err)
             reject(err)
           }
@@ -287,7 +260,7 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [apiClient, selectedAccount, signer, isMapped, evmAddress])
+  }, [apiClient, unsafeApiClient, selectedAccount, signer, isMapped, evmAddress])
 
   return {
     evmAddress,

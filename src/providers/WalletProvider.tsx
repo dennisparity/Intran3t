@@ -32,6 +32,7 @@ interface WalletContextValue {
 
   // PAPI
   apiClient: any | null
+  unsafeApiClient: any | null
   signer: PolkadotSigner | null
 
   // Account mapping — shared across all modules
@@ -58,6 +59,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [apiClient, setApiClient] = useState<any>(null)
+  const [unsafeApiClient, setUnsafeApiClient] = useState<any>(null)
   const [signer, setSigner] = useState<PolkadotSigner | null>(null)
 
   // Mapping state — single shared instance for all modules
@@ -81,7 +83,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const provider = inHost ? createPapiProvider(PASEO_ASSET_HUB_GENESIS, wsProvider) : wsProvider
         const client = createClient(provider)
         const api = client.getTypedApi(paseo)
+        const unsafeApi = client.getUnsafeApi()
         setApiClient(api)
+        setUnsafeApiClient(unsafeApi)
         console.log(`✅ PAPI client initialized (${inHost ? 'host' : 'standalone'} mode)`)
       } catch (error) {
         console.error('Failed to initialize PAPI:', error)
@@ -368,6 +372,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     accounts,
     selectedAccount,
     apiClient,
+    unsafeApiClient,
     signer,
     isMapped,
     evmAddress,

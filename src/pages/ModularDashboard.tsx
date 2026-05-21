@@ -1,19 +1,15 @@
 import { useWallet } from '../providers/WalletProvider'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Search, ArrowLeft } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import { Acc3ssWidget, defaultAcc3ssConfig } from '../modules/acc3ss'
 import { GovernanceWidget, defaultGovernanceConfig } from '../modules/governance'
 import { QuickNavWidget, defaultQuickNavConfig } from '../modules/quick-navigation'
 import { HelpCenterWidget, defaultHelpCenterConfig } from '../modules/help-center'
 import { ProfileWidget, defaultProfileConfig } from '../modules/profile'
 import { FormsWidget, defaultFormsConfig } from '../modules/forms'
-import { AddressConverterWidget } from '../modules/address-converter'
+import { OfficeBookingCard } from '../modules/office-booking'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useUserSearch } from '../hooks/useUserSearch'
 import { UserSearchResults } from '../components/UserSearchResults'
-import { useAccessControl } from '../hooks/useAccessControl'
-import { LockedModule } from '../components/LockedModule'
 import { SettingsMenu } from '../components/SettingsMenu'
 import { useDiscoveredUsers } from '../hooks/useDiscoveredUsers'
 import ConnectWallet from '../components/ConnectWallet'
@@ -45,9 +41,6 @@ export default function ModularDashboard() {
   // Use search hook
   const { data: searchResults = [], isLoading: isSearching } = useUserSearch(searchQuery)
 
-  // Use access control hook
-  const accessControl = useAccessControl(selectedAccount?.address || evm.account || undefined)
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
   }
@@ -77,7 +70,7 @@ export default function ModularDashboard() {
 
   return (
     <>
-    <div className={`min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300 ${!selectedAccount && !evm.connected && !isReconnecting ? 'blur-md pointer-events-none' : ''}`}>
+    <div className="min-h-screen p-6 bg-[#fafaf9] transition-filter duration-300">
       <div className="max-w-[1600px] mx-auto">
         {/* Top Bar with Branding, Search, and Settings */}
         <div className="flex items-center justify-between gap-6 mb-6">
@@ -155,66 +148,27 @@ export default function ModularDashboard() {
               {/* Profile - Always accessible */}
               <ProfileWidget config={defaultProfileConfig} />
 
-              {/* Quick Navigation - Requires verified identity */}
-              {accessControl.canAccessQuickNav ? (
-                <QuickNavWidget config={defaultQuickNavConfig} />
-              ) : (
-                <LockedModule moduleName="Quick Navigation" compact />
-              )}
+              <QuickNavWidget config={defaultQuickNavConfig} />
 
-              {/* Help Center - Requires verified identity */}
-              {accessControl.canAccessHelpCenter ? (
-                <HelpCenterWidget config={defaultHelpCenterConfig} />
-              ) : (
-                <LockedModule moduleName="Help Center" compact />
-              )}
+              <HelpCenterWidget config={defaultHelpCenterConfig} />
             </div>
 
             {/* Main Content Area */}
             <div className="col-span-12 lg:col-span-9">
               <div className="grid grid-cols-12 gap-6 auto-rows-[250px]">
-                {/* Forms - Requires verified identity */}
                 <div className="col-span-12 xl:col-span-8 row-span-2">
-                  {accessControl.canAccessForms ? (
-                    <FormsWidget config={defaultFormsConfig} />
-                  ) : (
-                    <LockedModule
-                      moduleName="Forms"
-                      description="Create and submit forms to collect team feedback with a verified identity."
-                    />
-                  )}
+                  <FormsWidget config={defaultFormsConfig} />
                 </div>
 
-                {/* Acc3ss - Requires verified identity */}
-                <div className="col-span-12 xl:col-span-4 row-span-2">
-                  {accessControl.canAccessAcc3ss ? (
-                    <Acc3ssWidget config={defaultAcc3ssConfig} />
-                  ) : (
-                    <LockedModule
-                      moduleName="Acc3ss"
-                      description="Mint and manage NFT access passes with a verified identity."
-                    />
-                  )}
+                <div className="col-span-12 xl:col-span-4 row-span-1">
+                  <OfficeBookingCard />
                 </div>
 
-                {/* Parity DAO - Requires verified identity */}
                 <div className="col-span-12 xl:col-span-8 row-span-2">
-                  {accessControl.canAccessGovernance ? (
-                    <GovernanceWidget config={defaultGovernanceConfig} />
-                  ) : (
-                    <LockedModule
-                      moduleName="Governance"
-                      description="Participate in organization polls and decisions with a verified identity."
-                    />
-                  )}
+                  <GovernanceWidget config={defaultGovernanceConfig} />
                 </div>
 
-                {/* Address Converter - Utility module, always accessible */}
-                <div className="col-span-12 xl:col-span-4 row-span-2">
-                  <AddressConverterWidget />
-                </div>
-
-                {/* Add Plugin - Moved below Forms */}
+                {/* Add Plugin */}
                 <div className="col-span-12 xl:col-span-8 row-span-1">
                   <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
                     <div className="w-14 h-14 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
@@ -235,33 +189,8 @@ export default function ModularDashboard() {
 
     </div>
 
-    {!selectedAccount && !evm.connected && (
-      <div className="fixed inset-0 bg-[#0f0f0f]/60 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl border border-[#e7e5e4] p-10 max-w-sm w-full mx-4 shadow-xl text-center">
-          <div className="w-14 h-14 bg-[#fafaf9] rounded-xl border border-[#e7e5e4] flex items-center justify-center mx-auto mb-5">
-            {isReconnecting ? (
-              <div className="w-8 h-8 rounded-full border-2 border-[#e7e5e4] border-t-[#1c1917] animate-spin" />
-            ) : (
-              <PolkadotLogo className="w-8 h-8 text-[#1c1917]" />
-            )}
-          </div>
-          {isReconnecting ? (
-            <>
-              <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Reconnecting</h2>
-              <p className="text-sm text-[#78716c]">Detecting your wallet...</p>
-            </>
-          ) : (
-            <>
-              <h2 className="font-serif text-2xl text-[#1c1917] mb-2">Welcome back</h2>
-              <p className="text-sm text-[#78716c] mb-6">Connect your wallet to access the dashboard</p>
-              <div className="flex justify-center">
-                <ConnectWallet />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    )}
+    {/* Wallet gate disabled for local testing — re-enable before Triangle deploy */}
+    {/* {!selectedAccount && !evm.connected && ( ... )} */}
     </>
   )
 }

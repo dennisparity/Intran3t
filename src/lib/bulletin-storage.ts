@@ -68,9 +68,9 @@ function getAliceSigner(): PolkadotSigner {
 
 // ─── Core on-chain upload ──────────────────────────────────────────────────
 
-// Binary re-exported from polkadot-api is the class version at runtime, but
-// TypeScript resolves it from an older nested dependency without fromBytes.
-const BinaryClass = Binary as unknown as { fromBytes(d: Uint8Array): unknown }
+function bytesToHex(bytes: Uint8Array): `0x${string}` {
+  return ('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`
+}
 
 async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promise<string> {
   const cid = computeCID(data)
@@ -87,7 +87,7 @@ async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promi
         reject(new Error('Bulletin store timed out after 180s'))
       }, 180_000)
 
-      sub = api.tx.TransactionStorage.store({ data: BinaryClass.fromBytes(data) })
+      sub = api.tx.TransactionStorage.store({ data: Binary.fromHex(bytesToHex(data)) })
         .signSubmitAndWatch(signer)
         .subscribe({
           next: (event: { type: string; found?: boolean }) => {
