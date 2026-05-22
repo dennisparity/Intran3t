@@ -181,10 +181,9 @@ export const ASSETHUB_PASEO: ChainConfig = {
   id: "assethub-paseo",
   name: "AssetHub Paseo",
   displayName: "AssetHub Paseo Testnet",
-  endpoint: "wss://paseo-asset-hub-rpc.polkadot.io",
+  endpoint: "wss://paseo-asset-hub-next-rpc.polkadot.io",
   endpoints: [
-    "wss://paseo-asset-hub-rpc.polkadot.io",
-    "wss://sys.ibp.network/asset-hub-paseo",
+    "wss://paseo-asset-hub-next-rpc.polkadot.io",
   ],
   tokenSymbol: "PAS",
   tokenDecimals: 10,

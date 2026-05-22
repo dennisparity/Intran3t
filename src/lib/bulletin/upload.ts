@@ -14,8 +14,8 @@ import { calculateCID } from "./cid";
 // Bulletin Chain endpoints
 export const BULLETIN_ENDPOINTS = {
   paseo: {
-    ws: "wss://paseo-bulletin-rpc.polkadot.io",
-    gateway: "https://paseo-ipfs.polkadot.io/ipfs/",
+    ws: "wss://paseo-bulletin-next-rpc.polkadot.io",
+    gateway: "https://paseo-bulletin-next-ipfs.polkadot.io/ipfs/",
   },
   pop1: {
     ws: "wss://pop1-testnet.parity-lab.parity.io:443/10000",

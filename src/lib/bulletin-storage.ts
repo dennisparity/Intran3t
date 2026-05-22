@@ -21,8 +21,8 @@ import { createClient, Binary, type PolkadotSigner } from 'polkadot-api'
 import { getPolkadotSigner } from 'polkadot-api/signer'
 import { getWsProvider } from 'polkadot-api/ws'
 
-const BULLETIN_RPC = 'wss://paseo-bulletin-rpc.polkadot.io'
-const BULLETIN_GATEWAY = 'https://paseo-ipfs.polkadot.io/ipfs'
+const BULLETIN_RPC = 'wss://paseo-bulletin-next-rpc.polkadot.io'
+const BULLETIN_GATEWAY = 'https://paseo-bulletin-next-ipfs.polkadot.io/ipfs'
 const LS_PREFIX = 'intran3t.bulletin.'
 
 export interface BulletinManifest {
