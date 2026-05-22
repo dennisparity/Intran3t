@@ -81,6 +81,7 @@ export interface IdentityInfo {
   discord?: string
   matrix?: string
   verified: boolean
+  popLevel?: 'full' | 'light' | null
 }
 
 /**
@@ -180,15 +181,24 @@ function decodeIdentityData(data: any): string | undefined {
  */
 function hasPositiveJudgement(judgements: any[]): boolean {
   if (!judgements || judgements.length === 0) return false
-
   for (const [_, judgement] of judgements) {
-    // Check for Reasonable or KnownGood judgements
-    if (judgement.isReasonable || judgement.isKnownGood) {
-      return true
-    }
+    if (judgement.isReasonable || judgement.isKnownGood) return true
   }
-
   return false
+}
+
+/**
+ * Derive PoP level from People Chain judgements.
+ * KnownGood → 'full', Reasonable → 'light', otherwise null.
+ */
+function getPopLevel(judgements: any[]): 'full' | 'light' | null {
+  if (!judgements || judgements.length === 0) return null
+  let highest: 'full' | 'light' | null = null
+  for (const [_, judgement] of judgements) {
+    if (judgement.isKnownGood) return 'full'
+    if (judgement.isReasonable) highest = 'light'
+  }
+  return highest
 }
 
 /**
@@ -270,7 +280,8 @@ export async function queryOnChainIdentity(
       twitter: decodeIdentityData(info.twitter),
       riot: decodeIdentityData(info.riot),
       matrix: matrixValue,
-      verified: hasPositiveJudgement(judgements)
+      verified: hasPositiveJudgement(judgements),
+      popLevel: getPopLevel(judgements)
     }
 
     // Check for discord and github - they might be directly on info or in additional

@@ -1,136 +1,34 @@
 /**
  * Substrate EVM Signer Hook
  *
- * Provides EVM-compatible signing using Substrate wallets via pallet_revive.
- * Allows Substrate accounts (after mapping) to sign EVM transactions without MetaMask.
- *
- * Flow:
- * 1. User connects Substrate wallet (Talisman, SubWallet, etc.)
- * 2. Account is mapped via pallet_revive.map_account()
- * 3. EVM transactions are signed with Substrate wallet
- * 4. Transactions submitted via pallet_revive to EVM layer
+ * Provides EVM-compatible signing via pallet_revive using the Substrate signer from WalletProvider.
+ * evmAddress and isMapped come from WalletProvider — no duplicate chain queries here.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useWallet } from '../providers/WalletProvider'
-import { keccak256, hexToBytes } from 'viem'
-import { decodeAddress } from '@polkadot/util-crypto'
+import { hexToBytes } from 'viem'
 import { Binary } from '@polkadot-api/substrate-bindings'
 
 interface SubstrateEVMSignerReturn {
-  // Derived/mapped EVM address
   evmAddress: `0x${string}` | null
-
-  // Whether account is mapped on-chain
   isMapped: boolean | null
-
-  // Sign and send EVM transaction
   sendTransaction: (txData: {
     to: string
     data: string
     value?: bigint
     gasLimit?: bigint
     onProgress?: (stage: 'broadcasted' | 'in_block') => void
-  }) => Promise<string> // returns tx hash
-
-  // Loading states
+  }) => Promise<string>
   isLoading: boolean
   error: string | null
 }
 
-/**
- * Derives EVM address from Substrate SS58 address
- * Formula: keccak256(AccountId32) -> last 20 bytes
- */
-function deriveEvmAddress(ss58Address: string): `0x${string}` {
-  const decoded = decodeAddress(ss58Address)
-  const hash = keccak256(decoded)
-  return ('0x' + hash.slice(-40)) as `0x${string}`
-}
-
-// Module-level cache for mapping results — shared across all hook instances
-const mappingCache = new Map<string, boolean | null>()
-
-/**
- * Hook to provide EVM signing capabilities using Substrate wallet
- */
 export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
-  // Use Product SDK wallet provider - signer comes from connectInjectedExtension
-  const { selectedAccount, apiClient, unsafeApiClient, signer } = useWallet()
-  const [evmAddress, setEvmAddress] = useState<`0x${string}` | null>(null)
-  const [isMapped, setIsMapped] = useState<boolean | null>(null)
+  const { selectedAccount, apiClient, unsafeApiClient, signer, evmAddress, isMapped } = useWallet()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Derive EVM address (skip on-chain mapping check)
-  useEffect(() => {
-    console.log('🔍 SubstrateEVMSigner - checking conditions:', {
-      hasAccount: !!selectedAccount?.address,
-      address: selectedAccount?.address
-    })
-
-    if (!selectedAccount?.address) {
-      setEvmAddress(null)
-      setIsMapped(false)
-      return
-    }
-
-    const checkMapping = async () => {
-      try {
-        // Derive EVM address from Substrate address
-        const derived = deriveEvmAddress(selectedAccount.address)
-        setEvmAddress(derived)
-
-        // Return cached result if available — skip chain read
-        const cached = mappingCache.get(selectedAccount.address)
-        if (cached !== undefined) {
-          setIsMapped(cached)
-          return
-        }
-
-        // Actually check if account is mapped
-        if (!apiClient) {
-          setIsMapped(null)
-          return
-        }
-
-        const result = await apiClient.query.Revive.OriginalAccount.getValue(derived)
-        const mapped = result !== null
-
-        mappingCache.set(selectedAccount.address, mapped)
-        setIsMapped(mapped)
-        console.log('🔗 Substrate EVM Signer:', {
-          substrateAddress: selectedAccount.address,
-          derivedEvmAddress: derived,
-          isMapped: mapped
-        })
-      } catch (err) {
-        // Handle incompatible runtime (chain metadata mismatch) - same as useAccountMapping
-        if (err instanceof Error && err.message.includes('Incompatible runtime entry')) {
-          console.warn('⚠️ Account mapping check unavailable (chain metadata mismatch)')
-          console.warn('⚠️ Will rely on accountMapping.isMapped from useAccountMapping hook instead')
-          // Set to null (unknown) rather than false (unmapped)
-          // This prevents blocking functionality when we can't verify
-          setIsMapped(null)
-        } else {
-          console.error('Failed to check EVM address mapping:', err)
-          setIsMapped(null)
-          setError('Failed to check address mapping')
-        }
-      }
-    }
-
-    checkMapping()
-  }, [selectedAccount?.address])
-
-  /**
-   * Send EVM transaction using Substrate wallet
-   *
-   * This submits the transaction via pallet_revive.eth_transact() which:
-   * 1. Validates the sender is the mapped account
-   * 2. Executes the EVM transaction
-   * 3. Returns the transaction hash
-   */
   const sendTransaction = useCallback(async (txData: {
     to: string
     data: string
@@ -138,106 +36,57 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
     gasLimit?: bigint
     onProgress?: (stage: 'broadcasted' | 'in_block') => void
   }): Promise<string> => {
-    console.log('🔍 sendTransaction - debugging:', {
-      hasApiClient: !!apiClient,
-      hasSelectedAccount: !!selectedAccount,
-      accountAddress: selectedAccount?.address,
-      hasSigner: !!signer,
-      signerType: typeof signer
-    })
-
-    if (!apiClient) {
-      throw new Error('API client not initialized - please connect wallet')
-    }
-
-    if (!selectedAccount?.address) {
-      throw new Error('No account selected - please connect wallet')
-    }
-
-    if (!signer) {
-      throw new Error('Signer not available - please ensure wallet is connected')
-    }
-
-    if (!evmAddress) {
-      throw new Error('EVM address not derived')
-    }
+    if (!apiClient) throw new Error('API client not initialized — please connect wallet')
+    if (!selectedAccount?.address) throw new Error('No account selected — please connect wallet')
+    if (!signer) throw new Error('Signer not available — please connect wallet')
+    if (!evmAddress) throw new Error('EVM address not derived')
 
     setIsLoading(true)
     setError(null)
 
     try {
-      console.log('📤 Sending EVM transaction via Substrate:', {
-        from: evmAddress,
-        to: txData.to,
-        data: txData.data,
-        value: txData.value?.toString(),
-        gasLimit: txData.gasLimit?.toString()
-      })
-
-      // Submit via pallet_revive.call
-      // This extrinsic allows mapped accounts to execute EVM transactions
       const dataBytes = hexToBytes(txData.data as `0x${string}`)
-
-      console.log('📋 Transaction parameters:', {
-        destHex: txData.to,
-        dataHex: txData.data.substring(0, 66) + '...',
-        dataBytesLength: dataBytes?.length,
-        value: txData.value || 0n
-      })
-
-      // Use unsafe API to bypass stale typed descriptor validation (Incompatible runtime entry)
       const txApi = unsafeApiClient || apiClient
       const tx = txApi.tx.Revive.call({
         dest: txData.to,
         value: txData.value || 0n,
-        // CRITICAL: Direct Revive uses 'weight_limit' not 'gas_limit'
-        // Pattern from hackm3: { ref_time: bigint, proof_size: bigint }
         weight_limit: {
-          ref_time: 500_000_000_000n,  // 500 billion (standard for contract calls)
-          proof_size: 2_000_000n        // 2MB proof size
+          ref_time: 500_000_000_000n,
+          proof_size: 2_000_000n,
         },
-        storage_deposit_limit: 10_000_000_000_000n,  // 10 trillion (standard limit)
-        data: Binary.fromBytes(dataBytes) as any
+        storage_deposit_limit: 10_000_000_000_000n,
+        data: Binary.fromBytes(dataBytes) as any,
       })
 
-      console.log('📋 Transaction object created:', tx)
-
-      // Sign and submit with Substrate wallet using Typink's signer
-      console.log('⏳ Signing and submitting transaction...')
-      console.log('📋 Signer:', signer)
-      console.log('📋 Signer keys:', signer ? Object.keys(signer) : 'empty')
-
-      // Resolves on txBestBlocksState (in-block, ~6-12s) — matches privatforms01 pattern.
-      // mortal: true is required; Spektr (Polkadot Desktop) silently drops immortal sign requests.
+      // mortal: true required — Polkadot Desktop (Spektr) silently drops immortal sign requests
       return new Promise<string>((resolve, reject) => {
-        let isResolved = false
+        let settled = false
 
-        const safeStringify = (obj: any) =>
+        const safeStr = (obj: any) =>
           JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
 
         const sub = tx.signSubmitAndWatch(signer, {
           mortality: { mortal: true, period: 256 },
         }).subscribe({
           next: (event: any) => {
-            if (isResolved) return
+            if (settled) return
 
             if (event.type === 'broadcasted' && event.txHash) {
               txData.onProgress?.('broadcasted')
             }
 
             if (event.type === 'txBestBlocksState' && event.found) {
-              const failedEvent = event.events?.find(
+              const failed = event.events?.find(
                 (e: any) => e.type === 'System' && e.value?.type === 'ExtrinsicFailed'
               )
-              if (failedEvent) {
-                isResolved = true
+              if (failed) {
+                settled = true
                 sub.unsubscribe()
-                const dispatchError = safeStringify(failedEvent.value?.value ?? failedEvent.value)
-                reject(new Error(`Transaction failed on-chain: ${dispatchError}`))
+                reject(new Error(`Transaction failed on-chain: ${safeStr(failed.value?.value ?? failed.value)}`))
                 return
               }
               if (event.ok) {
-                isResolved = true
+                settled = true
                 sub.unsubscribe()
                 txData.onProgress?.('in_block')
                 resolve(event.txHash || 'in-block-no-hash')
@@ -245,28 +94,20 @@ export function useSubstrateEVMSigner(): SubstrateEVMSignerReturn {
             }
           },
           error: (err: any) => {
-            if (isResolved) return
-            isResolved = true
-            console.error('❌ Transaction subscription error:', err)
+            if (settled) return
+            settled = true
             reject(err)
-          }
+          },
         })
       })
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Transaction failed'
-      console.error('❌ Transaction failed:', err)
-      setError(errorMsg)
-      throw new Error(errorMsg)
+      const msg = err instanceof Error ? err.message : 'Transaction failed'
+      setError(msg)
+      throw new Error(msg)
     } finally {
       setIsLoading(false)
     }
-  }, [apiClient, unsafeApiClient, selectedAccount, signer, isMapped, evmAddress])
+  }, [apiClient, unsafeApiClient, selectedAccount, signer, evmAddress])
 
-  return {
-    evmAddress,
-    isMapped,
-    sendTransaction,
-    isLoading,
-    error
-  }
+  return { evmAddress, isMapped, sendTransaction, isLoading, error }
 }

@@ -164,21 +164,21 @@ export default function ModularDashboard() {
                   <OfficeBookingCard />
                 </div>
 
-                <div className="col-span-12 xl:col-span-8 row-span-2">
-                  <GovernanceWidget config={defaultGovernanceConfig} />
-                </div>
-
-                {/* Add Plugin */}
-                <div className="col-span-12 xl:col-span-8 row-span-1">
-                  <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
-                    <div className="w-14 h-14 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
-                      <span className="text-2xl text-[#a8a29e] group-hover:text-[#1c1917] transition-colors leading-none">+</span>
+                {/* Add Plugin — right rail, below Office Booking */}
+                <div className="col-span-12 xl:col-span-4 row-span-1">
+                  <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
+                    <div className="w-10 h-10 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
+                      <span className="text-xl text-[#a8a29e] group-hover:text-[#1c1917] transition-colors leading-none">+</span>
                     </div>
-                    <div className="text-center px-6">
+                    <div className="text-center px-4">
                       <p className="text-sm font-semibold text-[#1c1917] font-serif">Add Plugin</p>
-                      <p className="text-xs text-[#78716c] mt-0.5">Build custom functionality for your dashboard</p>
+                      <p className="text-xs text-[#78716c] mt-0.5">Build custom functionality</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="col-span-12 xl:col-span-8 row-span-2">
+                  <GovernanceWidget config={defaultGovernanceConfig} />
                 </div>
               </div>
             </div>

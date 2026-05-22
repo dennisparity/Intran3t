@@ -6,8 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useTypink } from 'typink';
-import { BrowserProvider, JsonRpcSigner, JsonRpcProvider } from 'ethers';
+import { BrowserProvider, JsonRpcSigner } from 'ethers';
 
 // Types
 type Provider = BrowserProvider | null;
@@ -83,7 +82,6 @@ interface EVMProviderProps {
  * ```
  */
 export function EVMProvider({ children }: EVMProviderProps) {
-  const { connectedAccount, disconnect: disconnectPolkadot } = useTypink();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [signer, setSigner] = useState<Signer | null>(null);
   const [account, setAccount] = useState<string | null>(null);

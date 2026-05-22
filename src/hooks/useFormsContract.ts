@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { ethers } from "ethers";
+import { encodeFunctionData } from "viem";
 import FormsV2ABI from "@/lib/contracts/FormsV2ABI.json";
 import { getFormsContractAddress } from "@/lib/contracts/config";
-import { getProvider, getBrowserSigner } from "@/lib/contracts/provider";
+import { getProvider } from "@/lib/contracts/provider";
+import { useSubstrateEVMSigner } from "./useSubstrateEVMSigner";
 
 export interface UseFormsContractReturn {
   // State
@@ -30,65 +32,38 @@ export interface UseFormsContractReturn {
 export function useFormsContract(): UseFormsContractReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const substrateSigner = useSubstrateEVMSigner();
 
-  const getContract = useCallback((withSigner = false) => {
+  const getContract = useCallback(() => {
     const address = getFormsContractAddress();
     if (address === "0x0000000000000000000000000000000000000000") {
       throw new Error("FormsV2 contract not deployed yet");
     }
-
-    const provider = getProvider();
-    if (withSigner) {
-      // For write operations, we'll get the signer when calling the function
-      return new ethers.Contract(address, FormsV2ABI, provider);
-    }
-    return new ethers.Contract(address, FormsV2ABI, provider);
+    return new ethers.Contract(address, FormsV2ABI, getProvider());
   }, []);
 
   /**
-   * Register a new form on-chain
-   * Returns the form ID
+   * Register a new form on-chain via Substrate EVM signer (works in Triangle host + browser)
+   * Returns the form ID (derived from formCount after tx confirms in-block)
    */
   const registerForm = useCallback(
     async (formCid: string): Promise<number> => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const contract = getContract(false);
-        const signer = await getBrowserSigner();
-        if (!signer) {
-          throw new Error("Wallet not connected");
+        const address = getFormsContractAddress();
+        if (address === "0x0000000000000000000000000000000000000000") {
+          throw new Error("FormsV2 contract not deployed yet");
         }
-
-        const contractWithSigner = contract.connect(signer);
-
-        console.log("[FormsContract] Registering form, CID:", formCid);
-
-        const tx = await contractWithSigner.registerForm(formCid);
-        const receipt = await tx.wait();
-
-        // Parse FormRegistered event to get formId
-        const event = receipt.logs
-          .map((log: ethers.Log) => {
-            try {
-              return contract.interface.parseLog({
-                topics: log.topics as string[],
-                data: log.data,
-              });
-            } catch {
-              return null;
-            }
-          })
-          .find((e: ethers.LogDescription | null) => e?.name === "FormRegistered");
-
-        if (!event) {
-          throw new Error("FormRegistered event not found");
-        }
-
-        const formId = Number(event.args[0]);
+        const callData = encodeFunctionData({
+          abi: FormsV2ABI as any,
+          functionName: "registerForm",
+          args: [formCid],
+        });
+        await substrateSigner.sendTransaction({ to: address, data: callData, value: 0n });
+        const contract = getContract();
+        const formId = Number(await contract.formCount()) - 1;
         console.log("[FormsContract] Form registered, ID:", formId);
-
         return formId;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to register form";
@@ -99,54 +74,29 @@ export function useFormsContract(): UseFormsContractReturn {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [substrateSigner, getContract]
   );
 
   /**
-   * Submit a response to a form
-   * Returns the response index
+   * Submit a response to a form via Substrate EVM signer
+   * Returns the response index (derived from getResponseCount after tx confirms in-block)
    */
   const submitResponse = useCallback(
     async (formId: number, responseCid: string): Promise<number> => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const contract = getContract(false);
-        const signer = await getBrowserSigner();
-        if (!signer) {
-          throw new Error("Wallet not connected");
-        }
-
-        const contractWithSigner = contract.connect(signer);
-
-        console.log("[FormsContract] Submitting response, formId:", formId, "CID:", responseCid);
-
-        const tx = await contractWithSigner.submitResponse(formId, responseCid);
-        const receipt = await tx.wait();
-
-        // Parse ResponseSubmitted event to get responseIdx
-        const event = receipt.logs
-          .map((log: ethers.Log) => {
-            try {
-              return contract.interface.parseLog({
-                topics: log.topics as string[],
-                data: log.data,
-              });
-            } catch {
-              return null;
-            }
-          })
-          .find((e: ethers.LogDescription | null) => e?.name === "ResponseSubmitted");
-
-        if (!event) {
-          throw new Error("ResponseSubmitted event not found");
-        }
-
-        const responseIdx = Number(event.args[1]);
-        console.log("[FormsContract] Response submitted, index:", responseIdx);
-
-        return responseIdx;
+        const address = getFormsContractAddress();
+        const callData = encodeFunctionData({
+          abi: FormsV2ABI as any,
+          functionName: "submitResponse",
+          args: [BigInt(formId), responseCid],
+        });
+        await substrateSigner.sendTransaction({ to: address, data: callData, value: 0n });
+        const contract = getContract();
+        const idx = Number(await contract.getResponseCount(formId)) - 1;
+        console.log("[FormsContract] Response submitted, index:", idx);
+        return idx;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to submit response";
         console.error("[FormsContract] Submit failed:", message);
@@ -156,7 +106,7 @@ export function useFormsContract(): UseFormsContractReturn {
         setIsLoading(false);
       }
     },
-    [getContract]
+    [substrateSigner, getContract]
   );
 
   /**
@@ -312,16 +262,11 @@ export function useFormsContract(): UseFormsContractReturn {
   );
 
   return {
-    // State
-    isLoading,
+    isLoading: isLoading || substrateSigner.isLoading,
     error,
-
-    // Write functions
     registerForm,
     submitResponse,
-    submitResponseViaRelay, // For wallet-less voters
-
-    // Read functions
+    submitResponseViaRelay,
     getFormCid,
     getResponseCids,
     getResponseCount,

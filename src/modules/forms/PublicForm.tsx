@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle, AlertCircle, Lock, Info, ArrowRight, ExternalLink, Box } from 'lucide-react'
+import { CheckCircle, AlertCircle, Lock, Info, ArrowRight, ExternalLink } from 'lucide-react'
 import PolkadotLogo from '../../components/PolkadotLogo'
 import type { Form, FormField } from './types'
 import { loadForms } from './config'
@@ -49,6 +49,7 @@ export function PublicForm() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submittedCid, setSubmittedCid] = useState<string | null>(null)
+  const [submitStatus, setSubmitStatus] = useState<string>('')
   const formKeyRef = useRef<Uint8Array | null>(null)
 
   // No session wallet needed — Alice relay handles on-chain submission
@@ -146,6 +147,7 @@ export function PublicForm() {
     }
 
     setIsSubmitting(true)
+    setSubmitStatus('Encrypting your response...')
 
     try {
       const responseId = `response-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -203,11 +205,12 @@ export function PublicForm() {
         save(allForms)
       }
 
-      // Upload to Bulletin + register CID on contract via Alice relay (BLOCKING - wait for success)
+      // Upload to Bulletin — show success immediately after, register on-chain in background
       if (encryptedCiphertext && encryptedNonce && formId) {
         const ct = encryptedCiphertext
         const n = encryptedNonce
 
+        setSubmitStatus('Uploading to Bulletin Chain...')
         console.log('[dForms] Starting Bulletin upload for formId:', formId)
         try {
           const timestamp = Date.now()
@@ -225,27 +228,18 @@ export function PublicForm() {
           })
           console.log('[dForms] Bulletin upload done, CID:', cid)
           setSubmittedCid(cid)
+          setSubmitted(true)
+          setIsSubmitting(false)
 
-          // Use on-chain ID if available, otherwise skip on-chain submission
+          // Register CID on-chain in the background — don't block the success screen
           if (form?.onChainId) {
-            try {
-              const responseIdx = await submitResponseViaRelay(Number(form.onChainId), cid)
-              console.log('✅ Response registered on-chain successfully')
-              console.log('   - Form ID:', form.onChainId)
-              console.log('   - CID:', cid)
-              console.log('   - Response Index:', responseIdx)
-            } catch (contractErr) {
-              console.error('❌ Contract submission failed:', contractErr)
-              console.log('✅ Response saved to Bulletin (CID:', cid, ')')
-              console.log('⚠️  Not indexed on-chain - admin must manually fetch from Bulletin')
-              // Still keep the CID since it's on Bulletin
-            }
-          } else {
-            console.log('ℹ️  Form has no on-chain ID, skipping contract submission')
+            submitResponseViaRelay(Number(form.onChainId), cid)
+              .then(idx => console.log('✅ Response registered on-chain, index:', idx))
+              .catch(err => console.error('❌ Background relay failed:', err))
           }
+          return
         } catch (err) {
           console.error('[dForms] Bulletin upload failed:', err)
-          // Failed to upload to Bulletin - can't submit
           setSubmittedCid(null)
         }
       }
@@ -377,12 +371,27 @@ export function PublicForm() {
             </div>
           </div>
 
+          {/* Submit another response */}
+          <div className="text-center mt-6">
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm text-[#78716c] hover:text-[#1c1917] underline underline-offset-2 transition-colors"
+            >
+              Submit another response
+            </button>
+          </div>
+
           {/* Footer */}
-          <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
+          <a
+            href="https://polkadot.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 mt-6 text-sm text-[#78716c] hover:text-[#1c1917] transition-colors"
+          >
             <span>Powered by</span>
             <PolkadotLogo className="w-4 h-4 text-[#1c1917]" />
             <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
-          </div>
+          </a>
         </div>
       </div>
     )
@@ -524,17 +533,14 @@ export function PublicForm() {
           )}
 
           {isSubmitting && (
-            <div className="mt-6 p-6 bg-[#fafaf9] border border-[#e7e5e4] rounded-xl">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '0ms' }} />
-                <div className="w-8 h-0.5 bg-[#e7e5e4] animate-pulse" style={{ animationDelay: '200ms' }} />
-                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '400ms' }} />
-                <div className="w-8 h-0.5 bg-[#e7e5e4] animate-pulse" style={{ animationDelay: '600ms' }} />
-                <Box className="w-5 h-5 text-[#1c1917] animate-pulse" style={{ animationDelay: '800ms' }} />
+            <div className="mt-6 p-5 bg-[#1c1917] rounded-xl">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div>
+                  <p className="text-sm font-semibold text-white">{submitStatus}</p>
+                  <p className="text-xs text-white/60 mt-0.5">This may take a few seconds</p>
+                </div>
               </div>
-              <p className="text-sm text-[#78716c] text-center">
-                Uploading to Bulletin, this may take a few seconds...
-              </p>
             </div>
           )}
 
@@ -548,11 +554,16 @@ export function PublicForm() {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c]">
+        <a
+          href="https://polkadot.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 mt-8 text-sm text-[#78716c] hover:text-[#1c1917] transition-colors"
+        >
           <span>Powered by</span>
           <PolkadotLogo className="w-4 h-4 text-[#1c1917]" />
           <span className="font-serif font-semibold text-[#1c1917]">Polkadot</span>
-        </div>
+        </a>
       </div>
     </div>
   )

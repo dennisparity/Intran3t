@@ -5,10 +5,13 @@
  * Falls back to regular wallet extensions when not in host
  */
 
-import { injectSpektrExtension } from '@novasamatech/product-sdk'
+import { injectSpektrExtension, accounts } from '@novasamatech/product-sdk'
 import { connectInjectedExtension, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
-import { decodeAddress } from '@polkadot/util-crypto'
+import { encodeAddress } from '@polkadot/util-crypto'
 import { createStandaloneTxSigner } from './standalone-tx-signer'
+
+// The DotNS identifier for this product — must match the deployed domain
+const PRODUCT_DOTNS_ID = 'intran3t.dot'
 
 export interface WalletExtension {
   name: string
@@ -30,59 +33,46 @@ export function isInHost(): boolean {
   }
 }
 
-const DAPP_NAME = 'intran3t'
-
-function buildAccountsFromBridge(rawAccounts: any[]): InjectedPolkadotAccount[] {
-  return rawAccounts.map((account: any) => {
-    const address: string = account.address
-    const publicKey = decodeAddress(address)
-    const polkadotSigner = createStandaloneTxSigner({
-      extensionName: 'spektr',
-      dappName: DAPP_NAME,
-      address,
-      publicKey,
-      keypairType: account.type || 'sr25519',
-    })
-    return { address, name: account.name || account.meta?.name || 'Triangle Account', polkadotSigner } as InjectedPolkadotAccount
-  })
-}
-
 /**
- * Gets the Spektr extension (Triangle Host) via window.injectedWeb3.spektr.
- * Matches dforms-powered-by-polkadot pattern.
+ * Gets the product account from the Triangle host via Product SDK.
+ * Uses host_create_transaction protocol — handles AsPgas extension natively,
+ * works on Polkadot Desktop >= 0.3.10, Mobile, and Web host.
  */
 async function getSpektrExtension(): Promise<WalletExtension | null> {
   try {
     const ready = await injectSpektrExtension()
     if (!ready) return null
 
-    const injectedWeb3 = (window as any).injectedWeb3
-    const spektrEntry = injectedWeb3?.spektr
-    if (!spektrEntry) return null
+    const accountResult = await accounts.getProductAccount(PRODUCT_DOTNS_ID, 0)
+    if (!accountResult.isOk()) {
+      console.warn('[Spektr] Product account unavailable:', accountResult.error.tag)
+      return null
+    }
 
-    const spektrExtension = typeof spektrEntry.enable === 'function'
-      ? await spektrEntry.enable(DAPP_NAME)
-      : spektrEntry
+    const productAccount = accountResult.value
+    // createTransaction signer: delegates signing to the host via host_create_transaction.
+    // The host assembles the full transaction, handles AsPgas and any other signed extensions.
+    const signer = accounts.getProductAccountSigner(productAccount, 'createTransaction')
+    // publicKey is raw bytes — encode to generic SS58 (prefix 42) for address display
+    const address = encodeAddress(productAccount.publicKey, 42)
 
-    const rawAccounts = await spektrExtension.accounts.get()
-    if (rawAccounts.length === 0) return null
-
-    const accounts = buildAccountsFromBridge(rawAccounts)
+    const injectedAccount: InjectedPolkadotAccount = {
+      address,
+      name: productAccount.dotNsIdentifier,
+      polkadotSigner: signer,
+    }
 
     return {
       name: 'spektr',
-      accounts,
-      getAccounts: async () => {
-        const fresh = await spektrExtension.accounts.get()
-        return buildAccountsFromBridge(fresh)
-      },
-      subscribe: (_callback) => ({ unsubscribe: () => {} })
+      accounts: [injectedAccount],
+      getAccounts: async () => [injectedAccount],
+      subscribe: (_callback) => ({ unsubscribe: () => {} }),
     }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Environment is not correct')) {
-      console.log('ℹ️ Spektr requires Polkadot Host environment, using browser wallets')
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Environment is not correct')) {
+      console.log('ℹ️ Not in Polkadot Host environment, falling back to browser wallets')
     } else {
-      console.warn('[Spektr] Failed to initialize:', error)
+      console.warn('[Spektr] Failed to get product account:', err)
     }
     return null
   }

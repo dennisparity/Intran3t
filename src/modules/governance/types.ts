@@ -5,6 +5,7 @@ export interface Vote {
   voter: string // Wallet address
   choice: VoteChoice
   timestamp: number
+  comment?: string
   signature?: string
   blockNumber?: number
   extrinsicHash?: string
@@ -24,8 +25,11 @@ export interface Poll {
     nay: string
     abstain: string
   }
-  // On-chain storage
-  remarkHash?: string // Hash of the System Remark that stores this poll
+  // On-chain contract fields
+  onChainId?: number
+  endBlock?: number
+  contentCid?: string
+  remarkHash?: string
   storedOnChain?: boolean
 }
 
@@ -35,5 +39,5 @@ export interface GovernanceConfig {
   showActiveTab?: boolean
   showClosedTab?: boolean
   allowPollCreation?: boolean
-  defaultPollDuration?: number // in hours
+  defaultPollDuration?: number // in blocks (for on-chain proposals)
 }

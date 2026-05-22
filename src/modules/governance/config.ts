@@ -3,25 +3,17 @@ import type { Poll, GovernanceConfig } from './types'
 // Storage key for polls in localStorage
 export const POLLS_STORAGE_KEY = 'intran3t_parity_dao_polls'
 
-// Sample polls to get started
-export const SAMPLE_POLLS: Poll[] = [
-  {
-    id: 'poll-1',
-    title: 'Should we implement dark mode?',
-    description: 'Vote to decide if Intran3t should have a dark mode theme option.',
-    creator: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
-    createdAt: Date.now() - 86400000, // 1 day ago
-    endsAt: Date.now() + 86400000 * 6, // 6 days from now
-    status: 'active',
-    votes: [],
-    options: {
-      aye: 'Yes, add dark mode',
-      nay: 'No, keep light theme only',
-      abstain: 'Abstain'
-    },
-    storedOnChain: false
-  }
-]
+export const SAMPLE_POLLS: Poll[] = []
+
+export const BLOCK_DURATION_OPTIONS = [
+  { label: '~1 day', blocks: 6_000 },
+  { label: '~7 days', blocks: 42_000 },
+  { label: '~14 days', blocks: 84_000 },
+  { label: '~30 days', blocks: 180_000 },
+] as const
+
+export const BULLETIN_GATEWAY = 'https://paseo-bulletin-next-ipfs.polkadot.io/ipfs/'
+export const BULLETIN_WS = 'wss://paseo-bulletin-next-rpc.polkadot.io'
 
 export const defaultGovernanceConfig: GovernanceConfig = {
   title: 'Parity DAO',
@@ -29,5 +21,5 @@ export const defaultGovernanceConfig: GovernanceConfig = {
   showActiveTab: true,
   showClosedTab: true,
   allowPollCreation: true,
-  defaultPollDuration: 168 // 7 days in hours
+  defaultPollDuration: 42_000 // ~7 days in blocks
 }
