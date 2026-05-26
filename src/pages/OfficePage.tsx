@@ -133,7 +133,6 @@ export default function OfficePage() {
     setSelectedDates(prev =>
       prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]
     )
-    setSelectedDeskId(null)
   }
 
   const selectDesk = (deskId: string) => {

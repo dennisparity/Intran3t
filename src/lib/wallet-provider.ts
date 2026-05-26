@@ -56,9 +56,14 @@ async function getSpektrExtension(): Promise<WalletExtension | null> {
     // publicKey is raw bytes — encode to generic SS58 (prefix 42) for address display
     const address = encodeAddress(productAccount.publicKey, 42)
 
+    const userIdResult = await accounts.getUserId()
+    const displayName = userIdResult.isOk()
+      ? userIdResult.value.primaryUsername
+      : productAccount.dotNsIdentifier
+
     const injectedAccount: InjectedPolkadotAccount = {
       address,
-      name: productAccount.dotNsIdentifier,
+      name: displayName,
       polkadotSigner: signer,
     }
 
