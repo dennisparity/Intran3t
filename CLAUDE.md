@@ -214,22 +214,34 @@ bun install && bun papi
 - **Domain naming:** 8+ chars, exactly 2 trailing digits (e.g., `myapp42`)
 - **Contenthash:** Must be ENSIP-7 compliant (`0xe3` + `0x01` + CID bytes)
 
-### DotNS Contract Addresses (Paseo AssetHub)
-**CRITICAL:** These are specific to `wss://sys.ibp.network/asset-hub-paseo`
+### DotNS Contract Addresses
+
+**Paseo Next v2** (bulletin-deploy 0.7.29+, `wss://paseo-asset-hub-next-rpc.polkadot.io`)
 ```
-DOTNS_REGISTRAR: 0x329aAA5b6bEa94E750b2dacBa74Bf41291E6c2BD
-DOTNS_REGISTRAR_CONTROLLER: 0xd09e0F1c1E6CE8Cf40df929ef4FC778629573651
-DOTNS_REGISTRY: 0x4Da0d37aBe96C06ab19963F31ca2DC0412057a6f
-DOTNS_RESOLVER: 0x95645C7fD0fF38790647FE13F87Eb11c1DCc8514
-DOTNS_CONTENT_RESOLVER: 0x7756DF72CBc7f062e7403cD59e45fBc78bed1cD7
+DOTNS_PROTOCOL_REGISTRY: 0x8F28419f4E32Bb0aA02e156A0543Ff253f126D7D
+DOTNS_REGISTRAR: 0xf7Ad3F44F316C73E4a2b46b1ed48d376bCc9E639
+DOTNS_REGISTRAR_CONTROLLER: 0x674b705268DAE369F0a7BE9cbaCDb928b8BA38C2
+DOTNS_REGISTRY: 0xa1b2b939E82b2ecE55Bd8a0E283818BfC1CA6CDc
+DOTNS_RESOLVER: 0xA8988eA083174ea94Ed1D686f0F073a10f65598D
+DOTNS_CONTENT_RESOLVER: 0x8A26480b0B5Df3d4D9b95adc24a5Ecb33A5b8F64
+```
+
+**Preview** (bulletin-deploy 0.7.29+, `wss://previewnet.substrate.dev/asset-hub`)
+```
+DOTNS_REGISTRAR: 0x061273AeF34e8ab9Ca08E199d7440E2639Fc2088
+DOTNS_REGISTRAR_CONTROLLER: 0xC0c21ca6302884572E61d69D5bf3E271Acf39B23
+DOTNS_REGISTRY: 0x5622CA75C75726Da13ae46C69127C07c87538633
+DOTNS_RESOLVER: 0x823f39E7a4126669be53211FFbCF27e55b3274C6
+DOTNS_CONTENT_RESOLVER: 0xBD003d5Dd04E68aC60d529a46AEfBdEf8941868C
 ```
 
 ### Current Deployment
-- Domain: `intran3t-app42.dot`
-- CID: `bafybeidnbm2osacrgrtebllzlqig3ynwvaetmfntqpfjeiirjpfdfyvlqy` (deployed 2026-02-25)
-- URL: https://intran3t-app42.paseo.li
-- Direct IPFS: https://bafybeidnbm2osacrgrtebllzlqig3ynwvaetmfntqpfjeiirjpfdfyvlqy.ipfs.dweb.link/
-- Transaction: `0xc75d9e3ebaa166c72ad199dd5f90028b859e270340a158e6762d276490647a6a`
+- Domain: `intran3t.dot`
+- Preview CID: `bafybeig2oimscx4jrejmdhlaqfvmli6urnyljufe6fhino5srjj4g34aym` (deployed 2026-05-29)
+- Preview tx: `0x9390e52a2a341a57ac9d1f36d3dc963ef2081effd699229961bca8e9a4c15640`
+- Paseo-next-v2 CID: `bafybeibjl3tkbeha5vesgtf7h4zhauqqko4crgspfwdjuwg34et5buzjty` (deployed 2026-05-29, new contracts)
+
+**Deploy note:** Always `unset BULLETIN_RPC` before deploying to preview (the .env sets it to paseo-next-v2's Bulletin which would override the preview endpoint).
 
 ---
 
