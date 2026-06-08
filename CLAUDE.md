@@ -11,7 +11,7 @@
 **Architecture:**
 - **Frontend:** React + TypeScript + Vite + Tailwind
 - **Blockchain:** Polkadot (Paseo testnet), People Chain, Bulletin Chain
-- **Wallets:** Typink (Substrate), MetaMask (EVM)
+- **Wallets:** `@novasamatech/product-sdk` — host path (Triangle) + browser fallback (Talisman/SubWallet)
 - **Contracts:** Solidity on AssetHub (FormsV2, AccessPass)
 - **Storage:** Bulletin (content), localStorage (keys), People Chain (identity)
 - **Deployment:** DotNS (`bulletin-deploy`)
@@ -24,22 +24,33 @@
 
 ## Critical Patterns
 
-### 1. Typink Signer Access (CRITICAL)
+### 1. Signing Stack (CRITICAL)
 
+Two paths — both flow through `WalletProvider.tsx`:
+
+**Host path (Triangle Desktop/Mobile/Web):**
 ```typescript
-// ✅ CORRECT
-const { signer } = useTypink()
-const tx = apiClient.tx.Revive.map_account({})
-const result = await tx.signSubmitAndWatch(signer)
-await result.ok
-
-// ❌ WRONG
-connectedAccount.wallet.signer  // wallet property doesn't exist
-connectedAccount.polkadotSigner  // doesn't exist
-tx.signAsync()  // wrong pattern
+const result = await accounts.getProductAccount('intran3t.dot', 0)
+const signer = accounts.getProductAccountSigner(result.value, 'createTransaction')
+// mortal:true required — Spektr silently drops immortal sign requests
+await tx.signSubmitAndWatch(signer, { mortality: { mortal: true, period: 256 } })
 ```
 
-**Why:** `connectedAccount` only has `{ source, address, name }`. Signer comes from top-level Typink hook.
+**Browser fallback (Talisman/SubWallet):**
+```typescript
+// connectInjectedExtension's built-in signer throws on AsPgas — replace it
+const ext = await connectInjectedExtension('talisman')
+const signer = createStandaloneTxSigner({ extensionName: 'talisman', address, ... })
+```
+
+**EVM contract calls — always via `useSubstrateEVMSigner`:**
+```typescript
+await substrateSigner.sendTransaction({ to: contractAddress, data: callData, value: 0n })
+```
+
+**Never use:** `useTypink()`, `getBrowserSigner()`, `window.ethereum`, `@parity/product-sdk-signer`
+
+Key files: `src/lib/wallet-provider.ts`, `src/hooks/useSubstrateEVMSigner.ts`, `src/providers/WalletProvider.tsx`
 
 ### 2. Form ID Handling
 
@@ -92,15 +103,15 @@ VITE_ACCESSPASS_CONTRACT_ADDRESS=0xfd2a6Ee5BE5AB187E8368025e33a8137ba66Df94
 
 # Services
 VITE_DOTID_API_URL=/api/dotid-proxy
-BULLETIN_RPC=wss://bulletin.dotspark.app
 
 # Relay (wallet-less submissions)
 VITE_RELAY_PRIVATE_KEY=<Alice_private_key>  # For testnet only
 
-# DotNS (deployment only)
-DOTNS_MNEMONIC=your twelve word phrase
+# DotNS (deployment only) — bulletin-deploy v0.9.0
+# MNEMONIC env var (not DOTNS_MNEMONIC) or use `bulletin-deploy login` instead
+MNEMONIC=your twelve word phrase
 DOTNS_DOMAIN=intran3t-app42
-PASEO_ASSETHUB_RPC=wss://sys.ibp.network/asset-hub-paseo
+# BULLETIN_RPC and PASEO_ASSETHUB_RPC are no longer needed — handled by --env paseo-next-v2
 ```
 
 ---
@@ -116,9 +127,19 @@ npm run preview      # Preview build
 
 ### Deployment
 ```bash
-# DotNS (decentralized)
-set -a; source .env; set +a
-NODE_OPTIONS="--max-old-space-size=8192" bulletin-deploy ./dist intran3t.dot --js-merkle
+# DotNS — bulletin-deploy v0.9.0
+# Option A: mnemonic in env
+MNEMONIC="..." bulletin-deploy ./dist intran3t.dot --env paseo-next-v2 --js-merkle
+
+# Option B: login with Polkadot mobile app (no mnemonic needed)
+bulletin-deploy login
+bulletin-deploy ./dist intran3t.dot --env paseo-next-v2 --js-merkle
+
+# Deploy to preview env
+bulletin-deploy ./dist intran3t.dot --env preview --js-merkle
+
+# Check who's signed in
+bulletin-deploy whoami
 ```
 
 ### Contracts
@@ -175,73 +196,47 @@ node contracts/solidity/scripts/check-mapping.js <substrate-address>
 
 ### DotNS Gateway 404
 **Problem:** Domain registered but not loading
-**Cause:** Wrong RPC during deployment (contract addresses differ per RPC)
-**Fix:** Always use `wss://sys.ibp.network/asset-hub-paseo` for DotNS
+**Cause:** Wrong `--env` during deployment, or deploying to preview but checking paseo gateway
+**Fix:** Use `--env paseo-next-v2` for `*.paseo.li`, `--env preview` for `*.previewnet.paseo.li`
 
 ---
 
 ## DotNS Deployment (Decentralized Hosting)
 
-### Quick Deploy
-```bash
-# Build + upload to Bulletin + register domain
-NODE_OPTIONS="--max-old-space-size=8192" npm run deploy:dotns
-```
+### bulletin-deploy v0.9.0
 
-### Manual Steps
+One command deploys: Bulletin upload + DotNS contenthash update.
+
 ```bash
-# 1. Build
 npm run build
 
-# 2. Get CID from Bulletin (via scripts/deploy.js)
-# 3. Set contenthash (via dotns-cli)
-cd ~/product-infrastructure/examples/pop-dotns
-bun run dev content set intran3t-app42 <cid> --mnemonic "<mnemonic>"
+# With mnemonic
+MNEMONIC="..." bulletin-deploy ./dist intran3t.dot --env paseo-next-v2 --js-merkle
+
+# With Polkadot mobile login (preferred — no mnemonic in shell)
+bulletin-deploy login
+bulletin-deploy ./dist intran3t.dot --env paseo-next-v2 --js-merkle
+
+# To preview environment
+bulletin-deploy ./dist intran3t.dot --env preview --js-merkle
+
+# Publish to on-chain Publisher registry (paseo-next-v2 only)
+bulletin-deploy ./dist intran3t.dot --env paseo-next-v2 --js-merkle --publish
 ```
 
-### External Tools Required
-```bash
-# Clone product-infrastructure (for dotns-cli)
-git clone git@github.com:paritytech/product-infrastructure.git ~/product-infrastructure
-cd ~/product-infrastructure/examples/pop-dotns
-bun install && bun papi
-```
+Available environments: `paseo-next-v2` (default), `preview`, `preview-pvm`, `paseo-next`, `polkadot`, `kusama`
 
 ### Critical Notes
-- **RPC:** Must use `wss://sys.ibp.network/asset-hub-paseo` (contract addresses differ per RPC)
-- **Memory:** Use `NODE_OPTIONS="--max-old-space-size=8192"` to prevent heap errors
-- **Gateway:** Only `paseo.li` works (`bigtava.online` has issues)
-- **Domain naming:** 8+ chars, exactly 2 trailing digits (e.g., `myapp42`)
-- **Contenthash:** Must be ENSIP-7 compliant (`0xe3` + `0x01` + CID bytes)
-
-### DotNS Contract Addresses
-
-**Paseo Next v2** (bulletin-deploy 0.7.29+, `wss://paseo-asset-hub-next-rpc.polkadot.io`)
-```
-DOTNS_PROTOCOL_REGISTRY: 0x8F28419f4E32Bb0aA02e156A0543Ff253f126D7D
-DOTNS_REGISTRAR: 0xf7Ad3F44F316C73E4a2b46b1ed48d376bCc9E639
-DOTNS_REGISTRAR_CONTROLLER: 0x674b705268DAE369F0a7BE9cbaCDb928b8BA38C2
-DOTNS_REGISTRY: 0xa1b2b939E82b2ecE55Bd8a0E283818BfC1CA6CDc
-DOTNS_RESOLVER: 0xA8988eA083174ea94Ed1D686f0F073a10f65598D
-DOTNS_CONTENT_RESOLVER: 0x8A26480b0B5Df3d4D9b95adc24a5Ecb33A5b8F64
-```
-
-**Preview** (bulletin-deploy 0.7.29+, `wss://previewnet.substrate.dev/asset-hub`)
-```
-DOTNS_REGISTRAR: 0x061273AeF34e8ab9Ca08E199d7440E2639Fc2088
-DOTNS_REGISTRAR_CONTROLLER: 0xC0c21ca6302884572E61d69D5bf3E271Acf39B23
-DOTNS_REGISTRY: 0x5622CA75C75726Da13ae46C69127C07c87538633
-DOTNS_RESOLVER: 0x823f39E7a4126669be53211FFbCF27e55b3274C6
-DOTNS_CONTENT_RESOLVER: 0xBD003d5Dd04E68aC60d529a46AEfBdEf8941868C
-```
+- `--env` handles all RPC and contract addresses — no manual `BULLETIN_RPC` or `PASEO_ASSETHUB_RPC` needed
+- `--js-merkle` always (no IPFS Kubo binary required)
+- Gateway: `paseo.li` (paseo-next-v2), `previewnet.paseo.li` (preview)
+- Domain: 8+ chars, exactly 2 trailing digits (e.g., `intran3t-app42`)
+- `bulletin-deploy whoami` to check current login state
 
 ### Current Deployment
 - Domain: `intran3t.dot`
 - Preview CID: `bafybeig2oimscx4jrejmdhlaqfvmli6urnyljufe6fhino5srjj4g34aym` (deployed 2026-05-29)
-- Preview tx: `0x9390e52a2a341a57ac9d1f36d3dc963ef2081effd699229961bca8e9a4c15640`
-- Paseo-next-v2 CID: `bafybeibjl3tkbeha5vesgtf7h4zhauqqko4crgspfwdjuwg34et5buzjty` (deployed 2026-05-29, new contracts)
-
-**Deploy note:** Always `unset BULLETIN_RPC` before deploying to preview (the .env sets it to paseo-next-v2's Bulletin which would override the preview endpoint).
+- Paseo-next-v2 CID: `bafybeibjl3tkbeha5vesgtf7h4zhauqqko4crgspfwdjuwg34et5buzjty` (deployed 2026-05-29)
 
 ---
 
@@ -261,7 +256,7 @@ DOTNS_CONTENT_RESOLVER: 0xBD003d5Dd04E68aC60d529a46AEfBdEf8941868C
 3. Map account: Call `pallet_revive.map_account()` via Substrate wallet
 4. Result: Substrate wallet can now sign EVM transactions
 
-**Priority:** mapped EVM > MetaMask > derived address
+**Note:** product-sdk derives the EVM address from the Substrate account — no MetaMask needed.
 
 ### Storage Strategy
 - **Bulletin:** Form definitions, encrypted responses (2-week TTL, auto-renewing)
@@ -302,53 +297,22 @@ DOTNS_CONTENT_RESOLVER: 0xBD003d5Dd04E68aC60d529a46AEfBdEf8941868C
 
 ---
 
-## Recent Changes (Last 7 Days)
+## Recent Changes
 
-### 2026-02-25
-- **Wallet Selection UX**: Multi-wallet support - users can now choose specific Polkadot wallet (Talisman, SubWallet, etc.) before account selection
-  - Files: `ConnectWallet.tsx`, `WalletProvider.tsx`, `wallet-provider.ts`
-  - Three-view system: wallets → polkadot-wallets → accounts
-  - Non-breaking changes to Product SDK integration (optional `preferredWallet` parameter)
-- **Form Creation Auto-Mapping**: Automatically map accounts before contract calls, eliminating BadProof errors
-  - File: `FormsWidget.tsx`
-  - Added status messages during mapping/upload/registration
-  - Better error handling - forms only saved when contract succeeds
-- **Acc3ss Module Improvements**: Better UX feedback and transaction hash extraction
-  - Files: `Acc3ssWidget.tsx`, `useSubstrateEVMSigner.ts`
-  - Added `mintingStatus` state with detailed progress messages
-  - Removed arbitrary 3-second wait, use deterministic token ID calculation
-  - Enhanced event parsing to extract EVM transaction hash from Revive.EthTransacted
-  - Added proper account mapping status checks (graceful handling of runtime metadata mismatches)
-- Product SDK migration complete: ProfileWidget balance now uses Product SDK/PAPI
-- Fixed Acc3ss button text to show location-specific pass status
-- Fixed Admin page blank screen (connectedAccount → selectedAccount)
-- DotNS deployment updated with latest bug fixes
-- Created comprehensive HOST_API.md reference (protocol + Product SDK guide)
-- Updated global CLAUDE.md with minimal Host API pointer
+### 2026-05-29
+- DotNS contracts updated for `bulletin-deploy` 0.7.29 → 0.9.0 (new contract addresses on paseo-next-v2)
+- Deployed: Preview CID `bafybeig2oimscx4jrejmdhlaqfvmli6urnyljufe6fhino5srjj4g34aym`, Paseo-next-v2 CID `bafybeibjl3tkbeha5vesgtf7h4zhauqqko4crgspfwdjuwg34et5buzjty`
 
-### 2026-02-23
-- Fixed response count sync across all views (Admin, Dashboard, Forms widget)
-- Optimized Forms widget spacing to eliminate scrolling
-- All views now use `form.onChainId || form.id` for contract queries
+### 2026-05-26
+- Office map seat selection fix, host account display name fix
 
-### 2026-02-20
-- DotNS deployment with ENSIP-7 contenthash fix
-- Forms UI polish (Polkadot brand colors, blockchain animation, radio buttons)
-- Bulletin manifest v1.0.0 structure (T3rminal-inspired JSON)
-
-### 2026-02-17-20
-- Complete dForms T3rminal pattern (Bulletin + Contract + Frontend)
-- Wallet-less voting via Alice relay
-- Admin view auto-fetch/decrypt from chain
-
-### 2026-02-13
-- PolkaVM contract migration (paused - API compatibility issues)
-- Removed RBAC dependency (simplified to permissionless)
-
-### 2026-02-10
-- Address Converter module
-- Typink signer access pattern fixed
-- DotNS contenthash encoding fixed (ENSIP-7 compliance)
+### 2026-05-22
+- **ParityDAO module:** On-chain governance via Solidity contract
+- **Signing stack upgrade:** Migrated to `createTransaction` host path + `createStandaloneTxSigner` browser fallback (product-sdk v0.7.9-4)
+- **Profile PoP:** Proof of Personhood integration
+- Form UX improvements
+- PAPI descriptors updated to Paseo Next v2
+- All Bulletin + Asset Hub endpoints migrated to v2
 
 ---
 
@@ -368,7 +332,7 @@ DOTNS_CONTENT_RESOLVER: 0xBD003d5Dd04E68aC60d529a46AEfBdEf8941868C
 
 ### Manual Checklist
 - [ ] Form creation + submission + admin view decryption
-- [ ] Access pass minting (Substrate mapped vs MetaMask)
+- [ ] Access pass minting (map account → mint via Substrate signer)
 - [ ] Search (local users + People Chain registry)
 - [ ] Account mapping flow
 - [ ] Response counts match across all views
