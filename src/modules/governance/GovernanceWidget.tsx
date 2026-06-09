@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from '../../providers/WalletProvider'
-import { ThumbsUp, ThumbsDown, Clock, Plus, X, Users, CheckCircle, Minus, Link, HelpCircle, Loader2, Scale } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Clock, Plus, X, Users, CheckCircle, Minus, Loader2, Scale, ImageIcon } from 'lucide-react'
 import type { Poll, Vote, GovernanceConfig, VoteChoice } from './types'
 import { SAMPLE_POLLS, POLLS_STORAGE_KEY, BLOCK_DURATION_OPTIONS, BULLETIN_GATEWAY, BULLETIN_WS } from './config'
 import Identicon from '@polkadot/react-identicon'
-import { useIdentity } from '../profile/use-identity'
 import { useParityDAOContract, VOTE_CHOICE } from '../../hooks/useParityDAOContract'
-import { uploadJsonToBulletin } from '../../lib/bulletin/upload'
-import { useBalance } from 'typink'
+import { uploadToBulletin, uploadJsonToBulletin } from '../../lib/bulletin/upload'
 
 const CHOICE_MAP: Record<VoteChoice, number> = {
   aye: VOTE_CHOICE.Aye,
@@ -48,7 +46,7 @@ function CreatePollModal({
   submitStatus
 }: {
   onClose: () => void
-  onSubmit: (title: string, description: string, durationBlocks: number) => void
+  onSubmit: (title: string, description: string, durationBlocks: number, imageFile?: File) => void
   creatorAddress: string
   isSubmitting: boolean
   submitStatus: string
@@ -56,10 +54,24 @@ function CreatePollModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [durationBlocks, setDurationBlocks] = useState(String(BLOCK_DURATION_OPTIONS[1].blocks))
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setImageFile(file)
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (ev) => setImagePreview(ev.target?.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setImagePreview(null)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(title, description, parseInt(durationBlocks))
+    onSubmit(title, description, parseInt(durationBlocks), imageFile ?? undefined)
   }
 
   return (
@@ -100,6 +112,35 @@ function CreatePollModal({
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-[#1c1917] mb-2">
+              Image <span className="text-[#a8a29e] font-normal">(optional)</span>
+            </label>
+            <label className="flex items-center gap-3 px-4 py-2 border border-[#e7e5e4] rounded-lg cursor-pointer hover:bg-[#fafaf9] transition-colors group">
+              <ImageIcon className="w-4 h-4 text-[#a8a29e] group-hover:text-[#78716c] transition-colors flex-shrink-0" />
+              <span className="text-sm text-[#78716c]">{imageFile ? imageFile.name : 'Choose an image...'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="sr-only"
+                disabled={isSubmitting}
+              />
+            </label>
+            {imagePreview && (
+              <div className="mt-2 relative">
+                <img src={imagePreview} alt="Preview" className="w-full h-36 object-cover rounded-lg border border-[#e7e5e4]" />
+                <button
+                  type="button"
+                  onClick={() => { setImageFile(null); setImagePreview(null) }}
+                  className="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-[#1c1917] mb-2">Voting Duration</label>
             <select
               value={durationBlocks}
@@ -112,13 +153,6 @@ function CreatePollModal({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="bg-[#fafaf9] rounded-lg p-3 border border-[#e7e5e4] flex items-center gap-2">
-            <Link className="w-4 h-4 text-purple-600 shrink-0" />
-            <p className="text-xs text-[#78716c]">
-              Content stored on Bulletin Chain, vote registry on Paseo Asset Hub
-            </p>
           </div>
 
           {submitStatus && (
@@ -170,7 +204,6 @@ function VoteModal({
 }) {
   const [selectedVote, setSelectedVote] = useState<VoteChoice | null>(null)
   const [comment, setComment] = useState('')
-  const { data: identity } = useIdentity(userAddress)
 
   const formatBalance = (value: bigint | undefined): string => {
     if (!value) return "0"
@@ -206,10 +239,10 @@ function VoteModal({
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm font-medium text-[#1c1917]">
-                  {identity?.display || `${userAddress.slice(0, 6)}...${userAddress.slice(-6)}`}
+                  {userAddress.slice(0, 6)}...{userAddress.slice(-6)}
                 </span>
               </div>
-              <span className="text-xs text-[#78716c]">{identity?.display ? 'Verified Identity' : 'Connected Account'}</span>
+              <span className="text-xs text-[#78716c]">Connected account</span>
             </div>
           </div>
 
@@ -363,6 +396,14 @@ function PollCard({
         </div>
       </div>
 
+      {poll.imageCid && (
+        <img
+          src={`${BULLETIN_GATEWAY}${poll.imageCid}`}
+          alt={poll.title}
+          className="w-full h-32 object-cover rounded-lg mb-3 border border-[#e7e5e4]"
+        />
+      )}
+
       <div className="mb-3">
         {showResults ? (
           <>
@@ -439,8 +480,6 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
   const [currentBlock, setCurrentBlock] = useState<number | undefined>()
   const [loadingChain, setLoadingChain] = useState(false)
 
-  const balance = useBalance(selectedAccount?.address || '', { enabled: !!selectedAccount?.address })
-
   const daoContract = useParityDAOContract()
 
   // Load proposals from contract + local fallback on mount
@@ -463,12 +502,14 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
         proposalDataList.map(async (p, i) => {
           let title = `Proposal #${i}`
           let description = ''
+          let imageCid: string | undefined
           try {
             const res = await fetch(`${BULLETIN_GATEWAY}${p.contentCid}`)
             if (res.ok) {
               const json = await res.json()
               title = json.title || title
               description = json.description || ''
+              imageCid = json.imageCid
             }
           } catch {}
 
@@ -478,6 +519,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
             onChainId: i,
             title,
             description,
+            imageCid,
             creator: p.author,
             contentCid: p.contentCid,
             createdAt: 0,
@@ -544,14 +586,22 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
     fetchBlock()
   }, [])
 
-  const handleCreatePoll = async (title: string, description: string, durationBlocks: number) => {
+  const handleCreatePoll = async (title: string, description: string, durationBlocks: number, imageFile?: File) => {
     if (!selectedAccount) return
     setIsCreating(true)
 
     try {
+      let imageCid: string | undefined
+      if (imageFile) {
+        setCreateStatus('Uploading image...')
+        const imageBytes = new Uint8Array(await imageFile.arrayBuffer())
+        const imageResult = await uploadToBulletin(imageBytes, { bulletinEndpoint: BULLETIN_WS, ipfsGateway: BULLETIN_GATEWAY })
+        imageCid = imageResult.cid
+      }
+
       setCreateStatus('Uploading content to Bulletin...')
       const result = await uploadJsonToBulletin(
-        { title, description },
+        { title, description, imageCid },
         { bulletinEndpoint: BULLETIN_WS, ipfsGateway: BULLETIN_GATEWAY }
       )
 
@@ -713,7 +763,7 @@ export function GovernanceWidget({ config }: { config: GovernanceConfig }) {
         <VoteModal
           poll={votingPoll}
           userAddress={selectedAccount.address}
-          balance={balance?.free}
+          balance={undefined}
           onClose={() => { if (!isVoting) setVotingPoll(null) }}
           onVote={(choice, comment) => handleVote(votingPoll.id, choice, comment)}
           isVoting={isVoting}

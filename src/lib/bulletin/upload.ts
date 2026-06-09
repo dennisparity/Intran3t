@@ -114,16 +114,8 @@ export async function uploadToBulletin(
     // 4. Submit transaction
     // For //Alice we use sudo to bypass authorization limits on testnet.
     // For other accounts, direct call is used (requires authorization on chain).
-    let blockHash: string;
-
-    if (accountSeed === "//Alice") {
-      const sudoTx = api.tx.Sudo.sudo({ call: storeCall.decodedCall });
-      const result = await sudoTx.signAndSubmit(signer);
-      ({ blockHash } = checkTransactionResult(result));
-    } else {
-      const result = await storeCall.signAndSubmit(signer);
-      ({ blockHash } = checkTransactionResult(result));
-    }
+    const result = await storeCall.signAndSubmit(signer);
+    const { blockHash } = checkTransactionResult(result);
 
     return {
       cid,

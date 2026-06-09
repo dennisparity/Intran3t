@@ -1,3 +1,14 @@
+## 2026-06-09
+
+- Fix proposal creation: remove Sudo.sudo wrapper from Bulletin upload (Sudo pallet does not exist on paseo-next-v2 Bulletin chain)
+- GovernanceWidget: add optional image upload to proposal creation form, stored as separate Bulletin CID
+- GovernanceWidget: show proposal image in PollCard when present
+- GovernanceWidget: remove People Chain identity query from VoteModal (was causing console errors for addresses with no on-chain identity)
+- GovernanceWidget: remove "Content stored on Bulletin Chain" info box and its icon
+- ProfileWidget: remove "Syncing..." balance display (product account has no balance by design; root account not accessible from host)
+- ModularDashboard: wire up Add Plugin button to open a modal with three options (Request a Feature, Browse Plugins, Build and Publish)
+- Add AddPluginModal component with Request a Feature flow and Coming Soon placeholders
+
 ## 2026-06-08
 
 - Update CLAUDE.md signing stack: replace Typink/MetaMask references with canonical product-sdk patterns (host path + browser fallback)

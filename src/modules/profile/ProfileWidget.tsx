@@ -1,20 +1,10 @@
 import { useWallet } from '../../providers/WalletProvider'
-import { useBalance } from '../../hooks/useBalance'
 import Identicon from '@polkadot/react-identicon'
 import { User, ShieldCheck, ShieldOff, Github, Mail, Twitter, Lock } from 'lucide-react'
 import type { ProfileConfig } from './types'
 import { mockUserProfile } from './config'
 import { useEVM } from '../../providers/EVMProvider'
 import { useIdentity } from './use-identity'
-
-function formatBalance(value: bigint | undefined, decimals: number = 10): string {
-  if (!value) return "0"
-  const divisor = BigInt(10 ** decimals)
-  const wholePart = value / divisor
-  const fractionalPart = value % divisor
-  const fractionalStr = fractionalPart.toString().padStart(decimals, '0').slice(0, 2)
-  return `${wholePart}.${fractionalStr}`
-}
 
 interface ProfileWidgetProps {
   config: ProfileConfig
@@ -70,10 +60,6 @@ export function ProfileWidget({
   const displayAddress = profileAddress || selectedAccount?.address || evmAccount
   const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
 
-  const { data: balance } = useBalance(
-    (!isEvm && displayAddress) ? displayAddress : undefined
-  )
-
   const { data: identity, isLoading: identityLoading } = useIdentity(
     (!isEvm && displayAddress) ? displayAddress : undefined
   )
@@ -124,13 +110,6 @@ export function ProfileWidget({
                 </div>
               </div>
 
-              {balance?.free ? (
-                <p className="text-lg font-semibold text-[#1c1917] text-center mt-1">
-                  {formatBalance(balance.free)} PAS
-                </p>
-              ) : (
-                <p className="text-sm text-[#a8a29e] text-center mt-1">Syncing...</p>
-              )}
             </div>
 
             {/* Personhood status */}

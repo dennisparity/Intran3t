@@ -15,6 +15,7 @@ import { useDiscoveredUsers } from '../hooks/useDiscoveredUsers'
 import ConnectWallet from '../components/ConnectWallet'
 import PolkadotLogo from '../components/PolkadotLogo'
 import { useEVM } from '../providers/EVMProvider'
+import { AddPluginModal } from '../components/AddPluginModal'
 
 export default function ModularDashboard() {
   const { selectedAccount, isReconnecting } = useWallet()
@@ -35,6 +36,7 @@ export default function ModularDashboard() {
     const user = discoveredUsers.find(u => u.substrateAddress === profileAddress)
     return user?.evmAddress || undefined
   }, [profileAddress, discoveredUsers])
+  const [showPluginModal, setShowPluginModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
@@ -166,7 +168,10 @@ export default function ModularDashboard() {
 
                 {/* Add Plugin — right rail, below Office Booking */}
                 <div className="col-span-12 xl:col-span-4 row-span-1">
-                  <div className="h-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group">
+                  <button
+                    onClick={() => setShowPluginModal(true)}
+                    className="h-full w-full border-2 border-dashed border-[#e7e5e4] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#1c1917] hover:bg-[#fafaf9] transition-all duration-200 cursor-pointer group"
+                  >
                     <div className="w-10 h-10 rounded-xl border border-[#e7e5e4] bg-white group-hover:border-[#1c1917] flex items-center justify-center transition-colors">
                       <span className="text-xl text-[#a8a29e] group-hover:text-[#1c1917] transition-colors leading-none">+</span>
                     </div>
@@ -174,7 +179,7 @@ export default function ModularDashboard() {
                       <p className="text-sm font-semibold text-[#1c1917] font-serif">Add Plugin</p>
                       <p className="text-xs text-[#78716c] mt-0.5">Build custom functionality</p>
                     </div>
-                  </div>
+                  </button>
                 </div>
 
                 <div className="col-span-12 xl:col-span-8 row-span-2">
@@ -191,6 +196,8 @@ export default function ModularDashboard() {
 
     {/* Wallet gate disabled for local testing — re-enable before Triangle deploy */}
     {/* {!selectedAccount && !evm.connected && ( ... )} */}
+
+    {showPluginModal && <AddPluginModal onClose={() => setShowPluginModal(false)} />}
     </>
   )
 }

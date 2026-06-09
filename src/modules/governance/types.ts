@@ -29,6 +29,7 @@ export interface Poll {
   onChainId?: number
   endBlock?: number
   contentCid?: string
+  imageCid?: string
   remarkHash?: string
   storedOnChain?: boolean
 }
