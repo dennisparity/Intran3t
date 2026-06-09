@@ -1,3 +1,7 @@
+## 2026-06-09 (2)
+
+- Update Bulletin chain PAPI descriptor to current runtime (codeHash mismatch was blocking proposal creation with TransactionStorage.store error)
+
 ## 2026-06-09
 
 - Fix proposal creation: remove Sudo.sudo wrapper from Bulletin upload (Sudo pallet does not exist on paseo-next-v2 Bulletin chain)
