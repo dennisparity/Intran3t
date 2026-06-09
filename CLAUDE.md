@@ -235,8 +235,8 @@ Available environments: `paseo-next-v2` (default), `preview`, `preview-pvm`, `pa
 
 ### Current Deployment
 - Domain: `intran3t.dot`
-- Paseo-next-v2 CID: `bafybeiab5cgggtsklpgb7pgai43cncaf25n7lspyamnzf5qpzkizu4ryhm` (deployed 2026-06-08)
-- Preview CID: `bafybeic26ftho3xdqmrccui7vnbqqofwo22fdumm2wnukknc5k3zqdooca` (deployed 2026-06-08)
+- Paseo-next-v2 CID: `bafybeihh6lo7mjkhedq5uwim4wmo2ik735qmny5m5t37giojqhwpnvbx3q` (deployed 2026-06-09)
+- Preview CID: `bafybeih6vfnere5bwam37wh5443p6zyh4uqpqcymqcffqpdzs4gvbnufpe` (deployed 2026-06-09)
 
 ---
 
