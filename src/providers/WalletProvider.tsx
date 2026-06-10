@@ -8,7 +8,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createClient } from 'polkadot-api'
 import { getWsProvider } from 'polkadot-api/ws'
-import { createPapiProvider } from '@novasamatech/product-sdk'
+import { createPapiProvider } from '@novasamatech/host-api-wrapper'
 import type { InjectedPolkadotAccount, PolkadotSigner } from 'polkadot-api/pjs-signer'
 import { getWalletExtension, isInHost, type WalletExtension } from '../lib/wallet-provider'
 import { paseo } from '../../.papi/descriptors'
@@ -213,7 +213,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       delayTimer = setTimeout(attemptConnect, delay)
     } else {
       // Try silent Spektr detection for Triangle hosts that don't set __HOST_WEBVIEW_MARK__
-      import('@novasamatech/product-sdk')
+      import('@novasamatech/host-api-wrapper')
         .then(({ injectSpektrExtension }) => injectSpektrExtension())
         .then(ready => {
           if (ready) {

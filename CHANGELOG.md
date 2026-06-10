@@ -1,3 +1,8 @@
+## 2026-06-10
+
+- Migrate host SDK from deprecated `@novasamatech/product-sdk` (0.7.9-4) to `@novasamatech/host-api-wrapper` (0.8.7-2) to restore wire-compatibility with Triangle host running host-api 0.8
+- Update all three import sites in WalletProvider.tsx and wallet-provider.ts (static imports and dynamic import for silent Spektr detection)
+
 ## 2026-06-09 (2)
 
 - Update Bulletin chain PAPI descriptor to current runtime (codeHash mismatch was blocking proposal creation with TransactionStorage.store error)

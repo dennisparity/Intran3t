@@ -5,7 +5,7 @@
  * Falls back to regular wallet extensions when not in host
  */
 
-import { injectSpektrExtension, accounts } from '@novasamatech/product-sdk'
+import { injectSpektrExtension, accounts } from '@novasamatech/host-api-wrapper'
 import { connectInjectedExtension, type InjectedPolkadotAccount } from 'polkadot-api/pjs-signer'
 import { encodeAddress } from '@polkadot/util-crypto'
 import { createStandaloneTxSigner } from './standalone-tx-signer'
