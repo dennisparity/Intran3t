@@ -1,3 +1,7 @@
+## 2026-06-10 (2)
+
+- Fix Bulletin upload in Triangle host: wrap PAPI client with createPapiProvider(BULLETIN_GENESIS) so the host routes to the correct Bulletin chain instead of falling back to Asset Hub (which has no TransactionStorage, causing "Incompatible runtime entry" in browser context)
+
 ## 2026-06-10
 
 - Migrate host SDK from deprecated `@novasamatech/product-sdk` (0.7.9-4) to `@novasamatech/host-api-wrapper` (0.8.7-2) to restore wire-compatibility with Triangle host running host-api 0.8

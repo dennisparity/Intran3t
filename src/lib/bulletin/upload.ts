@@ -9,7 +9,13 @@ import { createClient } from "polkadot-api";
 import { Binary } from "@polkadot-api/substrate-bindings";
 import { getPolkadotSigner } from "polkadot-api/signer";
 import { getWsProvider } from "polkadot-api/ws";
+import { createPapiProvider } from "@novasamatech/host-api-wrapper";
+import { isInHost } from "../wallet-provider";
 import { calculateCID } from "./cid";
+
+// Genesis hash for the Paseo Next v2 Bulletin chain — required so Triangle host
+// routes this PAPI client to the correct chain instead of falling back to Asset Hub.
+const BULLETIN_GENESIS = "0x8cfe6717dc4becfda2e13c488a1e2061ff2dfee96e7d031157f72d36716c0a22";
 
 // Bulletin Chain endpoints
 export const BULLETIN_ENDPOINTS = {
@@ -95,11 +101,17 @@ export async function uploadToBulletin(
   // 1. Calculate CID locally
   const cid = calculateCID(fileBytes);
 
-  // 2. Connect to Bulletin node via WebSocket
-  // withPolkadotSdkCompat is REQUIRED wrapper - without it WS communication
-  // with Substrate nodes won't work correctly
+  // 2. Connect to Bulletin node.
+  // In Triangle host, raw WebSocket connections are intercepted and routed to
+  // whatever chain the host knows — without a genesis hash it falls back to
+  // Asset Hub, which has no TransactionStorage and causes "Incompatible runtime
+  // entry". createPapiProvider routes to the correct Bulletin chain via genesis
+  // hash; outside the host it falls back to a direct WS connection.
   const wsProvider = getWsProvider(bulletinEndpoint);
-  const client = createClient(wsProvider);
+  const provider = isInHost()
+    ? createPapiProvider(BULLETIN_GENESIS as `0x${string}`, wsProvider)
+    : wsProvider;
+  const client = createClient(provider);
 
   try {
     // getTypedApi uses generated PAPI descriptors for type-safe API
