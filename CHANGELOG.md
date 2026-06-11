@@ -1,3 +1,11 @@
+## 2026-06-11
+
+- ProfileWidget: remove People Chain identity query; use host-injected account name directly and show "Member" badge when running inside Triangle host
+- useAccessControl: remove People Chain identity lookup; all access permissions are now constants (access control is not enforced in current testing phase)
+- Remove Acc3ss module entirely (Acc3ssWidget, config, types, nft-helpers); desk booking is handled by the dedicated office module
+- Update help-center copy to reference desk booking module instead of Acc3ss
+- Clean up address-conversion comment referencing removed Acc3ss module
+
 ## 2026-06-10 (2)
 
 - Fix Bulletin upload in Triangle host: wrap PAPI client with createPapiProvider(BULLETIN_GENESIS) so the host routes to the correct Bulletin chain instead of falling back to Asset Hub (which has no TransactionStorage, causing "Incompatible runtime entry" in browser context)

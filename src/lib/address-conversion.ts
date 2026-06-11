@@ -51,7 +51,7 @@ export function substrateToEvm(substrateAddress: string): string {
  * This uses keccak256 hash of the AccountId32 and takes the last 20 bytes.
  * This is the Ethereum-compatible derivation method.
  *
- * Used by: Acc3ss module (pallet_revive)
+ * Used by: account mapping (pallet_revive)
  *
  * @param substrateAddress - The Substrate address (SS58 format)
  * @returns EVM address (0x-prefixed hex string)

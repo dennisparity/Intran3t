@@ -35,7 +35,7 @@ export const defaultHelpCenterConfig: HelpCenterConfig = {
           title: 'How to book a desk',
           description: 'Reserve your workspace',
           icon: 'Calendar',
-          content: 'Use the Acc3ss module to view available desks and book your preferred workspace.'
+          content: 'Use the desk booking module to view available desks and book your preferred workspace.'
         },
         {
           id: 'meeting-rooms',

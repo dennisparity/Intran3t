@@ -4,7 +4,6 @@ import { User, ShieldCheck, ShieldOff, Github, Mail, Twitter, Lock } from 'lucid
 import type { ProfileConfig } from './types'
 import { mockUserProfile } from './config'
 import { useEVM } from '../../providers/EVMProvider'
-import { useIdentity } from './use-identity'
 
 interface ProfileWidgetProps {
   config: ProfileConfig
@@ -54,17 +53,13 @@ export function ProfileWidget({
   profileEvmAddress,
   isOwnProfile = true
 }: ProfileWidgetProps) {
-  const { selectedAccount, isReconnecting } = useWallet()
+  const { selectedAccount, isReconnecting, inHost } = useWallet()
   const { account: evmAccount } = useEVM()
 
   const displayAddress = profileAddress || selectedAccount?.address || evmAccount
   const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
 
-  const { data: identity, isLoading: identityLoading } = useIdentity(
-    (!isEvm && displayAddress) ? displayAddress : undefined
-  )
-
-  const accountName = identity?.display || selectedAccount?.name || 'Unknown User'
+  const accountName = selectedAccount?.name || 'Unknown User'
   const profile = displayAddress
     ? { address: displayAddress, name: accountName }
     : mockUserProfile
@@ -116,10 +111,13 @@ export function ProfileWidget({
             <div className="border-t border-[#e7e5e4] pt-3 mb-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-[#78716c] uppercase tracking-wide">Personhood</p>
-                {identityLoading ? (
-                  <span className="text-xs text-[#a8a29e]">Checking...</span>
+                {inHost && selectedAccount ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                    <ShieldCheck className="w-3 h-3" />
+                    Member
+                  </span>
                 ) : (
-                  <PopBadge level={identity?.popLevel} />
+                  <PopBadge level={null} />
                 )}
               </div>
             </div>
