@@ -1,3 +1,7 @@
+## 2026-06-12
+
+- Add bulletin-deploy.config.ts for Triangle product manifest registration
+
 ## 2026-06-11
 
 - ProfileWidget: remove People Chain identity query; use host-injected account name directly and show "Member" badge when running inside Triangle host
