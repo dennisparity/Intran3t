@@ -167,7 +167,15 @@ export default function ModularDashboard() {
                   <OfficeBookingCard />
                 </div>
 
-                {/* Add Plugin — right rail, below Office Booking */}
+                <div className="col-span-12 xl:col-span-4 row-span-2">
+                  <SlidesWidget config={defaultSlidesConfig} />
+                </div>
+
+                <div className="col-span-12 xl:col-span-8 row-span-2">
+                  <GovernanceWidget config={defaultGovernanceConfig} />
+                </div>
+
+                {/* Add Plugin — right rail, below Slides */}
                 <div className="col-span-12 xl:col-span-4 row-span-1">
                   <button
                     onClick={() => setShowPluginModal(true)}
@@ -181,14 +189,6 @@ export default function ModularDashboard() {
                       <p className="text-xs text-[#78716c] mt-0.5">Build custom functionality</p>
                     </div>
                   </button>
-                </div>
-
-                <div className="col-span-12 xl:col-span-8 row-span-2">
-                  <GovernanceWidget config={defaultGovernanceConfig} />
-                </div>
-
-                <div className="col-span-12 xl:col-span-4 row-span-2">
-                  <SlidesWidget config={defaultSlidesConfig} />
                 </div>
               </div>
             </div>

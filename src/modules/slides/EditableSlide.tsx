@@ -7,6 +7,7 @@ import {
 import type { DeckTheme, Slide, SlideBlock } from './types'
 import { themeColors, headingSize, scaledSize, SIZE } from './SlideView'
 import { BulletinImage } from './BulletinImage'
+import PolkadotLogo from '../../components/PolkadotLogo'
 
 const SCALE_MIN = 0.4, SCALE_MAX = 3, SCALE_STEP = 0.1
 const WIDTH_MIN = 20, WIDTH_MAX = 100, WIDTH_STEP = 10
@@ -160,7 +161,10 @@ export function EditableSlide({
   }
 
   return (
-    <div className="aspect-[16/9] w-full overflow-hidden" style={{ background: c.bg, containerType: 'size' }}>
+    <div className="aspect-[16/9] w-full overflow-hidden relative" style={{ background: c.bg, containerType: 'size' }}>
+      <div style={{ position: 'absolute', top: '3cqh', left: '4cqw', width: '4.5cqw', height: '4.5cqw', color: c.muted, opacity: 0.6, pointerEvents: 'none' }}>
+        <PolkadotLogo className="w-full h-full" />
+      </div>
       <div className="w-full h-full flex flex-col justify-center gap-[2.5cqh] px-[7cqw] py-[6cqh]">
         {slide.blocks.length === 0 ? (
           <p style={{ fontSize: SIZE.text, color: c.muted }} className="text-center">

@@ -1,3 +1,9 @@
+## 2026-06-15 (2)
+
+- Move Slides widget above Add Plugin in the dashboard right rail
+- Add Polkadot logo watermark to top-left of every slide (SlideView and EditableSlide, scales with container-query units)
+- Fix Slides publish in Triangle host: wrap Bulletin PAPI client with createPapiProvider(BULLETIN_GENESIS) in bulletin-storage.ts so the host routes to Bulletin chain instead of falling back to Asset Hub (same fix already applied to governance)
+
 ## 2026-06-15
 
 - Add Slides module: block-based presentation builder (heading, text, bullets, image, code) with on-canvas Google-Slides style editing, drag-and-drop reorder for blocks and slides, per-element size controls, duplicate, and Light/Dark themes

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { DeckTheme, Slide, SlideBlock } from './types'
 import { BulletinImage } from './BulletinImage'
+import PolkadotLogo from '../../components/PolkadotLogo'
 
 interface ThemeColors {
   bg: string
@@ -86,9 +87,12 @@ export function SlideView({ slide, theme, className, style }: {
   const c = themeColors(theme)
   return (
     <div
-      className={`aspect-[16/9] w-full overflow-hidden ${className ?? ''}`}
+      className={`aspect-[16/9] w-full overflow-hidden relative ${className ?? ''}`}
       style={{ background: c.bg, containerType: 'size', ...style }}
     >
+      <div style={{ position: 'absolute', top: '3cqh', left: '4cqw', width: '4.5cqw', height: '4.5cqw', color: c.muted, opacity: 0.6 }}>
+        <PolkadotLogo className="w-full h-full" />
+      </div>
       <div className="w-full h-full flex flex-col justify-center gap-[2.5cqh] px-[7cqw] py-[6cqh]">
         {slide.blocks.length === 0 ? (
           <p style={{ fontSize: '3cqw', color: c.muted }} className="text-center">Empty slide</p>

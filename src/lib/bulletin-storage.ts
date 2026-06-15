@@ -20,8 +20,12 @@ import * as multihash from 'multiformats/hashes/digest'
 import { createClient, Binary, type PolkadotSigner } from 'polkadot-api'
 import { getPolkadotSigner } from 'polkadot-api/signer'
 import { getWsProvider } from 'polkadot-api/ws'
+import { createPapiProvider } from '@novasamatech/host-api-wrapper'
+import { isInHost } from './wallet-provider'
 
 const BULLETIN_RPC = 'wss://paseo-bulletin-next-rpc.polkadot.io'
+// Required so Triangle host routes to Bulletin chain instead of falling back to Asset Hub.
+const BULLETIN_GENESIS = '0x8cfe6717dc4becfda2e13c488a1e2061ff2dfee96e7d031157f72d36716c0a22'
 const BULLETIN_GATEWAY = 'https://paseo-bulletin-next-ipfs.polkadot.io/ipfs'
 const LS_PREFIX = 'intran3t.bulletin.'
 
@@ -68,6 +72,14 @@ function getAliceSigner(): PolkadotSigner {
 
 // ─── Core on-chain upload ──────────────────────────────────────────────────
 
+function createBulletinClient() {
+  const wsProvider = getWsProvider(BULLETIN_RPC)
+  const provider = isInHost()
+    ? createPapiProvider(BULLETIN_GENESIS as `0x${string}`, wsProvider)
+    : wsProvider
+  return createClient(provider)
+}
+
 function bytesToHex(bytes: Uint8Array): `0x${string}` {
   return ('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`
 }
@@ -76,7 +88,7 @@ async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promi
   const cid = computeCID(data)
   const cidStr = cid.toString()
 
-  const client = createClient(getWsProvider(BULLETIN_RPC))
+  const client = createBulletinClient()
   try {
     const api = client.getUnsafeApi() as any
 
@@ -195,7 +207,7 @@ export async function uploadRawToBulletinWithStatus(data: Uint8Array): Promise<B
 
 /** Authorize an account to store on Bulletin, via the //Alice sudo relay. Idempotent. */
 async function authorizeAccountViaSudo(address: string): Promise<void> {
-  const client = createClient(getWsProvider(BULLETIN_RPC))
+  const client = createBulletinClient()
   try {
     const api = client.getUnsafeApi() as any
     await new Promise<void>((resolve, reject) => {
