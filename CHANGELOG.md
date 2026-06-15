@@ -1,3 +1,7 @@
+## 2026-06-15 (4)
+
+- Fix Binary.fromBytes: import Binary from @polkadot-api/substrate-bindings instead of polkadot-api; the polkadot-api re-export omits fromBytes, causing uploads to fail immediately with TypeError
+
 ## 2026-06-15 (3)
 
 - Fix Bulletin uploads in bulletin-storage.ts: replace getUnsafeApi() + signSubmitAndWatch with getTypedApi(bulletin) + signAndSubmit; the unsafe API stalls indefinitely fetching runtime metadata before encoding, causing image upload and deck publish to hang and time out
