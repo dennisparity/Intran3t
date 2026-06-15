@@ -150,15 +150,109 @@ export async function uploadToBulletin(manifest: BulletinManifest): Promise<stri
 }
 
 export async function uploadRawToBulletin(data: Uint8Array): Promise<string> {
+  return (await uploadRawToBulletinWithStatus(data)).cid
+}
+
+export interface BulletinUploadResult {
+  cid: string
+  /** true if the TransactionStorage.store extrinsic landed in a block; false if it fell back to localStorage. */
+  onChain: boolean
+  /** Who signed the store extrinsic: the wallet-less relay, or the publisher's own account. */
+  signer: 'relay-alice' | 'user'
+  /** SS58 address that owns the stored data (set when signer === 'user'). */
+  owner?: string
+}
+
+/**
+ * Same as uploadRawToBulletin but reports whether the data actually went on-chain
+ * or fell back to localStorage, so callers can be honest about state.
+ */
+export async function uploadRawToBulletinWithStatus(data: Uint8Array): Promise<BulletinUploadResult> {
   const cid = computeCID(data).toString()
   try {
     const onChainCid = await submitToBulletin(data, getAliceSigner())
     lsPut(onChainCid, new TextDecoder().decode(data))
-    return onChainCid
+    return { cid: onChainCid, onChain: true, signer: 'relay-alice' }
   } catch (err) {
     console.warn('[Bulletin] Chain upload failed, falling back to localStorage:', err)
     lsPut(cid, new TextDecoder().decode(data))
-    return cid
+    return { cid, onChain: false, signer: 'relay-alice' }
+  }
+}
+
+// ─── Publisher-signed upload (authorize-then-store) ──────────────────────────
+//
+// Bulletin storage is permissioned: TransactionStorage.store only succeeds for
+// accounts the chain has authorized via TransactionStorage.authorize_account,
+// which itself requires Sudo. So to let an individual publish & own their deck,
+// we (1) have the //Alice sudo relay authorize the publisher's account, then
+// (2) the publisher's own account signs the store extrinsic.
+//
+// UPGRADE PATH (post-prototype): once live, users should be authorized by
+// default (e.g. the host/product grants storage allowance on first use, or the
+// chain allows permissionless store with a deposit). At that point the sudo
+// authorize step below is removed and the publisher simply signs the store.
+
+/** Authorize an account to store on Bulletin, via the //Alice sudo relay. Idempotent. */
+async function authorizeAccountViaSudo(address: string): Promise<void> {
+  const client = createClient(getWsProvider(BULLETIN_RPC))
+  try {
+    const api = client.getUnsafeApi() as any
+    await new Promise<void>((resolve, reject) => {
+      let sub: { unsubscribe: () => void } | undefined
+      const timeout = setTimeout(() => {
+        sub?.unsubscribe()
+        reject(new Error('Bulletin authorize timed out after 120s'))
+      }, 120_000)
+
+      sub = api.tx.Sudo.sudo({
+        call: {
+          type: 'TransactionStorage',
+          value: {
+            type: 'authorize_account',
+            value: { who: address, transactions: 4_294_967_295, bytes: 18_446_744_073_709_551_615n }
+          }
+        }
+      })
+        .signSubmitAndWatch(getAliceSigner())
+        .subscribe({
+          next: (event: { type: string; found?: boolean }) => {
+            // The outer sudo extrinsic landing in a block means authorization is
+            // applied (AlreadyAuthorized inner errors are harmless — still authorized).
+            if (event.type === 'txBestBlocksState' && event.found) {
+              clearTimeout(timeout); sub?.unsubscribe(); resolve()
+            } else if (event.type === 'invalid') {
+              clearTimeout(timeout); sub?.unsubscribe(); reject(new Error('Bulletin authorize invalid'))
+            }
+          },
+          error: (err: unknown) => { clearTimeout(timeout); sub?.unsubscribe(); reject(err) }
+        })
+    })
+  } finally {
+    client.destroy()
+  }
+}
+
+/**
+ * Authorize the publisher's account (via sudo relay), then store the data signed
+ * by that same account so the individual owns it on-chain. Falls back to
+ * localStorage if either step fails, reporting honest status.
+ */
+export async function uploadRawToBulletinAsUser(
+  data: Uint8Array,
+  signer: PolkadotSigner,
+  owner: string
+): Promise<BulletinUploadResult> {
+  const cid = computeCID(data).toString()
+  try {
+    await authorizeAccountViaSudo(owner)
+    const onChainCid = await submitToBulletin(data, signer)
+    lsPut(onChainCid, new TextDecoder().decode(data))
+    return { cid: onChainCid, onChain: true, signer: 'user', owner }
+  } catch (err) {
+    console.warn('[Bulletin] Publisher-signed upload failed, falling back to localStorage:', err)
+    lsPut(cid, new TextDecoder().decode(data))
+    return { cid, onChain: false, signer: 'user', owner }
   }
 }
 

@@ -1,3 +1,11 @@
+## 2026-06-15
+
+- Add Slides module: block-based presentation builder (heading, text, bullets, image, code) with on-canvas Google-Slides style editing, drag-and-drop reorder for blocks and slides, per-element size controls, duplicate, and Light/Dark themes
+- Store decks and images on Bulletin Chain; share via public /present/:cid viewer that needs no wallet, plus a /slides/preview/:localId draft preview
+- Add Slides dashboard widget and routes; decks indexed in localStorage with On-chain / Local only / Draft status
+- bulletin-storage: add uploadRawToBulletinWithStatus reporting on-chain vs localStorage fallback, and uploadRawToBulletinAsUser implementing authorize-then-store so the publisher's own account signs and owns the deck (Alice sudo authorize_account then publisher-signed store)
+- Make publish state honest in the UI: distinguish on-chain ownership, relay-signed, and local-only fallback, with a stale-since-publish indicator
+
 ## 2026-06-12
 
 - Add bulletin-deploy.config.ts for Triangle product manifest registration
