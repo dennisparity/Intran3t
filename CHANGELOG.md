@@ -1,3 +1,8 @@
+## 2026-06-15 (3)
+
+- Fix Bulletin uploads in bulletin-storage.ts: replace getUnsafeApi() + signSubmitAndWatch with getTypedApi(bulletin) + signAndSubmit; the unsafe API stalls indefinitely fetching runtime metadata before encoding, causing image upload and deck publish to hang and time out
+- Remove authorizeAccountViaSudo: Sudo pallet does not exist on Bulletin v2 (same issue -- would hang identically); individual account authorization falls back to Alice relay with owner attribution preserved in deck data
+
 ## 2026-06-15 (2)
 
 - Move Slides widget above Add Plugin in the dashboard right rail

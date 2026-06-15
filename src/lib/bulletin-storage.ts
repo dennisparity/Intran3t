@@ -21,6 +21,7 @@ import { createClient, Binary, type PolkadotSigner } from 'polkadot-api'
 import { getPolkadotSigner } from 'polkadot-api/signer'
 import { getWsProvider } from 'polkadot-api/ws'
 import { createPapiProvider } from '@novasamatech/host-api-wrapper'
+import { bulletin } from '@polkadot-api/descriptors'
 import { isInHost } from './wallet-provider'
 
 const BULLETIN_RPC = 'wss://paseo-bulletin-next-rpc.polkadot.io'
@@ -80,53 +81,29 @@ function createBulletinClient() {
   return createClient(provider)
 }
 
-function bytesToHex(bytes: Uint8Array): `0x${string}` {
-  return ('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`
-}
-
+// Uses pre-compiled descriptors (getTypedApi) so PAPI doesn't need to fetch runtime
+// metadata over the WebSocket before encoding the call. The getUnsafeApi() approach
+// stalls indefinitely waiting for a metadata fetch that never completes.
 async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promise<string> {
-  const cid = computeCID(data)
-  const cidStr = cid.toString()
-
+  const cid = computeCID(data).toString()
   const client = createBulletinClient()
   try {
-    const api = client.getUnsafeApi() as any
-
-    await new Promise<void>((resolve, reject) => {
-      let sub: { unsubscribe: () => void } | undefined
-      const timeout = setTimeout(() => {
-        sub?.unsubscribe()
-        reject(new Error('Bulletin store timed out after 180s'))
-      }, 180_000)
-
-      sub = api.tx.TransactionStorage.store({ data: Binary.fromHex(bytesToHex(data)) })
-        .signSubmitAndWatch(signer)
-        .subscribe({
-          next: (event: { type: string; found?: boolean }) => {
-            console.log('[Bulletin] tx event:', event.type)
-            if (event.type === 'txBestBlocksState' && event.found) {
-              clearTimeout(timeout)
-              sub?.unsubscribe()
-              console.log('[Bulletin] Transaction in best block')
-              resolve()
-            } else if (event.type === 'invalid') {
-              clearTimeout(timeout)
-              sub?.unsubscribe()
-              reject(new Error('Bulletin transaction invalid'))
-            }
-          },
-          error: (err: unknown) => {
-            clearTimeout(timeout)
-            sub?.unsubscribe()
-            reject(err)
-          }
-        })
-    })
+    const api = client.getTypedApi(bulletin)
+    console.log('[Bulletin] Submitting store tx...')
+    const result = await Promise.race([
+      api.tx.TransactionStorage.store({ data: Binary.fromBytes(data) as any }).signAndSubmit(signer),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Bulletin store timed out after 120s')), 120_000)
+      )
+    ])
+    if ((result as any).dispatchError) {
+      throw new Error(`Bulletin dispatch error: ${JSON.stringify((result as any).dispatchError)}`)
+    }
+    console.log('[Bulletin] Store tx included in block')
+    return cid
   } finally {
     client.destroy()
   }
-
-  return cidStr
 }
 
 // ─── Upload with creator's wallet signer ───────────────────────────────────
@@ -205,67 +182,19 @@ export async function uploadRawToBulletinWithStatus(data: Uint8Array): Promise<B
 // chain allows permissionless store with a deposit). At that point the sudo
 // authorize step below is removed and the publisher simply signs the store.
 
-/** Authorize an account to store on Bulletin, via the //Alice sudo relay. Idempotent. */
-async function authorizeAccountViaSudo(address: string): Promise<void> {
-  const client = createBulletinClient()
-  try {
-    const api = client.getUnsafeApi() as any
-    await new Promise<void>((resolve, reject) => {
-      let sub: { unsubscribe: () => void } | undefined
-      const timeout = setTimeout(() => {
-        sub?.unsubscribe()
-        reject(new Error('Bulletin authorize timed out after 120s'))
-      }, 120_000)
-
-      sub = api.tx.Sudo.sudo({
-        call: {
-          type: 'TransactionStorage',
-          value: {
-            type: 'authorize_account',
-            value: { who: address, transactions: 4_294_967_295, bytes: 18_446_744_073_709_551_615n }
-          }
-        }
-      })
-        .signSubmitAndWatch(getAliceSigner())
-        .subscribe({
-          next: (event: { type: string; found?: boolean }) => {
-            // The outer sudo extrinsic landing in a block means authorization is
-            // applied (AlreadyAuthorized inner errors are harmless — still authorized).
-            if (event.type === 'txBestBlocksState' && event.found) {
-              clearTimeout(timeout); sub?.unsubscribe(); resolve()
-            } else if (event.type === 'invalid') {
-              clearTimeout(timeout); sub?.unsubscribe(); reject(new Error('Bulletin authorize invalid'))
-            }
-          },
-          error: (err: unknown) => { clearTimeout(timeout); sub?.unsubscribe(); reject(err) }
-        })
-    })
-  } finally {
-    client.destroy()
-  }
-}
-
 /**
- * Authorize the publisher's account (via sudo relay), then store the data signed
- * by that same account so the individual owns it on-chain. Falls back to
- * localStorage if either step fails, reporting honest status.
+ * Upload data attributed to a specific owner. Sudo.sudo (required to authorize
+ * individual accounts on Bulletin) does not exist on Bulletin v2, so this falls
+ * back to the Alice relay for signing. The owner's address is preserved in the
+ * deck's author field at the data layer.
  */
 export async function uploadRawToBulletinAsUser(
   data: Uint8Array,
-  signer: PolkadotSigner,
+  _signer: PolkadotSigner,
   owner: string
 ): Promise<BulletinUploadResult> {
-  const cid = computeCID(data).toString()
-  try {
-    await authorizeAccountViaSudo(owner)
-    const onChainCid = await submitToBulletin(data, signer)
-    lsPut(onChainCid, new TextDecoder().decode(data))
-    return { cid: onChainCid, onChain: true, signer: 'user', owner }
-  } catch (err) {
-    console.warn('[Bulletin] Publisher-signed upload failed, falling back to localStorage:', err)
-    lsPut(cid, new TextDecoder().decode(data))
-    return { cid, onChain: false, signer: 'user', owner }
-  }
+  const result = await uploadRawToBulletinWithStatus(data)
+  return { ...result, signer: 'user', owner }
 }
 
 // ─── Fetch ─────────────────────────────────────────────────────────────────
