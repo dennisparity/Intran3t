@@ -15,7 +15,7 @@ import { paseo } from '../../.papi/descriptors'
 import { keccak256 } from 'viem'
 import { decodeAddress } from '@polkadot/util-crypto'
 
-const PASEO_ASSET_HUB_GENESIS = '0x173cea9df45656cf612c8b8ece56e04e9a693c69cfaac47d3628dae735067af8'
+const PASEO_ASSET_HUB_GENESIS = '0xbf0488dbe9daa1de1c08c5f743e26fdc2a4ecd74cf87dd1b4b1eeb99ae4ef19f'
 
 const MAPPING_CACHE_KEY = (addr: string) => `intran3t_mapped_${addr}`
 

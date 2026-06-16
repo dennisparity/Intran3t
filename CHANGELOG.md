@@ -1,3 +1,8 @@
+## 2026-06-16
+
+- Fix Asset Hub genesis hash in WalletProvider.tsx: testnet was fully reset (same RPC URL, new chain), stale PASEO_ASSET_HUB_GENESIS caused Incompatible runtime entry Tx(Revive.call) across Office Booking, Forms, and Governance
+- Regenerate PAPI descriptors and metadata for paseo via npx papi update
+
 ## 2026-06-15 (4)
 
 - Fix Binary.fromBytes: import Binary from @polkadot-api/substrate-bindings instead of polkadot-api; the polkadot-api re-export omits fromBytes, causing uploads to fail immediately with TypeError
