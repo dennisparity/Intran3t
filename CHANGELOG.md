@@ -1,3 +1,8 @@
+## 2026-06-17
+
+- Add 60s timeout to Bulletin uploads in upload.ts: signAndSubmit had no timeout, causing governance proposal creation to hang indefinitely on web instead of surfacing an error
+- Fix undefined DAPP_NAME in wallet-provider.ts: define const DAPP_NAME = 'Intran3t' so browser wallet enable() calls receive the correct origin string
+
 ## 2026-06-16
 
 - Fix Asset Hub genesis hash in WalletProvider.tsx: testnet was fully reset (same RPC URL, new chain), stale PASEO_ASSET_HUB_GENESIS caused Incompatible runtime entry Tx(Revive.call) across Office Booking, Forms, and Governance

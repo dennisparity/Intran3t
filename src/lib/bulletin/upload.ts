@@ -123,10 +123,18 @@ export async function uploadToBulletin(
       data: Binary.fromBytes(fileBytes) as any,
     });
 
-    // 4. Submit transaction
-    // For //Alice we use sudo to bypass authorization limits on testnet.
-    // For other accounts, direct call is used (requires authorization on chain).
-    const result = await storeCall.signAndSubmit(signer);
+    // 4. Submit transaction with timeout — signAndSubmit has no built-in timeout and
+    // will hang indefinitely if the node is slow or Alice has no BulletinAllowance.
+    const UPLOAD_TIMEOUT_MS = 60_000;
+    const result = await Promise.race([
+      storeCall.signAndSubmit(signer),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Bulletin upload timed out after ${UPLOAD_TIMEOUT_MS / 1000}s`)),
+          UPLOAD_TIMEOUT_MS
+        )
+      ),
+    ]);
     const { blockHash } = checkTransactionResult(result);
 
     return {

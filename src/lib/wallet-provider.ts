@@ -12,6 +12,7 @@ import { createStandaloneTxSigner } from './standalone-tx-signer'
 
 // The DotNS identifier for this product — must match the deployed domain
 const PRODUCT_DOTNS_ID = 'intran3t.dot'
+const DAPP_NAME = 'Intran3t'
 
 export interface WalletExtension {
   name: string
