@@ -1,3 +1,10 @@
+## 2026-07-03
+
+- Fix Profile widget Personhood badge: was hardcoded "Member" for host users; now queries the Asset Hub EVM personhood precompile (0x000000000000000000000000000000000a010000) and displays Full, Lite, or No PoP based on actual on-chain status
+- Add src/lib/personhood.ts: utility to call personhoodStatus(h160, context) on the precompile, deriving H160 from SS58 via keccak256, using VITE_ASSETHUB_EVM_RPC
+- Remove Attestations section from Profile widget (placeholder fields removed entirely)
+- Fix PopBadge labels: PoPFull -> Full, Light -> Lite; add loading spinner while precompile call is in-flight
+
 ## 2026-06-17
 
 - Add 60s timeout to Bulletin uploads in upload.ts: signAndSubmit had no timeout, causing governance proposal creation to hang indefinitely on web instead of surfacing an error

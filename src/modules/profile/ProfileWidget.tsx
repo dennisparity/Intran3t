@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { useWallet } from '../../providers/WalletProvider'
 import Identicon from '@polkadot/react-identicon'
-import { User, ShieldCheck, ShieldOff, Github, Mail, Twitter, Lock } from 'lucide-react'
+import { User, ShieldCheck, ShieldOff } from 'lucide-react'
 import type { ProfileConfig } from './types'
 import { mockUserProfile } from './config'
 import { useEVM } from '../../providers/EVMProvider'
+import { queryPopStatus } from '../../lib/personhood'
 
 interface ProfileWidgetProps {
   config: ProfileConfig
@@ -16,12 +18,20 @@ function isEvmAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/i.test(address)
 }
 
-function PopBadge({ level }: { level: 'full' | 'light' | null | undefined }) {
+function PopBadge({ level, loading }: { level: 'full' | 'light' | null | undefined; loading?: boolean }) {
+  if (loading) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f4] text-[#78716c] border border-[#e7e5e4]">
+        <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+        Checking
+      </span>
+    )
+  }
   if (level === 'full') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
         <ShieldCheck className="w-3 h-3" />
-        PoPFull
+        Full
       </span>
     )
   }
@@ -29,7 +39,7 @@ function PopBadge({ level }: { level: 'full' | 'light' | null | undefined }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
         <ShieldCheck className="w-3 h-3" />
-        Light
+        Lite
       </span>
     )
   }
@@ -41,20 +51,16 @@ function PopBadge({ level }: { level: 'full' | 'light' | null | undefined }) {
   )
 }
 
-const ATTESTATION_PLACEHOLDERS = [
-  { icon: Github, label: 'GitHub' },
-  { icon: Mail, label: 'Email' },
-  { icon: Twitter, label: 'Twitter / X' },
-]
-
 export function ProfileWidget({
   config,
   profileAddress,
   profileEvmAddress,
   isOwnProfile = true
 }: ProfileWidgetProps) {
-  const { selectedAccount, isReconnecting, inHost } = useWallet()
+  const { selectedAccount, isReconnecting } = useWallet()
   const { account: evmAccount } = useEVM()
+  const [popLevel, setPopLevel] = useState<'full' | 'light' | null>(null)
+  const [popLoading, setPopLoading] = useState(false)
 
   const displayAddress = profileAddress || selectedAccount?.address || evmAccount
   const isEvm = displayAddress ? isEvmAddress(displayAddress) : false
@@ -63,6 +69,20 @@ export function ProfileWidget({
   const profile = displayAddress
     ? { address: displayAddress, name: accountName }
     : mockUserProfile
+
+  useEffect(() => {
+    const address = profileAddress || selectedAccount?.address
+    if (!address || isEvmAddress(address)) return
+
+    const evmRpc = import.meta.env.VITE_ASSETHUB_EVM_RPC
+    if (!evmRpc) return
+
+    setPopLoading(true)
+    setPopLevel(null)
+    queryPopStatus(address, evmRpc)
+      .then(level => setPopLevel(level))
+      .finally(() => setPopLoading(false))
+  }, [profileAddress, selectedAccount?.address])
 
   return (
     <div className="bg-white border border-[#e7e5e4] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
@@ -104,42 +124,14 @@ export function ProfileWidget({
                   </p>
                 </div>
               </div>
-
             </div>
 
             {/* Personhood status */}
-            <div className="border-t border-[#e7e5e4] pt-3 mb-3">
+            <div className="border-t border-[#e7e5e4] pt-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-[#78716c] uppercase tracking-wide">Personhood</p>
-                {inHost && selectedAccount ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                    <ShieldCheck className="w-3 h-3" />
-                    Member
-                  </span>
-                ) : (
-                  <PopBadge level={null} />
-                )}
+                <PopBadge level={popLevel} loading={popLoading} />
               </div>
-            </div>
-
-            {/* Attestations (placeholder) */}
-            <div className="border-t border-[#e7e5e4] pt-3">
-              <p className="text-xs font-medium text-[#78716c] uppercase tracking-wide mb-2">Attestations</p>
-              <div className="space-y-1.5">
-                {ATTESTATION_PLACEHOLDERS.map(({ icon: Icon, label }) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between px-3 py-2 bg-[#fafaf9] rounded-lg border border-[#e7e5e4]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-3.5 h-3.5 text-[#a8a29e]" />
-                      <span className="text-xs text-[#78716c]">{label}</span>
-                    </div>
-                    <Lock className="w-3 h-3 text-[#d6d3d1]" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-[10px] text-[#a8a29e] text-center mt-2">Reputation attestations — coming soon</p>
             </div>
           </>
         ) : evmAccount ? (
