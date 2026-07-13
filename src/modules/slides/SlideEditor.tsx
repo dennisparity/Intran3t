@@ -245,7 +245,7 @@ export function SlideEditor() {
           {publishState === 'publishing'
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Publishing to Bulletin…</>
             : <><Share2 className="w-4 h-4" />
-                {publishedCid ? (editedSincePublish ? 'Publish update' : 'Published') : 'Publish to Bulletin'}</>}
+                {publishedCid && publishedOnChain ? (editedSincePublish ? 'Publish update' : 'Published') : 'Publish to Bulletin'}</>}
         </button>
       </div>
 

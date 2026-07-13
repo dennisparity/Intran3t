@@ -1,5 +1,9 @@
 ## 2026-07-13
 
+- Fix SlideEditor publish CTA: button showed "Published" even when Bulletin upload fell back to localStorage; now only shows "Published" when publishedOnChain is true, otherwise shows "Publish to Bulletin"
+
+## 2026-07-13
+
 - Regenerate PAPI descriptors via npx papi update: Bulletin and Paseo runtimes had drifted (bulletin codeHash 0xbf2cd5 -> 0xe6deb6, paseo codeHash 0x970b97 -> 0xd89ebe), causing Incompatible runtime entry on Bulletin store txs and breaking slide publication
 
 ## 2026-07-03
