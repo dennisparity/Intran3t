@@ -22,7 +22,6 @@ import { Binary } from '@polkadot-api/substrate-bindings'
 import { getPolkadotSigner } from 'polkadot-api/signer'
 import { getWsProvider } from 'polkadot-api/ws'
 import { createPapiProvider } from '@novasamatech/host-api-wrapper'
-import { bulletin } from '@polkadot-api/descriptors'
 import { isInHost } from './wallet-provider'
 
 const BULLETIN_RPC = 'wss://paseo-bulletin-next-rpc.polkadot.io'
@@ -82,14 +81,14 @@ function createBulletinClient() {
   return createClient(provider)
 }
 
-// Uses pre-compiled descriptors (getTypedApi) so PAPI doesn't need to fetch runtime
-// metadata over the WebSocket before encoding the call. The getUnsafeApi() approach
-// stalls indefinitely waiting for a metadata fetch that never completes.
+// getUnsafeApi() fetches live chain metadata at runtime — immune to "Incompatible runtime
+// entry" errors when the testnet runtime upgrades. The 120s Promise.race timeout below
+// protects against the stall that previously caused this approach to be reverted.
 async function submitToBulletin(data: Uint8Array, signer: PolkadotSigner): Promise<string> {
   const cid = computeCID(data).toString()
   const client = createBulletinClient()
   try {
-    const api = client.getTypedApi(bulletin)
+    const api = client.getUnsafeApi()
     console.log('[Bulletin] Submitting store tx...')
     const result = await Promise.race([
       api.tx.TransactionStorage.store({ data: Binary.fromBytes(data) as any }).signAndSubmit(signer),

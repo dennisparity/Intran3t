@@ -1,4 +1,3 @@
-import { bulletin } from "@polkadot-api/descriptors";
 import { sr25519CreateDerive } from "@polkadot-labs/hdkd";
 import {
   DEV_PHRASE,
@@ -114,8 +113,8 @@ export async function uploadToBulletin(
   const client = createClient(provider);
 
   try {
-    // getTypedApi uses generated PAPI descriptors for type-safe API
-    const api = client.getTypedApi(bulletin);
+    // getUnsafeApi fetches live chain metadata — immune to descriptor staleness after runtime upgrades.
+    const api = client.getUnsafeApi();
     const signer = createDevSigner(accountSeed);
 
     // 3. Create TransactionStorage.store extrinsic

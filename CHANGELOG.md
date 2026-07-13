@@ -1,5 +1,7 @@
 ## 2026-07-13
 
+- Switch Bulletin PAPI client from getTypedApi(bulletin) to getUnsafeApi() in bulletin-storage.ts and bulletin/upload.ts: fixes "Incompatible runtime entry Tx(TransactionStorage.store)" that recurs after every testnet runtime upgrade; getUnsafeApi fetches live chain metadata at runtime so descriptor staleness is impossible; both callers already have Promise.race timeouts (60s/120s) so the previous stall risk is mitigated
+
 - Fix SlideEditor publish CTA: button showed "Published" even when Bulletin upload fell back to localStorage; now only shows "Published" when publishedOnChain is true, otherwise shows "Publish to Bulletin"
 
 ## 2026-07-13
