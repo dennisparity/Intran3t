@@ -1,3 +1,7 @@
+## 2026-07-13
+
+- Regenerate PAPI descriptors via npx papi update: Bulletin and Paseo runtimes had drifted (bulletin codeHash 0xbf2cd5 -> 0xe6deb6, paseo codeHash 0x970b97 -> 0xd89ebe), causing Incompatible runtime entry on Bulletin store txs and breaking slide publication
+
 ## 2026-07-03
 
 - Fix Profile widget Personhood badge: was hardcoded "Member" for host users; now queries the Asset Hub EVM personhood precompile (0x000000000000000000000000000000000a010000) and displays Full, Lite, or No PoP based on actual on-chain status

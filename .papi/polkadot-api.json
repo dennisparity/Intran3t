@@ -6,13 +6,13 @@
       "wsUrl": "wss://paseo-bulletin-next-rpc.polkadot.io",
       "metadata": ".papi/metadata/bulletin.scale",
       "genesis": "0x8cfe6717dc4becfda2e13c488a1e2061ff2dfee96e7d031157f72d36716c0a22",
-      "codeHash": "0xbf2cd56d20198f00ab6f38d7e77f15a9d5671d47beb5d456012ed45d23572045"
+      "codeHash": "0xe6deb62a7078a64b2534febedb4638acce1615a95b2622272d368db3e559b8ac"
     },
     "paseo": {
       "wsUrl": "wss://paseo-asset-hub-next-rpc.polkadot.io",
       "metadata": ".papi/metadata/paseo.scale",
       "genesis": "0xbf0488dbe9daa1de1c08c5f743e26fdc2a4ecd74cf87dd1b4b1eeb99ae4ef19f",
-      "codeHash": "0x970b97e4531a527555f3b89d7a3c2d1beb3b389579eef6c2e3afb7d425066415"
+      "codeHash": "0xd89ebe4efd0300ac8a75980e1007bf7df579d9778f4b3aec87a25b519030cd74"
     }
   }
 }
